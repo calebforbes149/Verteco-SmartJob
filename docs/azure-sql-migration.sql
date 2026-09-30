@@ -431,3 +431,84 @@ END;
 COMMIT;
 GO
 
+BEGIN TRANSACTION;
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260930175459_FlaggedJobsAndCorrectiveActions'
+)
+BEGIN
+    ALTER TABLE [JobCards] ADD [FlagReason] nvarchar(1000) NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260930175459_FlaggedJobsAndCorrectiveActions'
+)
+BEGIN
+    ALTER TABLE [JobCards] ADD [FlaggedAtUtc] datetime2 NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260930175459_FlaggedJobsAndCorrectiveActions'
+)
+BEGIN
+    ALTER TABLE [JobCards] ADD [IsFlagged] bit NOT NULL DEFAULT CAST(0 AS bit);
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260930175459_FlaggedJobsAndCorrectiveActions'
+)
+BEGIN
+    CREATE TABLE [CorrectiveActions] (
+        [Id] uniqueidentifier NOT NULL,
+        [JobCardId] uniqueidentifier NOT NULL,
+        [Reason] nvarchar(1000) NOT NULL,
+        [OpenedAtUtc] datetime2 NOT NULL,
+        [OpenedByUserId] uniqueidentifier NULL,
+        [ResolvedAtUtc] datetime2 NULL,
+        [ResolvedByUserId] uniqueidentifier NULL,
+        [ResolutionNotes] nvarchar(2000) NULL,
+        [RowVersion] varbinary(max) NOT NULL,
+        CONSTRAINT [PK_CorrectiveActions] PRIMARY KEY ([Id]),
+        CONSTRAINT [FK_CorrectiveActions_JobCards_JobCardId] FOREIGN KEY ([JobCardId]) REFERENCES [JobCards] ([Id]) ON DELETE NO ACTION
+    );
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260930175459_FlaggedJobsAndCorrectiveActions'
+)
+BEGIN
+    CREATE INDEX [IX_JobCards_IsFlagged] ON [JobCards] ([IsFlagged]);
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260930175459_FlaggedJobsAndCorrectiveActions'
+)
+BEGIN
+    CREATE INDEX [IX_CorrectiveActions_JobCardId_ResolvedAtUtc] ON [CorrectiveActions] ([JobCardId], [ResolvedAtUtc]);
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260930175459_FlaggedJobsAndCorrectiveActions'
+)
+BEGIN
+    CREATE INDEX [IX_CorrectiveActions_OpenedAtUtc] ON [CorrectiveActions] ([OpenedAtUtc]);
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260930175459_FlaggedJobsAndCorrectiveActions'
+)
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20260930175459_FlaggedJobsAndCorrectiveActions', N'10.0.12');
+END;
+
+COMMIT;
+GO
+
