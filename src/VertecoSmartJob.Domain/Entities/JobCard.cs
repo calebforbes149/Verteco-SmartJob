@@ -39,6 +39,11 @@ public class JobCard : SoftDeletableEntity
     public string? ReopenReason { get; private set; }
     public string? CancelReason { get; private set; }
 
+    public bool IsFlagged { get; private set; }
+    public string? FlagReason { get; private set; }
+    public DateTime? FlaggedAtUtc { get; private set; }
+    public List<CorrectiveAction> CorrectiveActions { get; set; } = [];
+
     /// <summary>SHA-256 hash of the checklist + notes at the moment the technician submitted
     /// for review. Complete() recomputes and compares it so a manager can never sign off on a
     /// job card that quietly changed after submission.</summary>
@@ -149,6 +154,8 @@ public class JobCard : SoftDeletableEntity
     {
         if (Status != JobStatus.AwaitingApproval)
             throw new InvalidJobStatusTransitionException(Status.ToString(), nameof(Complete));
+        if (IsFlagged)
+            throw new InvalidFlagStateException("Resolve the open corrective action before approving this job card.");
 
         if (SealedHash is null || ComputeHash() != SealedHash ||
             Revisions.OrderBy(r => r.Number).LastOrDefault()?.VerifyIntegrity() != true)
@@ -182,6 +189,37 @@ public class JobCard : SoftDeletableEntity
 
         CancelReason = reason.Trim();
         Status = JobStatus.Cancelled;
+    }
+
+    public CorrectiveAction Flag(string reason, Guid? userId)
+    {
+        if (Status == JobStatus.Cancelled)
+            throw new InvalidJobStatusTransitionException(Status.ToString(), nameof(Flag));
+        if (IsFlagged)
+            throw new InvalidFlagStateException("This job card already has an open flag.");
+        if (string.IsNullOrWhiteSpace(reason)) throw new ReasonRequiredException("flag");
+
+        var action = CorrectiveAction.Open(Id, reason, userId);
+        CorrectiveActions.Add(action);
+        IsFlagged = true;
+        FlagReason = action.Reason;
+        FlaggedAtUtc = action.OpenedAtUtc;
+        return action;
+    }
+
+    public CorrectiveAction ResolveFlag(string notes, Guid? userId, Guid? actionId = null)
+    {
+        if (!IsFlagged)
+            throw new InvalidFlagStateException("This job card has no open flag to resolve.");
+        var action = CorrectiveActions.SingleOrDefault(a => a.IsOpen);
+        if (action is null || (actionId.HasValue && action.Id != actionId.Value))
+            throw new InvalidFlagStateException("The selected corrective action is not the open flag.");
+
+        action.Resolve(notes, userId);
+        IsFlagged = false;
+        FlagReason = null;
+        FlaggedAtUtc = null;
+        return action;
     }
 
     public void AddEvidence(Guid technicianId, string reference, string caption)

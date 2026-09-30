@@ -33,3 +33,6 @@ public sealed class ReasonRequiredException(string action)
     : DomainException($"A reason is required to {action} this job card.");
 
 public sealed class SubmissionInvalidException(string message) : DomainException(message);
+
+/// <summary>Flag or corrective-action operation is incompatible with its current state. Maps to 409.</summary>
+public sealed class InvalidFlagStateException(string message) : DomainException(message);
