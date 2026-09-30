@@ -1,1 +1,162 @@
-# insy7315-2026-task-2-st10453511
+# Verteco SmartJob — Person 1 (Alex)
+
+This folder is the backend, API, and reporting starting point for the group project. It contains Domain, Application, Infrastructure, API, and Contracts projects so the web and mobile teams can share DTOs.
+
+All jobs use the **single seeded Standard Job Card** and its six checklist items. Clients do not choose or edit a template.
+
+## What's included
+
+- Guarded job card lifecycle: Draft → Assigned → Accepted → InProgress → AwaitingApproval → Completed, with Reopened and Cancelled branches.
+- Submission validation for required fields, evidence, and both signatures; SHA-256 revision snapshots linked across resubmissions.
+- Customer, site, and user management services, soft deletion, and audit records.
+- Azure SQL EF Core provider, seed data, an EF migration, and an idempotent SQL deployment script.
+- Private Azure Blob Storage adapter. The technician upload and sync HTTP routes belong to Person 4 and are not in this collection yet.
+- `/api/v1` manager endpoints, dashboard aggregates, monthly reports, optional Gemini commentary, CSV/PDF exports, Swagger, and a Postman collection.
+
+## Open the solution
+
+Install the .NET 10 SDK and open `VertecoSmartJob.slnx` in Visual Studio. To run the automated .NET tests from this folder:
+
+```powershell
+dotnet restore VertecoSmartJob.slnx
+dotnet build VertecoSmartJob.slnx
+dotnet test tests/VertecoSmartJob.Tests/VertecoSmartJob.Tests.csproj
+```
+
+The automated tests use an isolated in-memory SQLite database. The running API uses Azure SQL.
+
+## Set up Azure for local development
+
+
+### Save local settings in Visual Studio User Secrets
+
+1. In Visual Studio **Solution Explorer**, right-click the **VertecoSmartJob.Api project** (not the solution) and choose **Manage User Secrets**. The project already has a `UserSecretsId`.
+2. Merge the following JSON into the `secrets.json` file that opens. Replace every placeholder with your own value; keep any other secrets you already use.
+
+   ```json
+   {
+     "ConnectionStrings": {
+       "AzureSql": "Server=tcp:<server>.database.windows.net,1433;Initial Catalog=<database>;User ID=<sql-login>;Password=<sql-password>;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+     },
+     "Blob": {
+       "ConnectionString": "<full connection string copied from Storage account > Access keys>",
+       "Container": "job-evidence"
+     },
+     "ApiKeys": {
+       "Accounts": [
+         {
+           "Email": "manager@verteco.example",
+           "Key": "<long unique development key>"
+         }
+       ]
+     }
+   }
+   ```
+
+   The `Email` must match the seeded manager user. Choose a long random development key and use its **exact value** in Postman's `managerKey` collection variable. The key is for this local development authentication harness, not your Azure SQL password or Azure account password.
+3. Save `secrets.json`, set **VertecoSmartJob.Api** as the startup project, select its **http** launch profile, and press **F5**. The API uses `http://localhost:5196`; Swagger is at `http://localhost:5196/swagger`. The **https** profile also exposes `https://localhost:7086`. The launch profiles set `ASPNETCORE_ENVIRONMENT=Development`, which makes User Secrets available.
+
+User Secrets live outside the repository and everyone configures their own local file. They are intended for development and are not encrypted. Never put real passwords, storage keys, or API keys in `appsettings.json`, the README, the Postman collection, or a commit. 
+Development startup applies the Azure SQL EF migration and seeds a manager, technicians, customers, sites, equipment, jobs, and the single standard template. The database must be reachable before the API can start. If the SQL firewall or credentials are wrong, startup stops during migration. The development API-key handler allows role checks while Person 3 builds real identity. Production startup is intentionally blocked until that work is integrated. For deployment, use the reviewed `docs/azure-sql-migration.sql` or EF migrations instead of having every production API instance migrate at startup.
+
+## Use the Postman collection
+
+The collection is `postman/VertecoSmartJob.Person1.postman_collection.json`. It contains **29 request examples**. It has no Postman assertion scripts, so a Runner result of **“0 tests”** means no automated assertions were defined; it does not indicate whether the HTTP responses were correct. Run the requests individually in the order below. Running the entire collection at once will encounter empty IDs, invalid job states, and requests that deliberately change data.
+
+### 1. Import and configure
+
+1. In Postman, choose **Import → File** and select the collection JSON above.
+2. Open the imported collection's **Variables** tab and set the values below. Collection variables work even when Postman shows **Environment: none**. Save the collection after editing them.
+
+   | Variable | Value |
+   | --- | --- |
+   | `baseUrl` | `http://localhost:5196` for Visual Studio's **http** profile. |
+   | `managerKey` | The exact `ApiKeys:Accounts[0]:Key` value in your User Secrets. |
+   | `customerId` | A customer GUID copied from **List customers** or **Create customer**. |
+   | `siteId` | A site GUID belonging to that customer, from **List sites** or **Create site**. |
+   | `technicianId` | A technician GUID copied from **List technicians**. |
+   | `jobId` | A job GUID copied from **List jobs** or **Create job**; change it when testing a different job state. |
+   | `userId` | A user GUID copied from **List users** or the disposable-user request below. |
+   | `reportPeriod` | A month in `yyyy-MM` form, for example `2026-09`; use a month containing your test data for nonzero figures. |
+
+3. Start the API in Visual Studio and send **Dashboard stats**. Expect **200 OK**. Every collection request already sends `X-SmartJob-Key: {{managerKey}}`; you do not need to log in or add Bearer authentication. A missing/wrong key normally gives **401**, while a valid key without the required Manager role gives **403**.
+4. In a JSON response, copy an `id` GUID into the relevant collection variable. For list responses, look in `items`. Do not include quotes around a GUID in the variable value. Empty `{{jobId}}`, `{{siteId}}`, or `{{userId}}` values make detail and write requests hit the wrong URL.
+
+### 2. Run the read-only requests
+
+These requests can be sent without changing data. For detail requests, first fill in the corresponding ID variable.
+
+| Collection request | Expected result / what to check |
+| --- | --- |
+| **Dashboard stats** | **200**; `activeJobCards`, `dueTodayCount`, `techniciansAvailable`. |
+| **List jobs** | **200**; `items`, `totalCount`, `page`, `pageSize`. Copy a job's `id`, `status`, and `customerId`/`siteId` from **Get job** when needed. |
+| **Get job** | **200** for a valid `jobId`; shows status, standard checklist, and assigned technician if present. |
+| **List customers** | **200**; copy an `items[].id` into `customerId`. |
+| **Get customer** | **200** for a valid `customerId`; inspect its sites. |
+| **List sites** | **200**; set `customerId` first to filter by that customer, then copy a site `id` into `siteId`. |
+| **Get site** | **200** for a valid `siteId`; verify its `customerId` matches the selected customer. |
+| **Look up equipment serial** | **200** for seeded serial `UPS-60-MID-001`; an unknown serial gives **404**. |
+| **List users** | **200**; copy a safe test user's `id` into `userId`. |
+| **Get user** | **200** for a valid `userId`. |
+| **List technicians** | **200**; copy an `items[].id` into `technicianId`. |
+| **Standard job card fields** | **200**; one standard template with six checklist items. |
+| **List reports** | **200**; edit the request's `year=2026` query parameter if testing another year. A month with no data still returns a report with zero counts. |
+| **Monthly report and AI commentary** | **200** for valid `reportPeriod`; check counts and averages. `aiCommentary` may be null when no Gemini key is configured. |
+| **Export report CSV** | **200**, `text/csv`; use **Send and Download** in Postman to save the file. |
+| **Export report PDF** | **200**, `application/pdf`; use **Send and Download** to save the file. |
+| **Audit trail** | **200**; repeat after writes to see new entries. |
+
+### 3. Test customer, site, and job writes in order
+
+Each `POST` or `PATCH` request has a sample JSON body under Postman's **Body → raw → JSON**. Replace the `{{...}}` values via collection variables and edit sample names if you run the request more than once.
+
+| Order | Collection request | Expected result and next step |
+| --- | --- | --- |
+| 1 | **Create customer** | **201 Created**. Copy response `id` to `customerId`. Use a distinct customer name for repeat runs. |
+| 2 | **Edit customer** | **200**. Confirm `contactPhone` changed; **Get customer** should show the same value. |
+| 3 | **Create site** | **201 Created**. Its body uses `{{customerId}}`. Copy response `id` to `siteId`. |
+| 4 | **Edit site** | **200**. Confirm `address` changed; **Get site** should show it. |
+| 5 | **Create job with standard checklist** | **201 Created**. `customerId` and `siteId` must match. **Remove the `technicianId` line from this request body** so the new job stays in `Draft`. Copy response `id` to `jobId`. The API automatically uses the one standard job card template. |
+| 6 | **Edit draft job** | **200**; verify the `priority` and `notes` in **Get job**. This only works while status is `Draft`. |
+| 7 | **Assign technician** | **200**; set `technicianId` from **List technicians**, then verify status `Assigned`. Once assigned, the draft edit request correctly returns **409 Conflict**. |
+
+The collection's **Approve submitted job** request cannot approve a newly assigned job. A technician must accept it, start it, complete its checklist, add evidence and both signatures, then submit it for review. Those technician HTTP routes are not yet in the Person 1 collection. For a manager-side test, use a **seeded `AwaitingApproval` job** from **List jobs**, set its `id` as `jobId`, then send **Approve submitted job**. Expect **200** and status `Completed`.
+
+Next, use that completed job to send **Reopen job**. Expect **200** and status `Reopened`. To test **Cancel active job**, first set `jobId` to a *different* job in `Draft`, `Assigned`, `Accepted`, `InProgress`, `AwaitingApproval`, or `Reopened`; expect **200** and `Cancelled`. Cancelling a `Completed` or already `Cancelled` job correctly returns **409**. These requests change shared Azure data, so choose disposable records when possible.
+
+### 4. Test user management safely
+
+The collection includes **List users**, **Get user**, **Suspend user**, and **Deactivate user**. Do not suspend or deactivate the seeded `manager@verteco.example` account: the development key maps to that user.
+
+To create a disposable account before using the destructive user requests, make a separate Postman request:
+
+- Method: `POST`
+- URL: `{{baseUrl}}/api/v1/users`
+- Headers: `X-SmartJob-Key: {{managerKey}}` and `Content-Type: application/json`
+- Body → raw → JSON:
+
+  ```json
+  {
+    "fullName": "Postman Test Manager",
+    "email": "postman-test-unique@example.test",
+    "phone": "011 000 0000",
+    "role": "Manager"
+  }
+  ```
+
+Use a new email on repeat runs. Expect **201** and copy the returned `id` into `userId`. Then send **Get user** (**200**), **Suspend user** (**200**, `isSuspended: true`), and **Deactivate user** (**204 No Content**). An empty response body after **204** is correct.
+
+### Troubleshooting Postman and Azure
+
+| Symptom | Check |
+| --- | --- |
+| API stops at `MigrateAsync`, SQL host not found | Use the exact `*.database.windows.net` server name in User Secrets; check internet/DNS and Azure SQL Networking. |
+| SQL login or firewall error | Check SQL login/password, database name, your current public IP firewall rule, and whether the free database has paused after its allowance. |
+| API says `ConnectionStrings:AzureSql` or `Blob:ServiceUri or Blob:ConnectionString` is required | Open **Manage User Secrets** on the **API project**, verify the JSON keys and run with the **Development** launch profile. |
+| Postman `401` | Confirm the API is running and `managerKey` exactly matches User Secrets; the email must identify an existing, active user. |
+| Postman `403` | The key identified a user without permission for that manager endpoint. |
+| Postman `400` | Check required body fields, valid GUID variables, JSON syntax, and the `yyyy-MM-dd` job date or `yyyy-MM` report period. |
+| Postman `404` or `405` on an ID request | Fill `jobId`, `customerId`, `siteId`, or `userId`; an empty variable can turn a detail URL into a collection URL. |
+| Postman `409` | Check the job's current `status`; edits require `Draft`, approval requires `AwaitingApproval`, and cancellation cannot follow completion. |
+| Postman Runner says **0 tests** | The collection has request examples but no Postman assertion scripts. Inspect response status/body for each request using the tables above. |
+
