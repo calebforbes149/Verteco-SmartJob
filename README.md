@@ -1,4 +1,6 @@
-# Verteco SmartJob — Person 1 (Alex)
+# Verteco SmartJob
+
+Person 1 (Alex)
 
 This folder is the backend, API, and reporting starting point for the group project. It contains Domain, Application, Infrastructure, API, and Contracts projects so the web and mobile teams can share DTOs.
 
