@@ -511,6 +511,175 @@
         ],
         "url": "{{baseUrl}}/api/v1/audit?page=1&pageSize=20&sort=-date"
       }
+    },
+    {
+      "name": "Create technician and account",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/technicians",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"New Test Technician\",\n  \"email\": \"new.tech@example.test\",\n  \"phone\": \"011 000 0000\",\n  \"skills\": [\n    \"Power Systems\"\n  ],\n  \"availability\": \"Available\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Edit technician",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/technicians/{{technicianId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"skills\": [\n    \"Power Systems\",\n    \"Networking\"\n  ],\n  \"availability\": \"Available\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "List flagged jobs",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/jobs?flagged=true&page=1&pageSize=20"
+      }
+    },
+    {
+      "name": "Flag job",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/jobs/{{jobId}}/flag",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reason\": \"Client reported a defect that needs correction\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Resolve job flag",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/jobs/{{jobId}}/resolve-flag",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"resolutionNotes\": \"Corrective work completed and verified\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "List corrective actions",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/corrective-actions?status=open&page=1&pageSize=20&sort=-date"
+      }
+    },
+    {
+      "name": "Get corrective action",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/corrective-actions/{{correctiveActionId}}"
+      }
+    },
+    {
+      "name": "Resolve corrective action",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/corrective-actions/{{correctiveActionId}}/resolve",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"resolutionNotes\": \"Corrective work completed and verified\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
     }
   ],
   "variable": [
@@ -545,6 +714,10 @@
     {
       "key": "reportPeriod",
       "value": "2026-09"
+    },
+    {
+      "key": "correctiveActionId",
+      "value": ""
     }
   ]
 }
