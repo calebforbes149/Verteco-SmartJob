@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/VertecoSmartJob.Domain/VertecoSmartJob.Domain.csproj" />
+    <Project Path="src/VertecoSmartJob.Application/VertecoSmartJob.Application.csproj" />
+    <Project Path="src/VertecoSmartJob.Infrastructure/VertecoSmartJob.Infrastructure.csproj" />
+    <Project Path="src/VertecoSmartJob.Contracts/VertecoSmartJob.Contracts.csproj" />
+    <Project Path="src/VertecoSmartJob.Api/VertecoSmartJob.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/VertecoSmartJob.Tests/VertecoSmartJob.Tests.csproj" />
+  </Folder>
+</Solution>
