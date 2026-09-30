@@ -11,6 +11,8 @@ public class JobCardSummaryDto
     public string TemplateName { get; set; } = string.Empty;
     public string? TechnicianName { get; set; }
     public DateOnly ScheduledDate { get; set; }
+    public bool IsFlagged { get; set; }
+    public string? FlagReason { get; set; }
 }
 
 public class JobCardDetailDto
@@ -38,6 +40,10 @@ public class JobCardDetailDto
     public string? ReviewNotes { get; set; }
     public string? ReopenReason { get; set; }
     public string? CancelReason { get; set; }
+    public bool IsFlagged { get; set; }
+    public string? FlagReason { get; set; }
+    public DateTime? FlaggedAtUtc { get; set; }
+    public List<CorrectiveActionDto> CorrectiveActions { get; set; } = [];
     public List<JobRevisionDto> Revisions { get; set; } = [];
     public int EvidenceCount { get; set; }
     public bool HasTechnicianSignature { get; set; }
@@ -89,6 +95,30 @@ public class ReopenJobRequest
 public class CancelJobRequest
 {
     public string Reason { get; set; } = string.Empty;
+}
+
+public class FlagJobRequest
+{
+    public string Reason { get; set; } = string.Empty;
+}
+
+public class ResolveFlagRequest
+{
+    public string ResolutionNotes { get; set; } = string.Empty;
+}
+
+public class CorrectiveActionDto
+{
+    public Guid Id { get; set; }
+    public Guid JobCardId { get; set; }
+    public string JobNumber { get; set; } = string.Empty;
+    public string Reason { get; set; } = string.Empty;
+    public DateTime OpenedAtUtc { get; set; }
+    public Guid? OpenedByUserId { get; set; }
+    public bool IsOpen { get; set; }
+    public DateTime? ResolvedAtUtc { get; set; }
+    public Guid? ResolvedByUserId { get; set; }
+    public string? ResolutionNotes { get; set; }
 }
 
 public class JobRevisionDto

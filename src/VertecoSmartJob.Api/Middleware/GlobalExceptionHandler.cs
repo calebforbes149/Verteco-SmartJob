@@ -16,6 +16,7 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
         var (status, title) = exception switch
         {
             InvalidJobStatusTransitionException => (StatusCodes.Status409Conflict, "Invalid job card transition"),
+            InvalidFlagStateException => (StatusCodes.Status409Conflict, "Invalid flag state"),
             JobCardModifiedSinceReviewException => (StatusCodes.Status409Conflict, "Job card changed since review"),
             ChecklistNotCompleteException => (StatusCodes.Status422UnprocessableEntity, "Checklist incomplete"),
             ReasonRequiredException => (StatusCodes.Status422UnprocessableEntity, "Reason required"),

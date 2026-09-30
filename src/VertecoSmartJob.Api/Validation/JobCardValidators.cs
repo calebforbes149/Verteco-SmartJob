@@ -56,3 +56,13 @@ public class CancelJobRequestValidator : AbstractValidator<CancelJobRequest>
     public CancelJobRequestValidator() => RuleFor(x => x.Reason).NotEmpty().MaximumLength(1000);
 }
 
+public class FlagJobRequestValidator : AbstractValidator<FlagJobRequest>
+{
+    public FlagJobRequestValidator() => RuleFor(x => x.Reason).NotEmpty().MaximumLength(1000);
+}
+
+public class ResolveFlagRequestValidator : AbstractValidator<ResolveFlagRequest>
+{
+    public ResolveFlagRequestValidator() => RuleFor(x => x.ResolutionNotes).NotEmpty().MaximumLength(2000);
+}
+

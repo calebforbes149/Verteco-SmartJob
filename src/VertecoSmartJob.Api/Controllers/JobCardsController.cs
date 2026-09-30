@@ -23,6 +23,7 @@ public class JobCardsController(JobCardService jobCardService) : ControllerBase
     public async Task<ActionResult<PagedResponse<JobCardSummaryDto>>> Search(
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] string? sort = null, [FromQuery] string? q = null,
         [FromQuery] string? status = null, [FromQuery] string? priority = null,
+        [FromQuery] bool? flagged = null,
         [FromQuery] Guid? customerId = null, [FromQuery] Guid? siteId = null, [FromQuery] Guid? technicianId = null,
         CancellationToken ct = default)
     {
@@ -40,7 +41,8 @@ public class JobCardsController(JobCardService jobCardService) : ControllerBase
             Priority = Enum.TryParse<JobPriority>(priority, true, out var p) ? p : null,
             CustomerId = customerId,
             SiteId = siteId,
-            TechnicianId = User.IsInRole("Technician") ? ActorTechnicianId : technicianId
+            TechnicianId = User.IsInRole("Technician") ? ActorTechnicianId : technicianId,
+            Flagged = flagged
         };
 
         var result = await jobCardService.SearchAsync(query, ct);
@@ -118,5 +120,25 @@ public class JobCardsController(JobCardService jobCardService) : ControllerBase
         await jobCardService.CancelAsync(id, request.Reason, ct);
         var job = await jobCardService.GetByIdAsync(id, ct);
         return Ok(job!.ToDetailDto());
+    }
+
+    [HttpPost("{id:guid}/flag")]
+    public async Task<ActionResult<JobCardDetailDto>> Flag(Guid id, FlagJobRequest request, CancellationToken ct)
+    {
+        if (!User.IsInRole("Manager") && !User.IsInRole("Technician")) return Forbid();
+        var existing = await jobCardService.GetByIdAsync(id, ct);
+        if (existing is null) return NotFound();
+        if (User.IsInRole("Technician") && existing.TechnicianId != ActorTechnicianId) return Forbid();
+        var job = await jobCardService.FlagAsync(id, request.Reason, ct);
+        return Ok(job.ToDetailDto());
+    }
+
+    [Authorize(Roles = "Manager")]
+    [HttpPost("{id:guid}/resolve-flag")]
+    [HttpPost("{id:guid}/resolve")]
+    public async Task<ActionResult<JobCardDetailDto>> ResolveFlag(Guid id, ResolveFlagRequest request, CancellationToken ct)
+    {
+        var job = await jobCardService.ResolveFlagAsync(id, request.ResolutionNotes, ct: ct);
+        return Ok(job.ToDetailDto());
     }
 }

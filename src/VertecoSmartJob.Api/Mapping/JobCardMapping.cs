@@ -15,7 +15,9 @@ public static class JobCardMapping
         SiteName = job.Site?.Name ?? "",
         TemplateName = job.JobTemplate?.Name ?? "",
         TechnicianName = job.Technician?.FullName,
-        ScheduledDate = job.ScheduledDate
+        ScheduledDate = job.ScheduledDate,
+        IsFlagged = job.IsFlagged,
+        FlagReason = job.FlagReason
     };
 
     public static JobCardDetailDto ToDetailDto(this JobCard job) => new()
@@ -40,6 +42,11 @@ public static class JobCardMapping
         ReviewNotes = job.ReviewNotes,
         ReopenReason = job.ReopenReason,
         CancelReason = job.CancelReason,
+        IsFlagged = job.IsFlagged,
+        FlagReason = job.FlagReason,
+        FlaggedAtUtc = job.FlaggedAtUtc,
+        CorrectiveActions = job.CorrectiveActions.OrderByDescending(a => a.OpenedAtUtc)
+            .Select(a => a.ToDto(job.Number)).ToList(),
         EvidenceCount = job.Evidence.Count,
         HasTechnicianSignature = job.Signatures.Any(s => s.Type == "Technician"),
         HasClientSignature = job.Signatures.Any(s => s.Type == "Client"),
@@ -56,5 +63,19 @@ public static class JobCardMapping
             Text = i.Text,
             IsDone = i.IsDone
         }).ToList()
+    };
+
+    public static CorrectiveActionDto ToDto(this CorrectiveAction action, string? jobNumber = null) => new()
+    {
+        Id = action.Id,
+        JobCardId = action.JobCardId,
+        JobNumber = jobNumber ?? action.JobCard?.Number ?? string.Empty,
+        Reason = action.Reason,
+        OpenedAtUtc = action.OpenedAtUtc,
+        OpenedByUserId = action.OpenedByUserId,
+        IsOpen = action.IsOpen,
+        ResolvedAtUtc = action.ResolvedAtUtc,
+        ResolvedByUserId = action.ResolvedByUserId,
+        ResolutionNotes = action.ResolutionNotes
     };
 }
