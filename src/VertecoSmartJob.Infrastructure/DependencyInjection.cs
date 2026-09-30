@@ -52,6 +52,7 @@ public static class DependencyInjection
         services.AddScoped<CustomerService>();
         services.AddScoped<SiteService>();
         services.AddScoped<UserManagementService>();
+        services.AddScoped<TechnicianManagementService>();
         services.AddScoped<ReportService>();
         services.AddSingleton<IReportingAiService>(sp => new GeminiReportingAiService(
             new HttpClient { Timeout = TimeSpan.FromSeconds(8) }, configuration,

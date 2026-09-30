@@ -23,6 +23,7 @@ public interface IUserRepository
     Task<List<User>> ListAsync(string? q = null, CancellationToken ct = default);
     Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<User?> GetByEmailAsync(string email, CancellationToken ct = default);
+    Task<User?> GetByTechnicianIdAsync(Guid technicianId, CancellationToken ct = default);
     Task AddAsync(User user, CancellationToken ct = default);
 }
 
@@ -36,6 +37,8 @@ public interface ITechnicianRepository
 {
     Task<List<Technician>> ListAsync(CancellationToken ct = default);
     Task<Technician?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task<Technician?> GetByEmailAsync(string email, CancellationToken ct = default);
+    Task AddAsync(Technician technician, CancellationToken ct = default);
 }
 
 public interface IJobTemplateRepository

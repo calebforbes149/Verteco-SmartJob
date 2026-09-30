@@ -93,12 +93,31 @@ public class EquipmentDto
 public class TechnicianDto
 {
     public Guid Id { get; set; }
+    public Guid? UserId { get; set; }
     public string FullName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
     public List<string> Skills { get; set; } = [];
     public string Availability { get; set; } = string.Empty;
     public int JobsCompleted { get; set; }
+}
+
+public class CreateTechnicianRequest
+{
+    public string FullName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Phone { get; set; } = string.Empty;
+    public List<string> Skills { get; set; } = [];
+    public string Availability { get; set; } = "Available";
+}
+
+public class PatchTechnicianRequest
+{
+    public string? FullName { get; set; }
+    public string? Email { get; set; }
+    public string? Phone { get; set; }
+    public List<string>? Skills { get; set; }
+    public string? Availability { get; set; }
 }
 
 public class JobTemplateDto

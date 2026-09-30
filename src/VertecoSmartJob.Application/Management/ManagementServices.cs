@@ -45,10 +45,65 @@ public sealed class SiteService(ISiteRepository sites, ICustomerRepository custo
     }
 }
 
-public sealed class UserManagementService(IUserRepository users, IAuditLogRepository audit, IUnitOfWork work, ICurrentUser? currentUser = null)
+public sealed class TechnicianManagementService(
+    ITechnicianRepository technicians, IUserRepository users, IAuditLogRepository audit,
+    IUnitOfWork work, ICurrentUser? currentUser = null)
+{
+    public async Task<(Technician Technician, User Account)> CreateAsync(Technician technician, CancellationToken ct = default)
+    {
+        if (await technicians.GetByEmailAsync(technician.Email, ct) is not null ||
+            await users.GetByEmailAsync(technician.Email, ct) is not null)
+            throw new ArgumentException("That email is already in use.");
+
+        var account = new User
+        {
+            FullName = technician.FullName, Email = technician.Email, Phone = technician.Phone,
+            Role = "Technician", TechnicianId = technician.Id, Technician = technician
+        };
+        await technicians.AddAsync(technician, ct);
+        await users.AddAsync(account, ct);
+        await audit.AddAsync(new AuditLog
+        {
+            ActorUserId = currentUser?.UserId, Action = "TechnicianCreated", Details = technician.Id.ToString()
+        }, ct);
+        await work.SaveChangesAsync(ct);
+        return (technician, account);
+    }
+
+    public async Task<(Technician Technician, User? Account)> UpdateAsync(
+        Guid id, Action<Technician> update, CancellationToken ct = default)
+    {
+        var technician = await technicians.GetByIdAsync(id, ct) ?? throw new KeyNotFoundException("Technician not found.");
+        update(technician);
+        var account = await users.GetByTechnicianIdAsync(id, ct);
+        if (account is not null)
+        {
+            account.FullName = technician.FullName;
+            account.Email = technician.Email;
+            account.Phone = technician.Phone;
+        }
+        await audit.AddAsync(new AuditLog
+        {
+            ActorUserId = currentUser?.UserId, Action = "TechnicianUpdated", Details = id.ToString()
+        }, ct);
+        await work.SaveChangesAsync(ct);
+        return (technician, account);
+    }
+}
+
+public sealed class UserManagementService(
+    IUserRepository users, ITechnicianRepository technicians, IAuditLogRepository audit,
+    IUnitOfWork work, ICurrentUser? currentUser = null)
 {
     public async Task<User> CreateAsync(User user, CancellationToken ct = default)
     {
+        if (user.Role == "Technician")
+        {
+            if (user.TechnicianId is not { } technicianId || await technicians.GetByIdAsync(technicianId, ct) is null)
+                throw new KeyNotFoundException("Technician not found.");
+            if (await users.GetByTechnicianIdAsync(technicianId, ct) is not null)
+                throw new ArgumentException("This technician already has a user account. Use POST /api/v1/technicians for a new technician.");
+        }
         await users.AddAsync(user, ct);
         await audit.AddAsync(new AuditLog { ActorUserId = currentUser?.UserId, Action = "UserCreated", Details = user.Id.ToString() }, ct);
         await work.SaveChangesAsync(ct);
@@ -59,6 +114,16 @@ public sealed class UserManagementService(IUserRepository users, IAuditLogReposi
     {
         var user = await users.GetByIdAsync(id, ct) ?? throw new KeyNotFoundException("User not found.");
         update(user);
+        if (user.Role == "Technician" && user.TechnicianId is { } technicianId)
+        {
+            var technician = await technicians.GetByIdAsync(technicianId, ct);
+            if (technician is not null)
+            {
+                technician.FullName = user.FullName;
+                technician.Email = user.Email;
+                technician.Phone = user.Phone;
+            }
+        }
         await audit.AddAsync(new AuditLog { ActorUserId = currentUser?.UserId, Action = user.IsDeleted ? "UserDeactivated" : user.IsSuspended ? "UserSuspended" : "UserUpdated", Details = user.Id.ToString() }, ct);
         await work.SaveChangesAsync(ct);
         return user;

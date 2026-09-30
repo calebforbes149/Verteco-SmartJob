@@ -32,9 +32,10 @@ public static class ReferenceMapping
         Equipment = s.Equipment.Select(e => new EquipmentDto { Id = e.Id, Name = e.Name, SerialNumber = e.SerialNumber, Description = e.Description }).ToList()
     };
 
-    public static TechnicianDto ToDto(this Technician t) => new()
+    public static TechnicianDto ToDto(this Technician t, Guid? userId = null) => new()
     {
         Id = t.Id,
+        UserId = userId,
         FullName = t.FullName,
         Email = t.Email,
         Phone = t.Phone,

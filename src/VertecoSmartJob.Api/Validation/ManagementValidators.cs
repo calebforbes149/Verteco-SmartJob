@@ -1,5 +1,6 @@
 using FluentValidation;
 using VertecoSmartJob.Contracts.Reference;
+using VertecoSmartJob.Domain.Enums;
 
 namespace VertecoSmartJob.Api.Validation;
 
@@ -68,5 +69,39 @@ public class PatchUserRequestValidator : AbstractValidator<PatchUserRequest>
         RuleFor(x => x.FullName).NotEmpty().MaximumLength(200).When(x => x.FullName is not null);
         RuleFor(x => x.Email).NotEmpty().EmailAddress().MaximumLength(200).When(x => x.Email is not null);
         RuleFor(x => x.Phone).MaximumLength(50);
+    }
+}
+
+public class CreateTechnicianRequestValidator : AbstractValidator<CreateTechnicianRequest>
+{
+    public CreateTechnicianRequestValidator()
+    {
+        RuleFor(x => x.FullName).NotEmpty().MaximumLength(150);
+        RuleFor(x => x.Email).NotEmpty().EmailAddress().MaximumLength(200);
+        RuleFor(x => x.Phone).MaximumLength(50);
+        RuleFor(x => x.Availability).Must(IsAvailability).WithMessage("Use Available, OnJob or OffDuty.");
+        RuleFor(x => x.Skills).Must(ValidSkills).WithMessage("Use at most 20 skills, each 1-100 characters and without '|'.");
+    }
+
+    internal static bool IsAvailability(string? value) =>
+        Enum.TryParse<TechnicianAvailability>(value, true, out var availability) &&
+        Enum.IsDefined(availability);
+
+    internal static bool ValidSkills(List<string>? skills) =>
+        skills is not null && skills.Count <= 20 &&
+        skills.All(s => !string.IsNullOrWhiteSpace(s) && s.Length <= 100 && !s.Contains('|'));
+}
+
+public class PatchTechnicianRequestValidator : AbstractValidator<PatchTechnicianRequest>
+{
+    public PatchTechnicianRequestValidator()
+    {
+        RuleFor(x => x.FullName).NotEmpty().MaximumLength(150).When(x => x.FullName is not null);
+        RuleFor(x => x.Email).NotEmpty().EmailAddress().MaximumLength(200).When(x => x.Email is not null);
+        RuleFor(x => x.Phone).MaximumLength(50);
+        RuleFor(x => x.Availability).Must(CreateTechnicianRequestValidator.IsAvailability)
+            .When(x => x.Availability is not null);
+        RuleFor(x => x.Skills).Must(CreateTechnicianRequestValidator.ValidSkills)
+            .When(x => x.Skills is not null);
     }
 }

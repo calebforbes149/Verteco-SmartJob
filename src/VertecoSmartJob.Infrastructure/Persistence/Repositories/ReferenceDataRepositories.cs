@@ -49,6 +49,8 @@ public class UserRepository(AppDbContext db) : IUserRepository
     public async Task AddAsync(User user, CancellationToken ct = default) => await db.Users.AddAsync(user, ct);
     public Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default) => db.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
     public Task<User?> GetByEmailAsync(string email, CancellationToken ct = default) => db.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
+    public Task<User?> GetByTechnicianIdAsync(Guid technicianId, CancellationToken ct = default) =>
+        db.Users.FirstOrDefaultAsync(u => u.TechnicianId == technicianId, ct);
     public Task<List<User>> ListAsync(string? q = null, CancellationToken ct = default)
     {
         var query = db.Users.AsQueryable();
@@ -65,11 +67,16 @@ public class AuditLogRepository(AppDbContext db) : IAuditLogRepository
 
 public class TechnicianRepository(AppDbContext db) : ITechnicianRepository
 {
+    public async Task AddAsync(Technician technician, CancellationToken ct = default) => await db.Technicians.AddAsync(technician, ct);
+
     public Task<List<Technician>> ListAsync(CancellationToken ct = default) =>
         db.Technicians.OrderBy(t => t.FullName).ToListAsync(ct);
 
     public Task<Technician?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         db.Technicians.FirstOrDefaultAsync(t => t.Id == id, ct);
+
+    public Task<Technician?> GetByEmailAsync(string email, CancellationToken ct = default) =>
+        db.Technicians.FirstOrDefaultAsync(t => t.Email == email, ct);
 }
 
 public class JobTemplateRepository(AppDbContext db) : IJobTemplateRepository
