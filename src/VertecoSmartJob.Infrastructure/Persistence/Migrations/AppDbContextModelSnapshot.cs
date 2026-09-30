@@ -60,6 +60,50 @@ namespace VertecoSmartJob.Infrastructure.Persistence.Migrations
                     b.ToTable("AuditLogs");
                 });
 
+            modelBuilder.Entity("VertecoSmartJob.Domain.Entities.CorrectiveAction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("JobCardId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("OpenedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("OpenedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("ResolutionNotes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime?>("ResolvedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ResolvedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OpenedAtUtc");
+
+                    b.HasIndex("JobCardId", "ResolvedAtUtc");
+
+                    b.ToTable("CorrectiveActions");
+                });
+
             modelBuilder.Entity("VertecoSmartJob.Domain.Entities.Customer", b =>
                 {
                     b.Property<Guid>("Id")
@@ -165,7 +209,17 @@ namespace VertecoSmartJob.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("DeletedAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("FlagReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("FlaggedAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsFlagged")
                         .HasColumnType("bit");
 
                     b.Property<Guid>("JobTemplateId")
@@ -218,6 +272,8 @@ namespace VertecoSmartJob.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CustomerId");
+
+                    b.HasIndex("IsFlagged");
 
                     b.HasIndex("JobTemplateId");
 
@@ -582,6 +638,17 @@ namespace VertecoSmartJob.Infrastructure.Persistence.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("VertecoSmartJob.Domain.Entities.CorrectiveAction", b =>
+                {
+                    b.HasOne("VertecoSmartJob.Domain.Entities.JobCard", "JobCard")
+                        .WithMany("CorrectiveActions")
+                        .HasForeignKey("JobCardId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("JobCard");
+                });
+
             modelBuilder.Entity("VertecoSmartJob.Domain.Entities.Equipment", b =>
                 {
                     b.HasOne("VertecoSmartJob.Domain.Entities.Site", "Site")
@@ -711,6 +778,8 @@ namespace VertecoSmartJob.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("VertecoSmartJob.Domain.Entities.JobCard", b =>
                 {
                     b.Navigation("ChecklistItems");
+
+                    b.Navigation("CorrectiveActions");
 
                     b.Navigation("Evidence");
 

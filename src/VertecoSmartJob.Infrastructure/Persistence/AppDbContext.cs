@@ -20,6 +20,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<JobCardRevision> JobCardRevisions => Set<JobCardRevision>();
     public DbSet<JobEvidence> JobEvidence => Set<JobEvidence>();
     public DbSet<JobSignature> JobSignatures => Set<JobSignature>();
+    public DbSet<CorrectiveAction> CorrectiveActions => Set<CorrectiveAction>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

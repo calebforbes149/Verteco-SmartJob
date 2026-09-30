@@ -15,6 +15,7 @@ public class JobCardConfiguration : IEntityTypeConfiguration<JobCard>
         b.Property(x => x.ReviewNotes).HasMaxLength(2000);
         b.Property(x => x.ReopenReason).HasMaxLength(1000);
         b.Property(x => x.CancelReason).HasMaxLength(1000);
+        b.Property(x => x.FlagReason).HasMaxLength(1000);
         b.Property(x => x.SealedHash).HasMaxLength(64);
         b.Property(x => x.RowVersion).IsConcurrencyToken();
 
@@ -33,6 +34,7 @@ public class JobCardConfiguration : IEntityTypeConfiguration<JobCard>
         b.HasIndex(x => x.CustomerId);
         b.HasIndex(x => x.SiteId);
         b.HasIndex(x => x.TechnicianId);
+        b.HasIndex(x => x.IsFlagged);
     }
 }
 
