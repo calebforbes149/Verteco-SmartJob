@@ -16,7 +16,8 @@ public class JobCardRepository(AppDbContext db) : IJobCardRepository
         .Include(j => j.ChecklistItems)
         .Include(j => j.Revisions)
         .Include(j => j.Evidence)
-        .Include(j => j.Signatures);
+        .Include(j => j.Signatures)
+        .Include(j => j.CorrectiveActions);
 
     public async Task<JobCard?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         await FullGraph().FirstOrDefaultAsync(j => j.Id == id, ct);
@@ -41,6 +42,7 @@ public class JobCardRepository(AppDbContext db) : IJobCardRepository
         if (query.CustomerId is { } customerId) jobs = jobs.Where(j => j.CustomerId == customerId);
         if (query.SiteId is { } siteId) jobs = jobs.Where(j => j.SiteId == siteId);
         if (query.TechnicianId is { } technicianId) jobs = jobs.Where(j => j.TechnicianId == technicianId);
+        if (query.Flagged is { } flagged) jobs = jobs.Where(j => j.IsFlagged == flagged);
 
         jobs = ApplySort(jobs, query.Sort);
 
@@ -52,6 +54,29 @@ public class JobCardRepository(AppDbContext db) : IJobCardRepository
 
         return new PagedResult<JobCard> { Items = items, TotalCount = total, Page = page, PageSize = pageSize };
     }
+
+    public async Task<PagedResult<CorrectiveAction>> SearchCorrectiveActionsAsync(CorrectiveActionQuery query, CancellationToken ct = default)
+    {
+        var actions = db.CorrectiveActions.AsNoTracking().Include(a => a.JobCard).AsQueryable();
+        if (query.IsOpen is { } isOpen)
+            actions = isOpen ? actions.Where(a => a.ResolvedAtUtc == null) : actions.Where(a => a.ResolvedAtUtc != null);
+        if (query.JobCardId is { } jobId) actions = actions.Where(a => a.JobCardId == jobId);
+        if (!string.IsNullOrWhiteSpace(query.Q))
+        {
+            var text = query.Q.Trim().ToLower();
+            actions = actions.Where(a => a.Reason.ToLower().Contains(text) || a.JobCard!.Number.ToLower().Contains(text));
+        }
+        actions = query.Sort == "date" ? actions.OrderBy(a => a.OpenedAtUtc) : actions.OrderByDescending(a => a.OpenedAtUtc);
+        var total = await actions.CountAsync(ct);
+        var items = await actions.Skip((query.Page - 1) * query.PageSize).Take(query.PageSize).ToListAsync(ct);
+        return new PagedResult<CorrectiveAction>
+        {
+            Items = items, TotalCount = total, Page = query.Page, PageSize = query.PageSize
+        };
+    }
+
+    public Task<CorrectiveAction?> GetCorrectiveActionByIdAsync(Guid id, CancellationToken ct = default) =>
+        db.CorrectiveActions.AsNoTracking().Include(a => a.JobCard).FirstOrDefaultAsync(a => a.Id == id, ct);
 
     public async Task<List<JobCard>> GetDashboardSnapshotAsync(CancellationToken ct = default) =>
         await FullGraph().OrderByDescending(j => j.ScheduledDate).ToListAsync(ct);
@@ -73,6 +98,9 @@ public class JobCardRepository(AppDbContext db) : IJobCardRepository
 
     public async Task AddSignatureAsync(JobSignature signature, CancellationToken ct = default) =>
         await db.JobSignatures.AddAsync(signature, ct);
+
+    public async Task AddCorrectiveActionAsync(CorrectiveAction action, CancellationToken ct = default) =>
+        await db.CorrectiveActions.AddAsync(action, ct);
 
     public Task<string> NextJobNumberAsync(CancellationToken ct = default) =>
         Task.FromResult($"JC-{DateTime.UtcNow.Year}-{Guid.NewGuid():N}"[..24].ToUpperInvariant());

@@ -22,4 +22,5 @@ public class JobCardQuery
     public Guid? CustomerId { get; init; }
     public Guid? SiteId { get; init; }
     public Guid? TechnicianId { get; init; }
+    public bool? Flagged { get; init; }
 }

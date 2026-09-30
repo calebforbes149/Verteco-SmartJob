@@ -27,6 +27,12 @@ public class JobCardService(
     public Task<PagedResult<JobCard>> SearchAsync(JobCardQuery query, CancellationToken ct = default) =>
         jobCards.SearchAsync(query, ct);
 
+    public Task<PagedResult<CorrectiveAction>> SearchCorrectiveActionsAsync(CorrectiveActionQuery query, CancellationToken ct = default) =>
+        jobCards.SearchCorrectiveActionsAsync(query, ct);
+
+    public Task<CorrectiveAction?> GetCorrectiveActionByIdAsync(Guid id, CancellationToken ct = default) =>
+        jobCards.GetCorrectiveActionByIdAsync(id, ct);
+
     public Task<List<JobCard>> GetDashboardSnapshotAsync(CancellationToken ct = default) =>
         jobCards.GetDashboardSnapshotAsync(ct);
 
@@ -138,6 +144,30 @@ public class JobCardService(
         job.Cancel(reason);
         await SaveWithAuditAsync(job, "JobCancelled", ct);
         return job;
+    }
+
+    public async Task<JobCard> FlagAsync(Guid jobId, string reason, CancellationToken ct = default)
+    {
+        var job = await RequireJobAsync(jobId, ct);
+        var action = job.Flag(reason, currentUser?.UserId);
+        await jobCards.AddCorrectiveActionAsync(action, ct);
+        await SaveWithAuditAsync(job, "JobFlagged", ct);
+        return job;
+    }
+
+    public async Task<JobCard> ResolveFlagAsync(Guid jobId, string notes, Guid? actionId = null, CancellationToken ct = default)
+    {
+        var job = await RequireJobAsync(jobId, ct);
+        job.ResolveFlag(notes, currentUser?.UserId, actionId);
+        await SaveWithAuditAsync(job, "FlagResolved", ct);
+        return job;
+    }
+
+    public async Task<JobCard> ResolveCorrectiveActionAsync(Guid actionId, string notes, CancellationToken ct = default)
+    {
+        var action = await jobCards.GetCorrectiveActionByIdAsync(actionId, ct)
+            ?? throw new KeyNotFoundException("Corrective action not found.");
+        return await ResolveFlagAsync(action.JobCardId, notes, actionId, ct);
     }
 
     public async Task<JobCard> AddEvidenceAsync(Guid jobId, Guid technicianId, string reference, string caption, CancellationToken ct = default)
