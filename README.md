@@ -8,8 +8,9 @@ All jobs use the **single seeded Standard Job Card** and its six checklist items
 
 - Guarded job card lifecycle: Draft → Assigned → Accepted → InProgress → AwaitingApproval → Completed, with Reopened and Cancelled branches.
 - Submission validation for required fields, evidence, and both signatures; SHA-256 revision snapshots linked across resubmissions.
-- Customer, site, and user management services, soft deletion, and audit records.
-- Azure SQL EF Core provider, seed data, an EF migration, and an idempotent SQL deployment script.
+- Customer, site, user, and technician management services, soft deletion, and audit records.
+- Flagged jobs and persisted corrective actions with manager resolution and audit records.
+- Azure SQL EF Core provider, seed data, migrations, and an idempotent SQL deployment script.
 - Private Azure Blob Storage adapter. The technician upload and sync HTTP routes belong to Person 4 and are not in this collection yet.
 - `/api/v1` manager endpoints, dashboard aggregates, monthly reports, optional Gemini commentary, CSV/PDF exports, Swagger, and a Postman collection.
 
@@ -57,11 +58,11 @@ The automated tests use an isolated in-memory SQLite database. The running API u
 3. Save `secrets.json`, set **VertecoSmartJob.Api** as the startup project, select its **http** launch profile, and press **F5**. The API uses `http://localhost:5196`; Swagger is at `http://localhost:5196/swagger`. The **https** profile also exposes `https://localhost:7086`. The launch profiles set `ASPNETCORE_ENVIRONMENT=Development`, which makes User Secrets available.
 
 User Secrets live outside the repository and everyone configures their own local file. They are intended for development and are not encrypted. Never put real passwords, storage keys, or API keys in `appsettings.json`, the README, the Postman collection, or a commit. 
-Development startup applies the Azure SQL EF migration and seeds a manager, technicians, customers, sites, equipment, jobs, and the single standard template. The database must be reachable before the API can start. If the SQL firewall or credentials are wrong, startup stops during migration. The development API-key handler allows role checks while Person 3 builds real identity. Production startup is intentionally blocked until that work is integrated. For deployment, use the reviewed `docs/azure-sql-migration.sql` or EF migrations instead of having every production API instance migrate at startup.
+Development startup applies pending Azure SQL EF migrations and seeds a manager, technicians, customers, sites, equipment, jobs, and the single standard template. The database must be reachable before the API can start. If the SQL firewall or credentials are wrong, startup stops during migration. The development API-key handler allows role checks while Person 3 builds real identity. Production startup is intentionally blocked until that work is integrated. For deployment, use the reviewed `docs/azure-sql-migration.sql` or EF migrations instead of having every production API instance migrate at startup.
 
 ## Use the Postman collection
 
-The collection is `postman/VertecoSmartJob.Person1.postman_collection.json`. It contains **29 request examples**. It has no Postman assertion scripts, so a Runner result of **“0 tests”** means no automated assertions were defined; it does not indicate whether the HTTP responses were correct. Run the requests individually in the order below. Running the entire collection at once will encounter empty IDs, invalid job states, and requests that deliberately change data.
+The collection is `postman/VertecoSmartJob.Person1.postman_collection.json`. It contains **37 request examples**. It has no Postman assertion scripts, so a Runner result of **“0 tests”** means no automated assertions were defined; it does not indicate whether the HTTP responses were correct. Run the requests individually in the order below. Running the entire collection at once will encounter empty IDs, invalid job states, and requests that deliberately change data.
 
 ### 1. Import and configure
 
@@ -78,6 +79,7 @@ The collection is `postman/VertecoSmartJob.Person1.postman_collection.json`. It 
    | `jobId` | A job GUID copied from **List jobs** or **Create job**; change it when testing a different job state. |
    | `userId` | A user GUID copied from **List users** or the disposable-user request below. |
    | `reportPeriod` | A month in `yyyy-MM` form, for example `2026-09`; use a month containing your test data for nonzero figures. |
+   | `correctiveActionId` | Copy an `id` from **List corrective actions** or a flagged job's `correctiveActions` array. |
 
 3. Start the API in Visual Studio and send **Dashboard stats**. Expect **200 OK**. Every collection request already sends `X-SmartJob-Key: {{managerKey}}`; you do not need to log in or add Bearer authentication. A missing/wrong key normally gives **401**, while a valid key without the required Manager role gives **403**.
 4. In a JSON response, copy an `id` GUID into the relevant collection variable. For list responses, look in `items`. Do not include quotes around a GUID in the variable value. Empty `{{jobId}}`, `{{siteId}}`, or `{{userId}}` values make detail and write requests hit the wrong URL.
@@ -105,6 +107,9 @@ These requests can be sent without changing data. For detail requests, first fil
 | **Export report CSV** | **200**, `text/csv`; use **Send and Download** in Postman to save the file. |
 | **Export report PDF** | **200**, `application/pdf`; use **Send and Download** to save the file. |
 | **Audit trail** | **200**; repeat after writes to see new entries. |
+| **List flagged jobs** | **200**; `items` contains only jobs with `isFlagged: true`. |
+| **List corrective actions** | **200**; defaults to `status=open`. Copy an `items[].id` into `correctiveActionId`; change `status` to `resolved` to view history. |
+| **Get corrective action** | **200** for a valid `correctiveActionId`; shows the reason, job number, and resolution fields. |
 
 ### 3. Test customer, site, and job writes in order
 
@@ -146,6 +151,16 @@ To create a disposable account before using the destructive user requests, make 
 
 Use a new email on repeat runs. Expect **201** and copy the returned `id` into `userId`. Then send **Get user** (**200**), **Suspend user** (**200**, `isSuspended: true`), and **Deactivate user** (**204 No Content**). An empty response body after **204** is correct.
 
+### 5. Test technician creation and corrective actions
+
+**Create technician and account** sends `POST /api/v1/technicians` as a Manager. Change the sample email before repeating it. Expect **201 Created** with both `id` (the new `technicianId`) and `userId` (the linked account for `/api/v1/users/{id}` suspend/reactivate/deactivate routes). The Technician and User are saved together. **Do not** call `POST /api/v1/users` again for this technician. Set the collection's `technicianId` to the returned `id`, then send **Edit technician** (`PATCH /api/v1/technicians/{{technicianId}}`); expect **200** and verify skills/availability. Name, email, and phone edits also update the linked User. The new endpoints require a Manager key.
+
+For a flagged-work walkthrough, set `jobId` to an existing job that is not Cancelled. Send **Flag job** with a nonempty `reason`; expect **200** with `isFlagged: true`, `flagReason`, and one new entry in `correctiveActions`. Managers can flag a job; an authenticated Technician may flag only a job assigned to them. **List flagged jobs** (`GET /api/v1/jobs?flagged=true`) should now contain this job. **List corrective actions** with `status=open` should contain its action. Copy that action's `id` into `correctiveActionId`, then send **Get corrective action** to inspect it.
+
+Resolve the flag using **either** **Resolve corrective action** (`POST /api/v1/corrective-actions/{{correctiveActionId}}/resolve`) **or** **Resolve job flag** (`POST /api/v1/jobs/{{jobId}}/resolve-flag`). Both take a nonempty `resolutionNotes` body and require a Manager key. Expect **200**; the job's `isFlagged` becomes `false`, and the corrective action remains in history with its resolution. Change **List corrective actions** to `status=resolved` to see it. Resolving the same action twice returns **409 Conflict**. A job in `AwaitingApproval` cannot be approved while it has an open flag; resolve it first.
+
+Each flag creates one corrective-action record with a reason, open/resolved state, timestamps, actor IDs, and resolution notes. This is the minimal persisted workflow for Person 2's Flagged Items and Corrective Actions screens; it does not yet include independent tasks, assignees, or due dates. A new EF migration adds these fields and records. The API applies it on the next Development startup; deployed databases need the updated migration script.
+
 ### Troubleshooting Postman and Azure
 
 | Symptom | Check |
@@ -157,6 +172,6 @@ Use a new email on repeat runs. Expect **201** and copy the returned `id` into `
 | Postman `403` | The key identified a user without permission for that manager endpoint. |
 | Postman `400` | Check required body fields, valid GUID variables, JSON syntax, and the `yyyy-MM-dd` job date or `yyyy-MM` report period. |
 | Postman `404` or `405` on an ID request | Fill `jobId`, `customerId`, `siteId`, or `userId`; an empty variable can turn a detail URL into a collection URL. |
-| Postman `409` | Check the job's current `status`; edits require `Draft`, approval requires `AwaitingApproval`, and cancellation cannot follow completion. |
+| Postman `409` | Check the job's current `status` and flag state; edits require `Draft`, approval requires `AwaitingApproval` with no open flag, and a flag can be resolved only once. |
 | Postman Runner says **0 tests** | The collection has request examples but no Postman assertion scripts. Inspect response status/body for each request using the tables above. |
 
