@@ -177,3 +177,59 @@ Each flag creates one corrective-action record with a reason, open/resolved stat
 | Postman `409` | Check the job's current `status` and flag state; edits require `Draft`, approval requires `AwaitingApproval` with no open flag, and a flag can be resolved only once. |
 | Postman Runner says **0 tests** | The collection has request examples but no Postman assertion scripts. Inspect response status/body for each request using the tables above. |
 
+## Person 2 (Caleb) — Web Front End setup
+
+This section documents what's been done to get `VertecoSmartJob.Web` built and running against this API, for the rest of the team.
+
+### Project location and reference
+
+`VertecoSmartJob.Web` lives directly inside `src/`, as a sibling of `VertecoSmartJob.Api`, `VertecoSmartJob.Application`, `VertecoSmartJob.Contracts`, `VertecoSmartJob.Domain`, and `VertecoSmartJob.Infrastructure` — not nested inside an extra `src/src/...` folder, and not at the solution root. Its `.csproj` has exactly one project reference:
+
+```xml
+<ItemGroup>
+  <ProjectReference Include="..\VertecoSmartJob.Contracts\VertecoSmartJob.Contracts.csproj" />
+</ItemGroup>
+```
+
+A duplicated/incorrect second `ProjectReference` line (pointing at `..\src\VertecoSmartJob.Contracts\...`) will cause `NU1104`/`MSB9008` build errors and a cascade of unrelated-looking `CS1061` errors in the Views — if you see that, check this file first.
+
+### Save local settings in Visual Studio User Secrets (Web project)
+
+1. In Solution Explorer, right-click **VertecoSmartJob.Web** (not the solution, not the Api project) → **Manage User Secrets**.
+2. Add a `DevAccounts` array — one entry per person who needs to sign in during development:
+
+   ```json
+   {
+     "DevAccounts": [
+       {
+         "Email": "manager@verteco.example",
+         "FullName": "SmartJob Manager",
+         "Role": "Manager",
+         "ApiKey": "<the exact key Person 1 set for this email under ApiKeys:Accounts>"
+       }
+     ]
+   }
+   ```
+
+3. The login page has no real password check yet (Person 3 hasn't built identity) — entering any password with an email that matches a `DevAccounts` entry signs you in as that user. Each entry's `ApiKey` must exactly match the `ApiKeys:Accounts[].Key` value for that same `Email` in the **Api** project's own User Secrets (above), since that key is what's sent on every request so the Api can authorize you as that user. Agree on these key values directly with whoever owns the Api's secrets — they're never committed to git.
+
+### Running the Web app against the Api
+
+- `Web/appsettings.json` points `Api:BaseUrl` at `http://localhost:5196`, matching the Api's **http** launch profile.
+- To run both projects together from one Visual Studio instance: right-click the solution → **Configure Startup Projects…** → **Multiple startup projects** → set both `VertecoSmartJob.Api` and `VertecoSmartJob.Web` to **Start**, then F5.
+- If you're only running Web locally against an Api someone else is hosting, you only need matching `ApiKeys:Accounts` values with them — not the Api's database/storage secrets.
+
+### Static assets
+
+`wwwroot/css/site.css` and the two logo images in `wwwroot/images/` (`verteco-logo-full.png`, `verteco-mark-transparent.png`) must exist in the Web project for the UI to render with its intended styling. These are plain static files, not generated at build time — if the site loads with no styling or broken image icons, check these are actually present first.
+
+### Known local setup issue: Azure SQL firewall
+
+If the Api throws something like:
+
+```
+Microsoft.Data.SqlClient.SqlException: Cannot open server 'smartjob' requested by the login.
+Client with IP address 'x.x.x.x' is not allowed to access the server.
+```
+
+this is Azure SQL's firewall rejecting your public IP — not a code or configuration problem on the Web side. Whoever owns the Azure SQL server needs to add that IP under **Azure Portal → SQL servers → `smartjob` → Networking → Firewall rules**, which can take a few minutes to take effect. Since the Api won't start at all while this is unresolved, any Web page that depends on real data will hang or fail until it's fixed. Home/mobile IPs can change over time, so this may need to be re-added later.
