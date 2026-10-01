@@ -5,6 +5,7 @@
     <Project Path="src/VertecoSmartJob.Contracts/VertecoSmartJob.Contracts.csproj" />
     <Project Path="src/VertecoSmartJob.Domain/VertecoSmartJob.Domain.csproj" />
     <Project Path="src/VertecoSmartJob.Infrastructure/VertecoSmartJob.Infrastructure.csproj" />
+    <Project Path="src/VertecoSmartJob.Web/VertecoSmartJob.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/VertecoSmartJob.Tests/VertecoSmartJob.Tests.csproj" />
