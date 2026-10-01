@@ -2,30 +2,27 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VertecoSmartJob.Api.Mapping;
+using VertecoSmartJob.Application.Files;
 using VertecoSmartJob.Application.Jobs;
 using VertecoSmartJob.Contracts.Common;
 using VertecoSmartJob.Contracts.Jobs;
 
 namespace VertecoSmartJob.Api.Controllers.Mobile;
 
-/// <summary>
-/// Mobile-facing job card API used by field technicians.
-/// All operations are restricted to the authenticated technician's
-/// assigned job cards.
-/// </summary>
+// Handles job card requests coming from the mobile app
 [ApiController]
 [Authorize(Roles = "Technician")]
 [Route("api/v1/mobile/jobs")]
-public class MobileJobsController(JobCardService jobCardService) : ControllerBase
+public class MobileJobsController(
+    JobCardService jobCardService,
+    IFieldFileStore fileStore) : ControllerBase
 {
     private Guid ActorTechnicianId =>
         Guid.TryParse(User.FindFirstValue("TechnicianId"), out var id)
             ? id
             : Guid.Empty;
 
-    /// <summary>
-    /// Returns job cards assigned to the authenticated technician.
-    /// </summary>
+    // Gets jobs assigned to the logged-in technician
     [HttpGet]
     public async Task<ActionResult<PagedResponse<JobCardSummaryDto>>> GetMyJobs(
         [FromQuery] int page = 1,
@@ -64,9 +61,7 @@ public class MobileJobsController(JobCardService jobCardService) : ControllerBas
         });
     }
 
-    /// <summary>
-    /// Returns the full mobile view of one assigned job.
-    /// </summary>
+    // Gets the full details for one assigned job
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<JobCardDetailDto>> GetJob(
         Guid id,
@@ -86,9 +81,7 @@ public class MobileJobsController(JobCardService jobCardService) : ControllerBas
         return Ok(job.ToDetailDto());
     }
 
-    /// <summary>
-    /// Technician accepts an assigned job.
-    /// </summary>
+    // Accepts a job assigned to the technician
     [HttpPost("{id:guid}/accept")]
     public async Task<ActionResult<JobCardDetailDto>> AcceptJob(
         Guid id,
@@ -97,15 +90,16 @@ public class MobileJobsController(JobCardService jobCardService) : ControllerBas
         if (!await CanAccessJob(id, ct))
             return Forbid();
 
-        await jobCardService.AcceptAsync(id, ActorTechnicianId, ct);
+        await jobCardService.AcceptAsync(
+            id,
+            ActorTechnicianId,
+            ct);
 
         return Ok(
             (await jobCardService.GetByIdAsync(id, ct))!.ToDetailDto());
     }
 
-    /// <summary>
-    /// Technician starts an accepted or reopened job.
-    /// </summary>
+    // Starts an accepted or reopened job
     [HttpPost("{id:guid}/start")]
     public async Task<ActionResult<JobCardDetailDto>> StartJob(
         Guid id,
@@ -114,16 +108,16 @@ public class MobileJobsController(JobCardService jobCardService) : ControllerBas
         if (!await CanAccessJob(id, ct))
             return Forbid();
 
-        await jobCardService.StartAsync(id, ActorTechnicianId, ct);
+        await jobCardService.StartAsync(
+            id,
+            ActorTechnicianId,
+            ct);
 
         return Ok(
             (await jobCardService.GetByIdAsync(id, ct))!.ToDetailDto());
     }
 
-    /// <summary>
-    /// Updates the completion state of a checklist item.
-    /// The current domain model implements this as a toggle.
-    /// </summary>
+    // Changes the completion state of a checklist item
     [HttpPatch("{id:guid}/checklist/{checklistItemId:guid}/toggle")]
     public async Task<ActionResult<JobCardDetailDto>> ToggleChecklistItem(
         Guid id,
@@ -143,11 +137,78 @@ public class MobileJobsController(JobCardService jobCardService) : ControllerBas
             (await jobCardService.GetByIdAsync(id, ct))!.ToDetailDto());
     }
 
-    /// <summary>
-    /// Submits the completed field job for management review.
-    /// Existing domain validation checks checklist completion,
-    /// signatures/evidence rules and creates the sealed revision.
-    /// </summary>
+    // Creates a temporary upload link for the mobile app
+    [HttpPost("{id:guid}/evidence/upload-instructions")]
+    public async Task<ActionResult<MobileEvidenceUploadResponse>>
+        CreateEvidenceUpload(
+            Guid id,
+            [FromBody] MobileEvidenceUploadRequest request,
+            CancellationToken ct)
+    {
+        if (!await CanAccessJob(id, ct))
+            return Forbid();
+
+        // Evidence can only be added while the job is in progress
+        await jobCardService.EnsureFieldEditAllowedAsync(
+            id,
+            ActorTechnicianId,
+            ct);
+
+        var instruction =
+            await fileStore.CreateUploadInstructionAsync(
+                request.Extension,
+                ct);
+
+        return Ok(new MobileEvidenceUploadResponse
+        {
+            UploadToken = instruction.UploadToken,
+            UploadUrl = instruction.UploadUrl,
+            ExpiresAtUtc = instruction.ExpiresAtUtc
+        });
+    }
+
+    // Confirms the uploaded file and adds it to the job
+    [HttpPost("{id:guid}/evidence/confirm")]
+    public async Task<ActionResult<JobCardDetailDto>> ConfirmEvidence(
+        Guid id,
+        [FromBody] MobileEvidenceConfirmRequest request,
+        CancellationToken ct)
+    {
+        if (!await CanAccessJob(id, ct))
+            return Forbid();
+
+        await jobCardService.EnsureFieldEditAllowedAsync(
+            id,
+            ActorTechnicianId,
+            ct);
+
+        // Checks the file size, type and checksum before using it
+        var reference = await fileStore.ConfirmUploadAsync(
+            request.UploadToken,
+            request.Sha256,
+            ct);
+
+        try
+        {
+            await jobCardService.AddEvidenceAsync(
+                id,
+                ActorTechnicianId,
+                reference,
+                request.Caption,
+                ct);
+        }
+        catch
+        {
+            // Removes the uploaded file if the evidence record cannot be saved
+            await fileStore.DeleteAsync(reference, ct);
+            throw;
+        }
+
+        return Ok(
+            (await jobCardService.GetByIdAsync(id, ct))!.ToDetailDto());
+    }
+
+    // Submits the finished job for review
     [HttpPost("{id:guid}/submit")]
     public async Task<ActionResult<JobCardDetailDto>> SubmitJob(
         Guid id,
@@ -165,6 +226,7 @@ public class MobileJobsController(JobCardService jobCardService) : ControllerBas
             (await jobCardService.GetByIdAsync(id, ct))!.ToDetailDto());
     }
 
+    // Checks that the technician owns the job
     private async Task<bool> CanAccessJob(
         Guid jobId,
         CancellationToken ct)
