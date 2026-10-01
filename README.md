@@ -181,6 +181,58 @@ Each flag creates one corrective-action record with a reason, open/resolved stat
 
 This section documents what's been done to get `VertecoSmartJob.Web` built and running against this API, for the rest of the team.
 
+### What's included
+
+A server-rendered ASP.NET Core MVC front end, calling this API through typed `HttpClient`s rather than any JavaScript framework. Screens built so far:
+
+- **Dashboard** — summary stats (active job cards, due today, technicians available).
+- **Job Cards** — list/filter, create (with the one seeded Standard checklist attached automatically), and a details view with the lifecycle tracker (Draft → Assigned → Accepted → InProgress → AwaitingApproval → Completed, plus Reopened/Cancelled).
+- **Customers** — list, details (with its sites), create, edit; create/edit also support creating a new site inline against that customer.
+- **Sites** — list, details (with equipment), create, edit.
+- **Technicians** — list, details (with linked user account status and Suspend/Reactivate/Deactivate actions), create, edit.
+- **Flagged Items** — list of flagged jobs and their open corrective actions (Manager only).
+- **Historical Records** — searchable record view across jobs/equipment history.
+- **Reports** — monthly report list and a details page with stats, status breakdown, AI commentary, and CSV/PDF export links (Manager only).
+- **Activity Feed** — audit trail view (Manager only).
+- **Profile & Settings** — read-only signed-in user info and logout.
+- **Login** — the temporary dev-account bridge described below (no real password check yet; that's Person 3's identity work).
+
+Manager-only pages and nav items are hidden from Technician accounts via `User.IsInRole("Manager")` checks, matching the API's own role rules.
+
+### Project structure — how to navigate
+
+Everything below lives inside `src/VertecoSmartJob.Web/`:
+
+| Folder / file | What's in it |
+| --- | --- |
+| `Program.cs` | App startup — registers one typed `HttpClient` per API area, auth/cookie setup, MVC routing. |
+| `Auth/` | `DevAccount.cs` (the dev-login model) and `ApiKeyDelegatingHandler.cs` (attaches the signed-in user's API key to every outgoing API request). |
+| `Api/` | One typed client class per API area (`JobCardsApiClient`, `CustomersApiClient`, `SitesApiClient`, `TechniciansApiClient`, `UsersApiClient`, `DashboardApiClient`, `ReportsApiClient`, `AuditApiClient`, `CorrectiveActionsApiClient`, `JobTemplatesApiClient`), plus shared plumbing (`ApiException.cs`, `ApiResponseExtensions.cs`, `AuditEntryDto.cs`, `JobCardListQuery.cs`). Controllers never call the API directly — they go through these. |
+| `Models/` | View models for forms and list/detail pages (one per screen, e.g. `JobCardListViewModel.cs`, `TechnicianDetailsViewModel.cs`, `CustomerFormViewModel.cs`, `LoginViewModel.cs`). |
+| `Controllers/` | One controller per feature area — `HomeController` (Dashboard), `JobCardsController`, `CustomersController`, `SitesController`, `TechniciansController`, `FlaggedItemsController`, `HistoryController`, `ReportsController`, `ActivityController`, `ProfileController`, `AccountController` (login/logout). |
+| `Views/{ControllerName}/` | The Razor pages for that controller — folder names match controller names exactly (e.g. `Views/Technicians/` holds `Index.cshtml`, `Details.cshtml`, `Create.cshtml`, `Edit.cshtml`). |
+| `Views/Shared/` | `_Layout.cshtml` (the sidebar/topbar shell every page renders inside) and `Error.cshtml`. |
+| `Views/_ViewStart.cshtml`, `Views/_ViewImports.cshtml` | Wires every view to `_Layout.cshtml` and brings in shared `@using`s and tag helpers. |
+| `wwwroot/css/site.css` | All styling — colors, layout, the login screen, sidebar, cards, tables, etc. |
+| `wwwroot/js/site.js` | Sidebar toggle, toast notifications, and the inline customer/site creation panels on the job card form. |
+| `wwwroot/images/` | `verteco-logo-full.png` and `verteco-mark-transparent.png`. |
+| `appsettings.json` | Non-secret config — `Api:BaseUrl` and an empty `DevAccounts` placeholder (the real list goes in User Secrets, not here). |
+
+To find the code behind any page: open the Razor view under `Views/{Area}/`, then its controller action under `Controllers/{Area}Controller.cs`, then whichever `Api/*ApiClient.cs` it calls for data.
+
+### Using the running app
+
+1. Sign in at `/Account/Login` with an email from your `DevAccounts` secrets (see below) and any password.
+2. You land on the **Dashboard**. The left sidebar groups everything:
+   - **Overview** → Dashboard.
+   - **Jobs** → Job Cards (list), Create Job Card (Manager only), Flagged Items (Manager only), Historical Records.
+   - **Clients** → Customers, Sites.
+   - **Team** → Technicians.
+   - **Insights** (Manager only) → Reports, Activity Feed.
+   - **Account** → Profile & Settings, Log out.
+3. On mobile-width screens the sidebar collapses behind a hamburger button (top-left).
+4. Signing in as a `Technician`-role dev account hides the Manager-only items automatically.
+
 ### Project location and reference
 
 `VertecoSmartJob.Web` lives directly inside `src/`, as a sibling of `VertecoSmartJob.Api`, `VertecoSmartJob.Application`, `VertecoSmartJob.Contracts`, `VertecoSmartJob.Domain`, and `VertecoSmartJob.Infrastructure` — not nested inside an extra `src/src/...` folder, and not at the solution root. Its `.csproj` has exactly one project reference:
