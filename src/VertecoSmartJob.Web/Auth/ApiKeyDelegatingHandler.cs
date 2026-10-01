@@ -1,17 +1,16 @@
-﻿namespace VertecoSmartJob.Web.Auth;
+﻿using System.Net.Http.Headers;
+
+namespace VertecoSmartJob.Web.Auth;
 
 public class ApiKeyDelegatingHandler(IHttpContextAccessor httpContextAccessor) : DelegatingHandler
 {
-    public const string ApiKeyClaimType = "smartjob:apikey";
+    public const string AccessTokenClaimType = "smartjob:accesstoken";
 
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        var apiKey = httpContextAccessor.HttpContext?.User.FindFirst(ApiKeyClaimType)?.Value;
-        if (!string.IsNullOrWhiteSpace(apiKey))
-        {
-            request.Headers.Remove("X-SmartJob-Key");
-            request.Headers.Add("X-SmartJob-Key", apiKey);
-        }
+        var token = httpContextAccessor.HttpContext?.User.FindFirst(AccessTokenClaimType)?.Value;
+        if (!string.IsNullOrWhiteSpace(token))
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         return base.SendAsync(request, cancellationToken);
     }

@@ -30,7 +30,7 @@
             <div class="login-form">
                 <img src="~/images/verteco-mark-transparent.png" alt="Verteco" class="login-form-mark">
                 <h2>Sign in to SmartJob</h2>
-                <span class="muted">Enter one of your DevAccounts emails to continue.</span>
+                <span class="muted">Enter your SmartJob email and password to continue.</span>
 
                 <form asp-controller="Account" asp-action="Login" method="post" novalidate>
                     @Html.AntiForgeryToken()
@@ -38,17 +38,16 @@
                     <div asp-validation-summary="All" class="form-error"></div>
 
                     <div class="field">
-                        <label>Work email <span class="prototype-tag">Dev bridge — see Step 3</span></label>
+                        <label>Work email</label>
                         <input asp-for="Email" type="text" autocomplete="username" />
                         <span asp-validation-for="Email" class="field-error"></span>
                     </div>
                     <div class="field">
-                        <label>Password <span class="prototype-tag">Not checked yet</span></label>
+                        <label>Password</label>
                         <input asp-for="Password" type="password" autocomplete="current-password" />
                         <span asp-validation-for="Password" class="field-error"></span>
                     </div>
                     <button class="btn btn-primary login-submit" type="submit">Sign in →</button>
-                    <div class="login-demo-note">⚠ There is no real password check yet — Person 3 hasn't built identity. Enter any password and an email that matches a DevAccounts entry in your User Secrets. See the build guide's Step 3.</div>
                 </form>
             </div>
         </div>

@@ -23,6 +23,8 @@ var apiBaseUrl = builder.Configuration["Api:BaseUrl"]
 
 builder.Services.AddTransient<ApiKeyDelegatingHandler>();
 
+builder.Services.AddHttpClient<AuthApiClient>(client => client.BaseAddress = new Uri(apiBaseUrl));
+
 builder.Services.AddHttpClient<JobCardsApiClient>(client => client.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<ApiKeyDelegatingHandler>();
 builder.Services.AddHttpClient<CustomersApiClient>(client => client.BaseAddress = new Uri(apiBaseUrl))
