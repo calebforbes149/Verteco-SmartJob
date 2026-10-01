@@ -59,6 +59,7 @@ public static class DependencyInjection
             new HttpClient { Timeout = TimeSpan.FromSeconds(8) }, configuration,
             sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<GeminiReportingAiService>>()));
         services.AddSingleton<PasswordHashingService>();
+        services.AddSingleton<JwtTokenService>();
         services.AddScoped<ISubmissionValidationStrategy, RequiredFieldsStrategy>();
         services.AddScoped<ISubmissionValidationStrategy, EvidencePresenceStrategy>();
         services.AddScoped<ISubmissionValidationStrategy, SignaturePresenceStrategy>();
