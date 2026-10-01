@@ -208,6 +208,48 @@ public class MobileJobsController(
             (await jobCardService.GetByIdAsync(id, ct))!.ToDetailDto());
     }
 
+    // Confirms an uploaded signature and adds it to the job
+    [HttpPost("{id:guid}/signatures/confirm")]
+    public async Task<ActionResult<JobCardDetailDto>> ConfirmSignature(
+        Guid id,
+        [FromBody] MobileSignatureConfirmRequest request,
+        CancellationToken ct)
+    {
+        if (!await CanAccessJob(id, ct))
+            return Forbid();
+
+        await jobCardService.EnsureFieldEditAllowedAsync(
+            id,
+            ActorTechnicianId,
+            ct);
+
+        // Checks the signature file before adding it to the job
+        var reference = await fileStore.ConfirmUploadAsync(
+            request.UploadToken,
+            request.Sha256,
+            ct);
+
+        try
+        {
+            await jobCardService.AddSignatureAsync(
+                id,
+                ActorTechnicianId,
+                request.SignerName,
+                request.Type,
+                reference,
+                ct);
+        }
+        catch
+        {
+            // Removes the file if the signature cannot be saved
+            await fileStore.DeleteAsync(reference, ct);
+            throw;
+        }
+
+        return Ok(
+            (await jobCardService.GetByIdAsync(id, ct))!.ToDetailDto());
+    }
+
     // Submits the finished job for review
     [HttpPost("{id:guid}/submit")]
     public async Task<ActionResult<JobCardDetailDto>> SubmitJob(

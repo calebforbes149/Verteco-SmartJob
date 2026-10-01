@@ -25,3 +25,15 @@ public sealed class MobileEvidenceConfirmRequest
 
     public string Caption { get; init; } = string.Empty;
 }
+
+// Sent after the mobile app has uploaded a signature
+public sealed class MobileSignatureConfirmRequest
+{
+    public string UploadToken { get; init; } = string.Empty;
+
+    public string Sha256 { get; init; } = string.Empty;
+
+    public string SignerName { get; init; } = string.Empty;
+
+    public string Type { get; init; } = string.Empty;
+}
