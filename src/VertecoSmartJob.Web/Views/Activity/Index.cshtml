@@ -1,0 +1,49 @@
+﻿@model PagedResponse<AuditEntryDto>
+@{
+    ViewData["Title"] = "Activity Feed";
+}
+
+<div class="page-head">
+    <div>
+        <div class="page-title">Activity Feed</div>
+        <div class="page-desc">
+            Not a real notifications feature — there's no Notifications endpoint on the API yet (no push or
+            email delivery either). This is the real Audit Log, which records every create/update/flag/suspend
+            action the API takes, shown as a feed so there's something genuinely useful here in the meantime.
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    @if (Model.Items.Count == 0)
+    {
+        <div class="empty-state"><b>No activity recorded yet</b></div>
+    }
+    else
+    {
+        @foreach (var entry in Model.Items)
+        {
+            <div class="timeline-item" style="padding:12px 16px;border-bottom:1px solid var(--border);">
+                <div class="timeline-dot"></div>
+                <div>
+                    <p><b>@entry.Action</b></p>
+                    <span class="tiny muted">@entry.CreatedAtUtc.ToString("dd MMM yyyy HH:mm") UTC @(entry.JobCardId is { } jobId ? $"· job {jobId}" : "")</span>
+                    @if (!string.IsNullOrWhiteSpace(entry.Details))
+                    {
+                        <p class="tiny muted">@entry.Details</p>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@if (Model.TotalPages > 1)
+{
+    <div class="pagination">
+        @for (var p = 1; p <= Model.TotalPages; p++)
+        {
+            <a class="@(p == Model.Page ? "page-link active" : "page-link")" asp-action="Index" asp-route-page="@p">@p</a>
+        }
+    </div>
+}

@@ -1,0 +1,40 @@
+﻿@model TechnicianFormViewModel
+@{
+    ViewData["Title"] = "New Technician";
+}
+
+<div class="page-head">
+    <div>
+        <div class="page-title">New Technician</div>
+        <div class="page-desc">Creates the technician and their linked user account together — that's one API call (TechnicianManagementService.CreateAsync does both).</div>
+    </div>
+</div>
+
+<div class="card card-pad" style="max-width:600px;">
+    <form asp-action="Create" method="post" novalidate>
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="All" class="form-error"></div>
+        <div class="form-grid">
+            <div class="field full"><label>Full name</label><input asp-for="FullName" type="text" /><span asp-validation-for="FullName" class="field-error"></span></div>
+            <div class="field"><label>Email</label><input asp-for="Email" type="email" /><span asp-validation-for="Email" class="field-error"></span></div>
+            <div class="field"><label>Phone</label><input asp-for="Phone" type="text" /></div>
+            <div class="field">
+                <label>Availability</label>
+                <select asp-for="Availability">
+                    @foreach (var a in TechnicianFormViewModel.AvailabilityOptions)
+                    {
+                        <option value="@a" selected="@(Model.Availability == a)">@a</option>
+                    }
+                </select>
+            </div>
+            <div class="field full">
+                <label>Skills <span class="prototype-tag">Comma-separated</span></label>
+                <input asp-for="SkillsText" type="text" placeholder="HVAC, Electrical, Refrigeration" />
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Create technician</button>
+            <a class="btn btn-ghost" asp-action="Index">Cancel</a>
+        </div>
+    </form>
+</div>

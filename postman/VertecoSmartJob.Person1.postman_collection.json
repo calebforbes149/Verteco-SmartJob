@@ -1,0 +1,723 @@
+{
+  "info": {
+    "name": "Verteco SmartJob \u2014 Person 1 API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Manager-side baseline routes. Technician HTTP and upload/sync routes are owned by Person 4. Use the development API key only in a local environment."
+  },
+  "item": [
+    {
+      "name": "Dashboard stats",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/dashboard/stats"
+      }
+    },
+    {
+      "name": "List jobs",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/jobs?page=1&pageSize=20&sort=-scheduledDate"
+      }
+    },
+    {
+      "name": "Get job",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/jobs/{{jobId}}"
+      }
+    },
+    {
+      "name": "Create job with standard checklist",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/jobs",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"siteId\": \"{{siteId}}\",\n  \"technicianId\": \"{{technicianId}}\",\n  \"priority\": \"Medium\",\n  \"scheduledDate\": \"2026-10-01\",\n  \"notes\": \"Inspect equipment\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Edit draft job",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/jobs/{{jobId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"priority\": \"High\",\n  \"notes\": \"Updated scope\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Assign technician",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/jobs/{{jobId}}/assign",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"technicianId\": \"{{technicianId}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Approve submitted job",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/jobs/{{jobId}}/approve",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reviewNotes\": \"Verified\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Reopen job",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/jobs/{{jobId}}/reopen",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reason\": \"Repeat the final test\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Cancel active job",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/jobs/{{jobId}}/cancel",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reason\": \"Client withdrew request\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "List customers",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/customers?page=1&pageSize=20&sort=name"
+      }
+    },
+    {
+      "name": "Get customer",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/customers/{{customerId}}"
+      }
+    },
+    {
+      "name": "Create customer",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/customers",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"New SA Customer\",\n  \"industry\": \"Industrial\",\n  \"contactName\": \"Nomsa\",\n  \"contactEmail\": \"nomsa@example.test\",\n  \"contactPhone\": \"011 000 0000\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Edit customer",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/customers/{{customerId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"contactPhone\": \"011 000 0001\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "List sites",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/sites?customerId={{customerId}}&page=1&pageSize=20&sort=name"
+      }
+    },
+    {
+      "name": "Get site",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/sites/{{siteId}}"
+      }
+    },
+    {
+      "name": "Create site",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/sites",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"name\": \"New Site\",\n  \"address\": \"Johannesburg, Gauteng\",\n  \"siteType\": \"Industrial\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Edit site",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/sites/{{siteId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"address\": \"Midrand, Gauteng\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Look up equipment serial",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/sites/equipment/by-serial/UPS-60-MID-001"
+      }
+    },
+    {
+      "name": "List users",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/users?page=1&pageSize=20&sort=name"
+      }
+    },
+    {
+      "name": "Get user",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/users/{{userId}}"
+      }
+    },
+    {
+      "name": "Suspend user",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/users/{{userId}}/suspend"
+      }
+    },
+    {
+      "name": "Deactivate user",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/users/{{userId}}/deactivate"
+      }
+    },
+    {
+      "name": "List technicians",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/technicians?page=1&pageSize=20&sort=name"
+      }
+    },
+    {
+      "name": "Standard job card fields",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/jobtemplates/standard"
+      }
+    },
+    {
+      "name": "List reports",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/reports?year=2026&page=1&pageSize=12&sort=-month"
+      }
+    },
+    {
+      "name": "Monthly report and AI commentary",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/reports/{{reportPeriod}}"
+      }
+    },
+    {
+      "name": "Export report CSV",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/reports/{{reportPeriod}}/export?format=csv"
+      }
+    },
+    {
+      "name": "Export report PDF",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/reports/{{reportPeriod}}/export?format=pdf"
+      }
+    },
+    {
+      "name": "Audit trail",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/audit?page=1&pageSize=20&sort=-date"
+      }
+    },
+    {
+      "name": "Create technician and account",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/technicians",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"New Test Technician\",\n  \"email\": \"new.tech@example.test\",\n  \"phone\": \"011 000 0000\",\n  \"skills\": [\n    \"Power Systems\"\n  ],\n  \"availability\": \"Available\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Edit technician",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/technicians/{{technicianId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"skills\": [\n    \"Power Systems\",\n    \"Networking\"\n  ],\n  \"availability\": \"Available\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "List flagged jobs",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/jobs?flagged=true&page=1&pageSize=20"
+      }
+    },
+    {
+      "name": "Flag job",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/jobs/{{jobId}}/flag",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reason\": \"Client reported a defect that needs correction\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Resolve job flag",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/jobs/{{jobId}}/resolve-flag",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"resolutionNotes\": \"Corrective work completed and verified\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "List corrective actions",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/corrective-actions?status=open&page=1&pageSize=20&sort=-date"
+      }
+    },
+    {
+      "name": "Get corrective action",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/corrective-actions/{{correctiveActionId}}"
+      }
+    },
+    {
+      "name": "Resolve corrective action",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/corrective-actions/{{correctiveActionId}}/resolve",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"resolutionNotes\": \"Corrective work completed and verified\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5196"
+    },
+    {
+      "key": "managerKey",
+      "value": ""
+    },
+    {
+      "key": "customerId",
+      "value": ""
+    },
+    {
+      "key": "siteId",
+      "value": ""
+    },
+    {
+      "key": "technicianId",
+      "value": ""
+    },
+    {
+      "key": "jobId",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "reportPeriod",
+      "value": "2026-09"
+    },
+    {
+      "key": "correctiveActionId",
+      "value": ""
+    }
+  ]
+}

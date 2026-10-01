@@ -1,0 +1,57 @@
+﻿@model LoginViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Sign in";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign in · SmartJob</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true">
+</head>
+<body>
+    <div class="login-shell">
+        <div class="login-brand">
+            <div class="login-brand-content">
+                <div class="brand-plate">
+                    <img src="~/images/verteco-logo-full.png" alt="Verteco — The Power of Innovation">
+                </div>
+                <div class="brand-caption">SmartJob · Manager Console</div>
+                <div class="login-headline">Job cards for teams who keep <span>power &amp; infrastructure</span> running.</div>
+                <p class="login-sub">Schedule work, assign technicians, and track every job card from first site visit to client sign-off.</p>
+            </div>
+            <div class="login-foot">© 2026 Verteco (Pty) Ltd · SmartJob</div>
+        </div>
+        <div class="login-form-side">
+            <div class="login-form">
+                <img src="~/images/verteco-mark-transparent.png" alt="Verteco" class="login-form-mark">
+                <h2>Sign in to SmartJob</h2>
+                <span class="muted">Enter one of your DevAccounts emails to continue.</span>
+
+                <form asp-controller="Account" asp-action="Login" method="post" novalidate>
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="ReturnUrl" />
+                    <div asp-validation-summary="All" class="form-error"></div>
+
+                    <div class="field">
+                        <label>Work email <span class="prototype-tag">Dev bridge — see Step 3</span></label>
+                        <input asp-for="Email" type="text" autocomplete="username" />
+                        <span asp-validation-for="Email" class="field-error"></span>
+                    </div>
+                    <div class="field">
+                        <label>Password <span class="prototype-tag">Not checked yet</span></label>
+                        <input asp-for="Password" type="password" autocomplete="current-password" />
+                        <span asp-validation-for="Password" class="field-error"></span>
+                    </div>
+                    <button class="btn btn-primary login-submit" type="submit">Sign in →</button>
+                    <div class="login-demo-note">⚠ There is no real password check yet — Person 3 hasn't built identity. Enter any password and an email that matches a DevAccounts entry in your User Secrets. See the build guide's Step 3.</div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,131 @@
+﻿@{
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    string NavClass(string forController) => controller == forController ? "nav-item active" : "nav-item";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>@ViewData["Title"] · SmartJob</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="~/css/site.css" asp-append-version="true">
+</head>
+<body>
+
+<div class="app-shell active" id="app-shell">
+  <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle navigation" aria-expanded="false" aria-controls="sidebar">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="wordmark-mark"><img src="~/images/verteco-mark-transparent.png" alt="Verteco"></div>
+      <div>
+        <div class="wordmark-text" style="font-size:15px;">VERTECO</div>
+        <div class="wordmark-sub" style="font-size:9.5px;">SmartJob</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav" aria-label="Main navigation">
+      <div class="nav-group">
+        <div class="nav-group-label">Overview</div>
+        <a class="@NavClass("Home")" asp-controller="Home" asp-action="Index">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+          Dashboard
+        </a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">Jobs</div>
+        <a class="@NavClass("JobCards")" asp-controller="JobCards" asp-action="Index">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="17" rx="2"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="16" y2="13"/></svg>
+          Job Cards
+        </a>
+        @if (User.IsInRole("Manager"))
+        {
+            <a class="nav-item" asp-controller="JobCards" asp-action="Create">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Create Job Card
+            </a>
+        }
+        @if (User.IsInRole("Manager"))
+        {
+            <a class="@NavClass("FlaggedItems")" asp-controller="FlaggedItems" asp-action="Index">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21V4a1 1 0 0 1 1.4-.9L19 9l-13.6 5.9A1 1 0 0 1 4 14"/></svg>
+              Flagged Items
+            </a>
+        }
+        <a class="@NavClass("History")" asp-controller="History" asp-action="Index">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+          Historical Records
+        </a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">Clients</div>
+        <a class="@NavClass("Customers")" asp-controller="Customers" asp-action="Index">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          Customers
+        </a>
+        <a class="@NavClass("Sites")" asp-controller="Sites" asp-action="Index">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s7-6.5 7-11a7 7 0 1 0-14 0c0 4.5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+          Sites
+        </a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">Team</div>
+        <a class="@NavClass("Technicians")" asp-controller="Technicians" asp-action="Index">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+          Technicians
+        </a>
+      </div>
+      @if (User.IsInRole("Manager"))
+      {
+          <div class="nav-group">
+            <div class="nav-group-label">Insights</div>
+            <a class="@NavClass("Reports")" asp-controller="Reports" asp-action="Index">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="4" y1="20" x2="20" y2="20"/><rect x="6" y="11" width="3" height="6"/><rect x="11" y="7" width="3" height="10"/><rect x="16" y="3" width="3" height="14"/></svg>
+              Reports
+            </a>
+            <a class="@NavClass("Activity")" asp-controller="Activity" asp-action="Index">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M8 12h2l1.5 3L14 7l1.5 5H16"/></svg>
+              Activity Feed
+            </a>
+          </div>
+      }
+      <div class="nav-group">
+        <div class="nav-group-label">Account</div>
+        <a class="@NavClass("Profile")" asp-controller="Profile" asp-action="Index">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+          Profile &amp; Settings
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-foot">
+      Signed in as <b style="color:#fff;">@User.Identity?.Name</b>
+      <form asp-controller="Account" asp-action="Logout" method="post" style="margin-top:8px;">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--text-inverse-dim);width:100%;justify-content:center;">Log out</button>
+      </form>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title mono">@ViewData["Title"]</div>
+      <div class="topbar-right">
+        <span class="tag" style="text-transform:uppercase;">@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</span>
+      </div>
+    </div>
+    <div class="content">
+      <div id="toast-stack" class="toast-stack"
+           data-toast="@TempData["Toast"]" data-error="@TempData["Error"]"></div>
+      @RenderBody()
+    </div>
+  </div>
+</div>
+
+<script src="~/js/site.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
