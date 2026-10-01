@@ -285,3 +285,5 @@ Client with IP address 'x.x.x.x' is not allowed to access the server.
 ```
 
 this is Azure SQL's firewall rejecting your public IP — not a code or configuration problem on the Web side. Whoever owns the Azure SQL server needs to add that IP under **Azure Portal → SQL servers → `smartjob` → Networking → Firewall rules**, which can take a few minutes to take effect. Since the Api won't start at all while this is unresolved, any Web page that depends on real data will hang or fail until it's fixed. Home/mobile IPs can change over time, so this may need to be re-added later.
+
+Person 3
