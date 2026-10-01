@@ -466,6 +466,43 @@ namespace VertecoSmartJob.Infrastructure.Persistence.Migrations
                     b.ToTable("JobTemplates");
                 });
 
+            modelBuilder.Entity("VertecoSmartJob.Domain.Entities.PasswordResetToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UsedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PasswordResetTokens");
+                });
+
             modelBuilder.Entity("VertecoSmartJob.Domain.Entities.Site", b =>
                 {
                     b.Property<Guid>("Id")
@@ -749,6 +786,15 @@ namespace VertecoSmartJob.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("JobCard");
+                });
+
+            modelBuilder.Entity("VertecoSmartJob.Domain.Entities.PasswordResetToken", b =>
+                {
+                    b.HasOne("VertecoSmartJob.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("VertecoSmartJob.Domain.Entities.Site", b =>

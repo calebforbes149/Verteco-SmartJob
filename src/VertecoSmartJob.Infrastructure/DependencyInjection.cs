@@ -48,6 +48,7 @@ public static class DependencyInjection
         services.AddScoped<ISiteRepository, SiteRepository>();
         services.AddScoped<ITechnicianRepository, TechnicianRepository>();
         services.AddScoped<IJobTemplateRepository, JobTemplateRepository>();
+        services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
 
         services.AddScoped<JobCardService>();
         services.AddScoped<CustomerService>();
