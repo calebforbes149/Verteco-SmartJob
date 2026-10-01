@@ -466,6 +466,50 @@ namespace VertecoSmartJob.Infrastructure.Persistence.Migrations
                     b.ToTable("JobTemplates");
                 });
 
+            modelBuilder.Entity("VertecoSmartJob.Domain.Entities.MobileSyncOperation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("JobCardId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("OperationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("OperationType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("ProcessedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Result")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<Guid>("TechnicianId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JobCardId");
+
+                    b.HasIndex("ProcessedAtUtc");
+
+                    b.HasIndex("TechnicianId", "OperationId")
+                        .IsUnique();
+
+                    b.ToTable("MobileSyncOperations");
+                });
+
             modelBuilder.Entity("VertecoSmartJob.Domain.Entities.Site", b =>
                 {
                     b.Property<Guid>("Id")

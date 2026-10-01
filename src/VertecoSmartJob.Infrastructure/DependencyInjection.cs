@@ -41,6 +41,7 @@ public static class DependencyInjection
         services.AddScoped<IFieldFileStore, AzureBlobFileStore>();
 
         services.AddScoped<IJobCardRepository, JobCardRepository>();
+        services.AddScoped<IMobileSyncRepository, MobileSyncRepository>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
@@ -49,6 +50,9 @@ public static class DependencyInjection
         services.AddScoped<IJobTemplateRepository, JobTemplateRepository>();
 
         services.AddScoped<JobCardService>();
+
+        // Handles pull and push requests from the mobile app
+        services.AddScoped<MobileSyncService>();
         services.AddScoped<CustomerService>();
         services.AddScoped<SiteService>();
         services.AddScoped<UserManagementService>();

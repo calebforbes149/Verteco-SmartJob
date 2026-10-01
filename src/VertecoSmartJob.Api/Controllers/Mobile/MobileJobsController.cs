@@ -137,6 +137,34 @@ public class MobileJobsController(
             (await jobCardService.GetByIdAsync(id, ct))!.ToDetailDto());
     }
 
+    // Records equipment and its serial number for the job site
+    [HttpPost("{id:guid}/equipment")]
+    public async Task<ActionResult<MobileEquipmentResponse>> CaptureEquipment(
+        Guid id,
+        [FromBody] MobileEquipmentCaptureRequest request,
+        CancellationToken ct)
+    {
+        if (!await CanAccessJob(id, ct))
+            return Forbid();
+
+        var equipment = await jobCardService.CaptureEquipmentAsync(
+            id,
+            ActorTechnicianId,
+            request.Name,
+            request.SerialNumber,
+            request.Description,
+            ct);
+
+        return Ok(new MobileEquipmentResponse
+        {
+            Id = equipment.Id,
+            SiteId = equipment.SiteId,
+            Name = equipment.Name,
+            SerialNumber = equipment.SerialNumber,
+            Description = equipment.Description
+        });
+    }
+
     // Creates a temporary upload link for the mobile app
     [HttpPost("{id:guid}/evidence/upload-instructions")]
     public async Task<ActionResult<MobileEvidenceUploadResponse>>

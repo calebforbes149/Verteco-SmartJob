@@ -15,6 +15,10 @@ public interface ISiteRepository
     Task<List<Site>> ListAsync(string? q = null, CancellationToken ct = default);
     Task<Site?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<Equipment?> FindBySerialNumberAsync(string serialNumber, CancellationToken ct = default);
+
+    // Adds equipment captured by a technician
+    Task AddEquipmentAsync(Equipment equipment, CancellationToken ct = default);
+
     Task AddAsync(Site site, CancellationToken ct = default);
 }
 
@@ -46,4 +50,3 @@ public interface IJobTemplateRepository
     Task<List<JobTemplate>> ListAsync(CancellationToken ct = default);
     Task<JobTemplate?> GetByIdAsync(Guid id, CancellationToken ct = default);
 }
-
