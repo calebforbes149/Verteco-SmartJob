@@ -1,12 +1,13 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/VertecoSmartJob.Domain/VertecoSmartJob.Domain.csproj" />
-    <Project Path="src/VertecoSmartJob.Application/VertecoSmartJob.Application.csproj" />
-    <Project Path="src/VertecoSmartJob.Infrastructure/VertecoSmartJob.Infrastructure.csproj" />
-    <Project Path="src/VertecoSmartJob.Contracts/VertecoSmartJob.Contracts.csproj" />
     <Project Path="src/VertecoSmartJob.Api/VertecoSmartJob.Api.csproj" />
+    <Project Path="src/VertecoSmartJob.Application/VertecoSmartJob.Application.csproj" />
+    <Project Path="src/VertecoSmartJob.Contracts/VertecoSmartJob.Contracts.csproj" />
+    <Project Path="src/VertecoSmartJob.Domain/VertecoSmartJob.Domain.csproj" />
+    <Project Path="src/VertecoSmartJob.Infrastructure/VertecoSmartJob.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/VertecoSmartJob.Tests/VertecoSmartJob.Tests.csproj" />
   </Folder>
+  <Project Path="VertecoSmartJob.Web/VertecoSmartJob.Web.csproj" Id="110e2d03-2430-42f0-9382-449f9bfef14a" />
 </Solution>
