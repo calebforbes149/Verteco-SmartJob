@@ -1,0 +1,217 @@
+﻿@model JobCardDetailDto
+@{
+    ViewData["Title"] = $"Job card {Model.Number}";
+    var canAssign = Model.Status is "Draft" or "Assigned";
+    var canApprove = Model.Status == "AwaitingApproval";
+    var canReopen = Model.Status is "AwaitingApproval" or "Completed";
+    var canCancel = Model.Status is "Draft" or "Assigned" or "Accepted" or "InProgress" or "AwaitingApproval" or "Reopened";
+    var isMobileOwned = Model.Status is "Accepted" or "InProgress";
+}
+
+<div class="page-head">
+  <div>
+    <div class="breadcrumb"><a asp-action="Index">Job Cards</a> / @Model.Number</div>
+    <div class="page-title mono">@Model.Number</div>
+    <div class="page-desc">
+      <span class="pill pill-@Model.Status.ToLowerInvariant()">@Model.Status</span>
+      <span class="pill pill-@Model.Priority.ToLowerInvariant()">@Model.Priority</span>
+      @if (Model.IsFlagged)
+      {
+          <span class="flag-badge">⚑ Flagged</span>
+      }
+    </div>
+  </div>
+</div>
+
+@if (Model.IsFlagged)
+{
+    <div class="card card-pad" style="border-color:var(--danger);background:var(--danger-bg);color:var(--danger);margin-bottom:16px;">
+      <b class="tiny">This job card is flagged</b>
+      <p class="tiny">@Model.FlagReason</p>
+      <p class="tiny muted" style="color:inherit;opacity:.8;">Flagged @(Model.FlaggedAtUtc?.ToString("dd MMM yyyy HH:mm") ?? "—") UTC. It can't be approved while flagged — resolve the corrective action first.</p>
+      <form asp-action="ResolveFlag" asp-route-id="@Model.Id" method="post" style="margin-top:8px;display:flex;gap:8px;align-items:flex-start;">
+        @Html.AntiForgeryToken()
+        <textarea name="resolutionNotes" placeholder="Resolution notes (required)" maxlength="2000" required style="flex:1;"></textarea>
+        <button type="submit" class="btn btn-sm" style="background:#fff;">Resolve flag</button>
+      </form>
+    </div>
+}
+else if (Model.Status != "Cancelled")
+{
+    <div class="card card-pad" style="margin-bottom:16px;">
+      <h3 class="tiny">Flag this job card</h3>
+      <form asp-action="Flag" asp-route-id="@Model.Id" method="post" style="margin-top:8px;display:flex;gap:8px;align-items:flex-start;">
+        @Html.AntiForgeryToken()
+        <textarea name="reason" placeholder="Reason for flagging (required)" maxlength="1000" required style="flex:1;"></textarea>
+        <button type="submit" class="btn btn-danger btn-sm">⚑ Flag</button>
+      </form>
+    </div>
+}
+
+<div class="two-col">
+  <div>
+    <div class="card section-card">
+      <div class="section-card-head"><h3>Checklist</h3></div>
+      <div class="section-card-body pad">
+        <p class="tiny muted">
+          Read-only here on purpose — only the assigned technician can tick these, from mobile.
+          There is no "start job" or "tick item" action on this screen; see the build guide's Job Details fix.
+        </p>
+        @{
+            var doneCount = Model.ChecklistItems.Count(i => i.IsDone);
+            var pct = Model.ChecklistItems.Count == 0 ? 0 : (100 * doneCount / Model.ChecklistItems.Count);
+        }
+        <div class="progress-track"><div class="progress-fill" style="width:@pct%;"></div></div>
+        <p class="tiny muted">@doneCount of @Model.ChecklistItems.Count complete</p>
+        @foreach (var item in Model.ChecklistItems.OrderBy(i => i.Order))
+        {
+            <div class="checklist-item @(item.IsDone ? "checked" : "")">
+              <div class="chk-box @(item.IsDone ? "checked" : "")">@(item.IsDone ? "✓" : "")</div>
+              <span>@item.Text</span>
+            </div>
+        }
+      </div>
+    </div>
+
+    @if (isMobileOwned)
+    {
+        <div class="card card-pad" style="border-color:var(--info);background:var(--info-bg);color:var(--info);">
+          This job is being actioned by the assigned technician on mobile right now — there's nothing for a manager to click until it reaches Awaiting Approval.
+        </div>
+    }
+
+    @if (canAssign)
+    {
+        <div class="card card-pad">
+          <h3 class="tiny">@(Model.TechnicianId is null ? "Assign a technician" : "Reassign technician")</h3>
+          <form asp-action="Assign" asp-route-id="@Model.Id" method="post" style="display:flex;gap:8px;margin-top:8px;">
+            @Html.AntiForgeryToken()
+            <input type="text" name="technicianId" placeholder="Technician GUID (Technicians picker lands in the next slice)" style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);" required />
+            <button type="submit" class="btn btn-primary btn-sm">Assign</button>
+          </form>
+        </div>
+    }
+
+    @if (canApprove)
+    {
+        <div class="card card-pad review-panel">
+          <h3>Manager review</h3>
+          <p class="tiny">Submitted for approval — evidence: @Model.EvidenceCount, technician signature: @(Model.HasTechnicianSignature ? "✓" : "✗"), client signature: @(Model.HasClientSignature ? "✓" : "✗").</p>
+          <form asp-action="Approve" asp-route-id="@Model.Id" method="post">
+            @Html.AntiForgeryToken()
+            <div class="field"><label>Review notes</label><textarea name="reviewNotes" maxlength="2000"></textarea></div>
+            <button type="submit" class="btn btn-success btn-sm">✓ Approve &amp; complete</button>
+          </form>
+        </div>
+    }
+
+    @if (canReopen)
+    {
+        <div class="card card-pad">
+          <h3 class="tiny">Reopen for rework</h3>
+          <form asp-action="Reopen" asp-route-id="@Model.Id" method="post">
+            @Html.AntiForgeryToken()
+            <div class="field"><label>Reason <span class="prototype-tag">Required</span></label><textarea name="reason" maxlength="1000" required></textarea></div>
+            <button type="submit" class="btn btn-sm">← Reopen for rework</button>
+          </form>
+        </div>
+    }
+
+    @if (canCancel)
+    {
+        <div class="card card-pad" style="border-color:var(--danger);">
+          <h3 class="tiny" style="color:var(--danger);">Cancel job card</h3>
+          <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" onsubmit="return confirm('Cancel this job card? This cannot be undone.');">
+            @Html.AntiForgeryToken()
+            <div class="field"><label>Reason <span class="prototype-tag">Required</span></label><textarea name="reason" maxlength="1000" required></textarea></div>
+            <button type="submit" class="btn btn-danger btn-sm">Cancel job card</button>
+          </form>
+        </div>
+    }
+
+    @if (Model.Status is "Completed" or "Cancelled")
+    {
+        <div class="card card-pad">
+          @if (Model.Status == "Completed")
+          {
+              <p class="tiny">Completed @(Model.CompletedAtUtc?.ToString("dd MMM yyyy HH:mm") ?? "—") UTC.</p>
+              @if (!string.IsNullOrWhiteSpace(Model.ReviewNotes))
+              {
+                  <p class="tiny muted">Review notes: @Model.ReviewNotes</p>
+              }
+          }
+          else
+          {
+              <p class="tiny">Cancelled. Reason: @Model.CancelReason</p>
+          }
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.ReopenReason) && Model.Status == "Reopened")
+    {
+        <div class="card card-pad" style="border-color:var(--warning);background:var(--warning-bg);">
+          <b class="tiny">Reopened — reason given:</b>
+          <p class="tiny">@Model.ReopenReason</p>
+        </div>
+    }
+  </div>
+
+  <div>
+    <div class="card section-card">
+      <div class="section-card-head"><h3>Job info</h3></div>
+      <div class="section-card-body pad">
+        <div class="info-row"><span>Customer</span><span>@Model.CustomerName</span></div>
+        <div class="info-row"><span>Site</span><span>@Model.SiteName</span></div>
+        <div class="info-row"><span>Template</span><span>@Model.TemplateName</span></div>
+        <div class="info-row"><span>Technician</span><span>@(Model.TechnicianName ?? "Unassigned")</span></div>
+        <div class="info-row"><span>Scheduled</span><span class="mono">@Model.ScheduledDate.ToString("dd MMM yyyy")</span></div>
+        @if (!string.IsNullOrWhiteSpace(Model.Notes))
+        {
+            <div class="info-row"><span>Notes</span><span style="text-align:left;max-width:60%;">@Model.Notes</span></div>
+        }
+      </div>
+    </div>
+
+    @if (Model.CorrectiveActions.Count > 0)
+    {
+        <div class="card section-card">
+          <div class="section-card-head"><h3>Flag history</h3></div>
+          <div class="section-card-body pad">
+            @foreach (var action in Model.CorrectiveActions.OrderByDescending(a => a.OpenedAtUtc))
+            {
+                <div class="timeline-item">
+                  <div class="timeline-dot"></div>
+                  <div>
+                    <p>@action.Reason — @(action.IsOpen ? "open" : "resolved")</p>
+                    <span>Opened @action.OpenedAtUtc.ToString("dd MMM yyyy HH:mm") UTC</span>
+                    @if (!action.IsOpen)
+                    {
+                        <span> · Resolved @action.ResolvedAtUtc?.ToString("dd MMM yyyy HH:mm") UTC: @action.ResolutionNotes</span>
+                    }
+                  </div>
+                </div>
+            }
+          </div>
+        </div>
+    }
+
+    @if (Model.Revisions.Count > 0)
+    {
+        <div class="card section-card">
+          <div class="section-card-head"><h3>Revisions</h3></div>
+          <div class="section-card-body pad">
+            @foreach (var rev in Model.Revisions.OrderByDescending(r => r.Number))
+            {
+                <div class="timeline-item">
+                  <div class="timeline-dot"></div>
+                  <div>
+                    <p>Revision @rev.Number — @(rev.IntegrityValid ? "integrity OK" : "⚠ integrity check failed")</p>
+                    <span>@rev.SubmittedAtUtc.ToString("dd MMM yyyy HH:mm") UTC · @rev.ContentHash[..12]…</span>
+                  </div>
+                </div>
+            }
+          </div>
+        </div>
+    }
+  </div>
+</div>
