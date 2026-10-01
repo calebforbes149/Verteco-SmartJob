@@ -9,7 +9,6 @@ namespace VertecoSmartJob.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/auth")]
-[AllowAnonymous]
 public class AuthController(
     IUserRepository users,
     IUnitOfWork unitOfWork,
@@ -19,6 +18,7 @@ public class AuthController(
     private const int MaxFailedAttempts = 5;
     private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
 
+    [AllowAnonymous]
     [HttpPost("login")]
     [EnableRateLimiting("auth")]
     public async Task<ActionResult<LoginResponse>> Login(LoginRequest request, CancellationToken ct)
@@ -55,5 +55,24 @@ public class AuthController(
             FullName = user.FullName,
             Role = user.Role
         });
+    }
+
+    [Authorize(Roles = "Manager")]
+    [HttpPost("users/{id:guid}/set-password")]
+    public async Task<IActionResult> SetPassword(Guid id, SetPasswordRequest request, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(request.NewPassword) || request.NewPassword.Length < 8)
+            return BadRequest(new ProblemDetails { Title = "Password must be at least 8 characters." });
+
+        var user = await users.GetByIdAsync(id, ct);
+        if (user is null) return NotFound();
+
+        var hash = hasher.Hash(user, request.NewPassword);
+        user.SetPasswordHash(hash);
+        user.ConfirmEmail();          // a Manager-set password implies the account is now usable
+        user.ResetFailedLogins();     // clear any prior lockout state on this account
+        await unitOfWork.SaveChangesAsync(ct);
+
+        return NoContent();
     }
 }
