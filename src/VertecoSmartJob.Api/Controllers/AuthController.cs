@@ -1,8 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Configuration;
+using System.Security.Cryptography;
 using VertecoSmartJob.Application.Abstractions;
 using VertecoSmartJob.Contracts.Auth;
+using VertecoSmartJob.Domain.Entities;
 using VertecoSmartJob.Infrastructure.Identity;
 
 namespace VertecoSmartJob.Api.Controllers;
@@ -11,9 +14,12 @@ namespace VertecoSmartJob.Api.Controllers;
 [Route("api/v1/auth")]
 public class AuthController(
     IUserRepository users,
+    IPasswordResetTokenRepository resetTokens,
     IUnitOfWork unitOfWork,
     PasswordHashingService hasher,
-    JwtTokenService tokens) : ControllerBase
+    JwtTokenService tokens,
+    IEmailSender emailSender,
+    IConfiguration configuration) : ControllerBase
 {
     private const int MaxFailedAttempts = 5;
     private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
@@ -73,6 +79,67 @@ public class AuthController(
         user.ResetFailedLogins();     // clear any prior lockout state on this account
         await unitOfWork.SaveChangesAsync(ct);
 
+        return NoContent();
+    }
+
+    [AllowAnonymous]
+    [HttpPost("forgot-password")]
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest request, CancellationToken ct)
+    {
+        var user = await users.GetByEmailAsync(request.Email, ct);
+
+        // Always return the same response whether or not the email exists —
+        // confirming an email is registered is itself information worth withholding.
+        if (user is not null && !user.IsSuspended)
+        {
+            var rawToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48));
+            var tokenHash = Convert.ToBase64String(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(rawToken)));
+
+            await resetTokens.AddAsync(new PasswordResetToken
+            {
+                UserId = user.Id,
+                TokenHash = tokenHash,
+                ExpiresAtUtc = DateTime.UtcNow.AddHours(1)
+            }, ct);
+            await unitOfWork.SaveChangesAsync(ct);
+
+            var webBaseUrl = configuration["WebApp:BaseUrl"] ?? "https://localhost:7088";
+            var resetLink = $"{webBaseUrl}/Account/ResetPassword?token={Uri.EscapeDataString(rawToken)}";
+
+            await emailSender.SendAsync(
+                user.Email,
+                "Reset your SmartJob password",
+                $"<p>Hi {user.FullName},</p><p>Click the link below to reset your SmartJob password. This link expires in 1 hour.</p><p><a href=\"{resetLink}\">{resetLink}</a></p><p>If you didn't request this, you can safely ignore this email.</p>",
+                ct);
+        }
+
+        return Ok(new { message = "If that email is registered, a reset link has been sent." });
+    }
+
+    [AllowAnonymous]
+    [HttpPost("reset-password")]
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> ResetPassword(ResetPasswordRequest request, CancellationToken ct)
+    {
+        var tokenHash = Convert.ToBase64String(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(request.Token)));
+        var resetToken = await resetTokens.GetByTokenHashAsync(tokenHash, ct);
+
+        if (resetToken is null || !resetToken.IsValid)
+            return BadRequest(new ProblemDetails { Title = "This reset link is invalid or has expired." });
+
+        if (string.IsNullOrWhiteSpace(request.NewPassword) || request.NewPassword.Length < 8)
+            return BadRequest(new ProblemDetails { Title = "Password must be at least 8 characters." });
+
+        var user = await users.GetByIdAsync(resetToken.UserId, ct);
+        if (user is null) return BadRequest(new ProblemDetails { Title = "This reset link is invalid or has expired." });
+
+        user.SetPasswordHash(hasher.Hash(user, request.NewPassword));
+        user.ConfirmEmail();
+        user.ResetFailedLogins();
+        resetToken.MarkUsed();
+
+        await unitOfWork.SaveChangesAsync(ct);
         return NoContent();
     }
 }
