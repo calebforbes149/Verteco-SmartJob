@@ -9,6 +9,7 @@ using VertecoSmartJob.Application.Jobs;
 using VertecoSmartJob.Application.Management;
 using VertecoSmartJob.Application.Reports;
 using VertecoSmartJob.Infrastructure.Ai;
+using VertecoSmartJob.Infrastructure.Email;
 using VertecoSmartJob.Infrastructure.Files;
 using VertecoSmartJob.Infrastructure.Identity;
 using VertecoSmartJob.Infrastructure.Persistence;
@@ -61,6 +62,7 @@ public static class DependencyInjection
             sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<GeminiReportingAiService>>()));
         services.AddSingleton<PasswordHashingService>();
         services.AddSingleton<JwtTokenService>();
+        services.AddScoped<IEmailSender, SmtpEmailSender>();
         services.AddScoped<ISubmissionValidationStrategy, RequiredFieldsStrategy>();
         services.AddScoped<ISubmissionValidationStrategy, EvidencePresenceStrategy>();
         services.AddScoped<ISubmissionValidationStrategy, SignaturePresenceStrategy>();
