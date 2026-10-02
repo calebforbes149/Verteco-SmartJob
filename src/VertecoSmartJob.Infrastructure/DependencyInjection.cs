@@ -12,6 +12,7 @@ using VertecoSmartJob.Infrastructure.Ai;
 using VertecoSmartJob.Infrastructure.Email;
 using VertecoSmartJob.Infrastructure.Files;
 using VertecoSmartJob.Infrastructure.Identity;
+using VertecoSmartJob.Infrastructure.Notifications;
 using VertecoSmartJob.Infrastructure.Persistence;
 using VertecoSmartJob.Infrastructure.Persistence.Repositories;
 
@@ -63,6 +64,7 @@ public static class DependencyInjection
         services.AddSingleton<PasswordHashingService>();
         services.AddSingleton<JwtTokenService>();
         services.AddScoped<IEmailSender, SmtpEmailSender>();
+        services.AddScoped<INotificationService, EmailNotificationService>();
         services.AddScoped<ISubmissionValidationStrategy, RequiredFieldsStrategy>();
         services.AddScoped<ISubmissionValidationStrategy, EvidencePresenceStrategy>();
         services.AddScoped<ISubmissionValidationStrategy, SignaturePresenceStrategy>();

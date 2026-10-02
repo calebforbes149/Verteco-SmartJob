@@ -17,6 +17,7 @@ public class JobCardService(
     ICustomerRepository customers,
     ISiteRepository sites,
     IAuditLogRepository audit,
+    INotificationService notifications,
     IEnumerable<ISubmissionValidationStrategy> submissionStrategies,
     IUnitOfWork unitOfWork,
     ICurrentUser? currentUser = null)
@@ -64,6 +65,10 @@ public class JobCardService(
 
         await jobCards.AddAsync(job, ct);
         await SaveWithAuditAsync(job, "JobCreated", ct);
+
+        if (technicianId is { } assignedTechId)
+            await notifications.NotifyJobAssignedAsync(assignedTechId, job.Number, ct);
+
         return job;
     }
 
@@ -75,6 +80,7 @@ public class JobCardService(
 
         job.AssignTo(technician.Id);
         await SaveWithAuditAsync(job, "JobAssigned", ct);
+        await notifications.NotifyJobAssignedAsync(technician.Id, job.Number, ct);
         return job;
     }
 
@@ -119,6 +125,7 @@ public class JobCardService(
         job.SubmitForReview(technicianId);
         await jobCards.AddRevisionAsync(job.Revisions.Last(), ct);
         await SaveWithAuditAsync(job, "JobSubmitted", ct);
+        await notifications.NotifyJobSubmittedAsync(job.Number, ct);
         return job;
     }
 
@@ -127,6 +134,8 @@ public class JobCardService(
         var job = await RequireJobAsync(jobId, ct);
         job.Complete(reviewNotes);
         await SaveWithAuditAsync(job, "JobApproved", ct);
+        if (job.TechnicianId is { } techId)
+            await notifications.NotifyJobApprovedAsync(techId, job.Number, ct);
         return job;
     }
 
@@ -135,6 +144,8 @@ public class JobCardService(
         var job = await RequireJobAsync(jobId, ct);
         job.Reopen(reason);
         await SaveWithAuditAsync(job, "JobReopened", ct);
+        if (job.TechnicianId is { } techId)
+            await notifications.NotifyJobReopenedAsync(techId, job.Number, reason, ct);
         return job;
     }
 
@@ -152,6 +163,7 @@ public class JobCardService(
         var action = job.Flag(reason, currentUser?.UserId);
         await jobCards.AddCorrectiveActionAsync(action, ct);
         await SaveWithAuditAsync(job, "JobFlagged", ct);
+        await notifications.NotifyJobFlaggedAsync(job.Number, reason, ct);
         return job;
     }
 
