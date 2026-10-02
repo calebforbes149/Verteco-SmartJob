@@ -77,6 +77,7 @@ public class AuthController(
 
     [Authorize(Roles = "Manager")]
     [HttpPost("users/{id:guid}/set-password")]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> SetPassword(Guid id, SetPasswordRequest request, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(request.NewPassword) || request.NewPassword.Length < 8)
