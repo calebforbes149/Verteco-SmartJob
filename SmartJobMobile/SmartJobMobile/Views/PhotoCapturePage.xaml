@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="SmartJobMobile.Views.PhotoCapturePage"
+    BackgroundColor="#121212"
+    Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- HEADER -->
+        <Grid
+            Grid.Row="0"
+            Padding="20,18"
+            ColumnDefinitions="Auto,*"
+            BackgroundColor="#181818">
+
+            <Button
+                Grid.Column="0"
+                Text="‹"
+                FontSize="30"
+                TextColor="White"
+                BackgroundColor="Transparent"
+                Padding="0"
+                WidthRequest="45"
+                Clicked="BackButton_Clicked"
+                SemanticProperties.Description="Go back" />
+
+            <VerticalStackLayout
+                Grid.Column="1"
+                Spacing="2"
+                VerticalOptions="Center">
+
+                <Label
+                    Text="PHOTO EVIDENCE"
+                    TextColor="#E53935"
+                    FontSize="20"
+                    FontAttributes="Bold" />
+
+                <Label
+                    Text="Add photographic evidence for this job"
+                    TextColor="#9E9E9E"
+                    FontSize="12" />
+
+            </VerticalStackLayout>
+
+        </Grid>
+
+        <!-- CONTENT -->
+        <ScrollView Grid.Row="1">
+
+            <VerticalStackLayout
+                Padding="20"
+                Spacing="18">
+
+                <!-- JOB INFORMATION -->
+                <Border
+                    BackgroundColor="#1E1E1E"
+                    Stroke="#383838"
+                    StrokeThickness="1"
+                    Padding="18">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="12" />
+                    </Border.StrokeShape>
+
+                    <VerticalStackLayout Spacing="6">
+
+                        <Label
+                            Text="JOB-1001"
+                            TextColor="#E53935"
+                            FontSize="13"
+                            FontAttributes="Bold" />
+
+                        <Label
+                            Text="Equipment Inspection"
+                            TextColor="White"
+                            FontSize="20"
+                            FontAttributes="Bold" />
+
+                        <Label
+                            Text="Verteco Client Site"
+                            TextColor="#BDBDBD"
+                            FontSize="13" />
+
+                    </VerticalStackLayout>
+
+                </Border>
+
+                <!-- INSTRUCTIONS -->
+                <VerticalStackLayout Spacing="5">
+
+                    <Label
+                        Text="Job Evidence"
+                        TextColor="White"
+                        FontSize="17"
+                        FontAttributes="Bold" />
+
+                    <Label
+                        Text="Take a clear photo of the equipment or select an existing photo."
+                        TextColor="#9E9E9E"
+                        FontSize="13" />
+
+                </VerticalStackLayout>
+
+                <!-- PHOTO PREVIEW -->
+                <Border
+                    BackgroundColor="#1E1E1E"
+                    Stroke="#424242"
+                    StrokeThickness="1"
+                    HeightRequest="280">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="12" />
+                    </Border.StrokeShape>
+
+                    <Grid>
+
+                        <!-- Shown before a photo is selected -->
+                        <VerticalStackLayout
+                            IsVisible="{Binding HasNoPhoto}"
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center"
+                            Spacing="10">
+
+                            <Label
+                                Text="📷"
+                                FontSize="45"
+                                HorizontalTextAlignment="Center" />
+
+                            <Label
+                                Text="No photo added"
+                                TextColor="#BDBDBD"
+                                FontSize="15"
+                                HorizontalTextAlignment="Center" />
+
+                            <Label
+                                Text="Take or choose a photo below"
+                                TextColor="#757575"
+                                FontSize="12"
+                                HorizontalTextAlignment="Center" />
+
+                        </VerticalStackLayout>
+
+                        <!-- Shown after a photo is selected -->
+                        <Image
+                            Source="{Binding PhotoSource}"
+                            IsVisible="{Binding HasPhoto}"
+                            Aspect="AspectFit"
+                            Margin="8"
+                            SemanticProperties.Description="Selected job evidence photo" />
+
+                    </Grid>
+
+                </Border>
+
+                <!-- PHOTO STATUS -->
+                <Label
+                    Text="{Binding PhotoStatus}"
+                    TextColor="#66BB6A"
+                    FontSize="13"
+                    IsVisible="{Binding HasPhoto}"
+                    HorizontalTextAlignment="Center" />
+
+                <!-- TAKE PHOTO -->
+                <Button
+                    Text="📷  TAKE PHOTO"
+                    Command="{Binding TakePhotoCommand}"
+                    BackgroundColor="#E53935"
+                    TextColor="White"
+                    FontSize="14"
+                    FontAttributes="Bold"
+                    HeightRequest="50"
+                    CornerRadius="10"
+                    SemanticProperties.Description="Take a photo using the device camera" />
+
+                <!-- CHOOSE PHOTO -->
+                <Button
+                    Text="CHOOSE PHOTO FROM DEVICE"
+                    Command="{Binding ChoosePhotoCommand}"
+                    BackgroundColor="#252525"
+                    TextColor="White"
+                    BorderColor="#555555"
+                    BorderWidth="1"
+                    FontSize="14"
+                    FontAttributes="Bold"
+                    HeightRequest="50"
+                    CornerRadius="10"
+                    SemanticProperties.Description="Choose an existing photo from this device" />
+
+                <!-- REMOVE PHOTO -->
+                <Button
+                    Text="REMOVE PHOTO"
+                    Command="{Binding RemovePhotoCommand}"
+                    IsVisible="{Binding HasPhoto}"
+                    BackgroundColor="Transparent"
+                    TextColor="#EF5350"
+                    BorderColor="#E53935"
+                    BorderWidth="1"
+                    FontSize="13"
+                    HeightRequest="46"
+                    CornerRadius="10"
+                    SemanticProperties.Description="Remove selected evidence photo" />
+
+                <!-- PHOTO NOTES -->
+                <Label
+                    Text="Photo Notes"
+                    TextColor="White"
+                    FontSize="15"
+                    FontAttributes="Bold"
+                    Margin="0,5,0,0" />
+
+                <Border
+                    BackgroundColor="#1E1E1E"
+                    Stroke="#424242"
+                    StrokeThickness="1"
+                    Padding="10">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="10" />
+                    </Border.StrokeShape>
+
+                    <Editor
+                        Text="{Binding PhotoNotes}"
+                        Placeholder="Describe the photo or any visible issues..."
+                        PlaceholderColor="#757575"
+                        TextColor="White"
+                        BackgroundColor="Transparent"
+                        AutoSize="TextChanges"
+                        MinimumHeightRequest="90"
+                        SemanticProperties.Description="Notes describing the evidence photo" />
+
+                </Border>
+
+                <!-- ERROR MESSAGE -->
+                <Label
+                    Text="{Binding ErrorMessage}"
+                    TextColor="#EF5350"
+                    FontSize="13"
+                    IsVisible="{Binding HasError}"
+                    HorizontalTextAlignment="Center" />
+
+                <!-- CONTINUE -->
+                <Button
+                    Text="CONTINUE"
+                    Command="{Binding ContinueCommand}"
+                    BackgroundColor="#E53935"
+                    TextColor="White"
+                    FontSize="15"
+                    FontAttributes="Bold"
+                    HeightRequest="52"
+                    CornerRadius="10"
+                    Margin="0,10,0,20"
+                    SemanticProperties.Description="Save photo evidence and continue" />
+
+            </VerticalStackLayout>
+
+        </ScrollView>
+
+    </Grid>
+
+</ContentPage>

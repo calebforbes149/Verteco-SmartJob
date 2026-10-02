@@ -1,0 +1,36 @@
+# Visual Studio
+.vs/
+**/.vs/
+
+# Build output
+bin/
+obj/
+**/bin/
+**/obj/
+
+# User-specific Visual Studio files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# .NET / MAUI generated files
+artifacts/
+**/artifacts/
+
+# Local databases
+*.db
+*.db3
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS files
+.DS_Store
+Thumbs.db

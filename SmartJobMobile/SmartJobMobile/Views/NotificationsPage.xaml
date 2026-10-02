@@ -1,0 +1,352 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="SmartJobMobile.Views.NotificationsPage"
+    BackgroundColor="#121212"
+    Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- HEADER -->
+        <Grid
+            Grid.Row="0"
+            Padding="20,18"
+            ColumnDefinitions="Auto,*"
+            BackgroundColor="#181818">
+
+            <Button
+                Grid.Column="0"
+                Text="‹"
+                FontSize="30"
+                TextColor="White"
+                BackgroundColor="Transparent"
+                Padding="0"
+                WidthRequest="45"
+                Clicked="BackButton_Clicked"
+                SemanticProperties.Description="Go back" />
+
+            <VerticalStackLayout
+                Grid.Column="1"
+                Spacing="2"
+                VerticalOptions="Center">
+
+                <Label
+                    Text="NOTIFICATIONS"
+                    TextColor="#E53935"
+                    FontSize="20"
+                    FontAttributes="Bold" />
+
+                <Label
+                    Text="Job updates and important alerts"
+                    TextColor="#9E9E9E"
+                    FontSize="12" />
+
+            </VerticalStackLayout>
+
+        </Grid>
+
+        <!-- CONTENT -->
+        <ScrollView Grid.Row="1">
+
+            <VerticalStackLayout
+                Padding="20"
+                Spacing="15">
+
+                <!-- UNREAD COUNT -->
+                <Border
+                    BackgroundColor="#1E1E1E"
+                    Stroke="#383838"
+                    StrokeThickness="1"
+                    Padding="16">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="12" />
+                    </Border.StrokeShape>
+
+                    <Grid ColumnDefinitions="*,Auto">
+
+                        <VerticalStackLayout Spacing="3">
+
+                            <Label
+                                Text="Your Notifications"
+                                TextColor="White"
+                                FontSize="17"
+                                FontAttributes="Bold" />
+
+                            <Label
+                                Text="You have 2 unread notifications"
+                                TextColor="#9E9E9E"
+                                FontSize="12" />
+
+                        </VerticalStackLayout>
+
+                        <Border
+                            Grid.Column="1"
+                            BackgroundColor="#E53935"
+                            StrokeThickness="0"
+                            Padding="10,5"
+                            VerticalOptions="Center">
+
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="15" />
+                            </Border.StrokeShape>
+
+                            <Label
+                                Text="2"
+                                TextColor="White"
+                                FontAttributes="Bold"
+                                FontSize="12" />
+
+                        </Border>
+
+                    </Grid>
+
+                </Border>
+
+                <!-- NOTIFICATION 1 -->
+                <Border
+                    BackgroundColor="#251D1D"
+                    Stroke="#E53935"
+                    StrokeThickness="1"
+                    Padding="16">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="12" />
+                    </Border.StrokeShape>
+
+                    <Grid ColumnDefinitions="Auto,*"
+                          ColumnSpacing="14">
+
+                        <Border
+                            HeightRequest="42"
+                            WidthRequest="42"
+                            BackgroundColor="#3D2424"
+                            StrokeThickness="0"
+                            VerticalOptions="Start">
+
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="21" />
+                            </Border.StrokeShape>
+
+                            <Label
+                                Text="!"
+                                TextColor="#EF5350"
+                                FontSize="20"
+                                FontAttributes="Bold"
+                                HorizontalTextAlignment="Center"
+                                VerticalTextAlignment="Center" />
+
+                        </Border>
+
+                        <VerticalStackLayout
+                            Grid.Column="1"
+                            Spacing="5">
+
+                            <Grid ColumnDefinitions="*,Auto">
+
+                                <Label
+                                    Text="New Job Assigned"
+                                    TextColor="White"
+                                    FontSize="15"
+                                    FontAttributes="Bold" />
+
+                                <Border
+                                    Grid.Column="1"
+                                    BackgroundColor="#E53935"
+                                    StrokeThickness="0"
+                                    HeightRequest="9"
+                                    WidthRequest="9"
+                                    VerticalOptions="Center">
+
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="5" />
+                                    </Border.StrokeShape>
+
+                                </Border>
+
+                            </Grid>
+
+                            <Label
+                                Text="JOB-1001 - Equipment Inspection has been assigned to you."
+                                TextColor="#BDBDBD"
+                                FontSize="13" />
+
+                            <Label
+                                Text="Today • 08:30"
+                                TextColor="#757575"
+                                FontSize="11" />
+
+                        </VerticalStackLayout>
+
+                    </Grid>
+
+                </Border>
+
+                <!-- NOTIFICATION 2 -->
+                <Border
+                    BackgroundColor="#251D1D"
+                    Stroke="#E53935"
+                    StrokeThickness="1"
+                    Padding="16">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="12" />
+                    </Border.StrokeShape>
+
+                    <Grid ColumnDefinitions="Auto,*"
+                          ColumnSpacing="14">
+
+                        <Border
+                            HeightRequest="42"
+                            WidthRequest="42"
+                            BackgroundColor="#3D2424"
+                            StrokeThickness="0"
+                            VerticalOptions="Start">
+
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="21" />
+                            </Border.StrokeShape>
+
+                            <Label
+                                Text="↻"
+                                TextColor="#EF5350"
+                                FontSize="20"
+                                HorizontalTextAlignment="Center"
+                                VerticalTextAlignment="Center" />
+
+                        </Border>
+
+                        <VerticalStackLayout
+                            Grid.Column="1"
+                            Spacing="5">
+
+                            <Grid ColumnDefinitions="*,Auto">
+
+                                <Label
+                                    Text="Job Reopened"
+                                    TextColor="White"
+                                    FontSize="15"
+                                    FontAttributes="Bold" />
+
+                                <Border
+                                    Grid.Column="1"
+                                    BackgroundColor="#E53935"
+                                    StrokeThickness="0"
+                                    HeightRequest="9"
+                                    WidthRequest="9"
+                                    VerticalOptions="Center">
+
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="5" />
+                                    </Border.StrokeShape>
+
+                                </Border>
+
+                            </Grid>
+
+                            <Label
+                                Text="JOB-0998 has been reopened by the Manager and requires your attention."
+                                TextColor="#BDBDBD"
+                                FontSize="13" />
+
+                            <Label
+                                Text="Yesterday • 15:45"
+                                TextColor="#757575"
+                                FontSize="11" />
+
+                        </VerticalStackLayout>
+
+                    </Grid>
+
+                </Border>
+
+                <!-- NOTIFICATION 3 -->
+                <Border
+                    BackgroundColor="#1E1E1E"
+                    Stroke="#383838"
+                    StrokeThickness="1"
+                    Padding="16">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="12" />
+                    </Border.StrokeShape>
+
+                    <Grid ColumnDefinitions="Auto,*"
+                          ColumnSpacing="14">
+
+                        <Border
+                            HeightRequest="42"
+                            WidthRequest="42"
+                            BackgroundColor="#263D2A"
+                            StrokeThickness="0"
+                            VerticalOptions="Start">
+
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="21" />
+                            </Border.StrokeShape>
+
+                            <Label
+                                Text="✓"
+                                TextColor="#66BB6A"
+                                FontSize="19"
+                                FontAttributes="Bold"
+                                HorizontalTextAlignment="Center"
+                                VerticalTextAlignment="Center" />
+
+                        </Border>
+
+                        <VerticalStackLayout
+                            Grid.Column="1"
+                            Spacing="5">
+
+                            <Label
+                                Text="Job Completed"
+                                TextColor="White"
+                                FontSize="15"
+                                FontAttributes="Bold" />
+
+                            <Label
+                                Text="JOB-0995 has been reviewed and marked as completed."
+                                TextColor="#BDBDBD"
+                                FontSize="13" />
+
+                            <Label
+                                Text="30 Sep • 11:20"
+                                TextColor="#757575"
+                                FontSize="11" />
+
+                        </VerticalStackLayout>
+
+                    </Grid>
+
+                </Border>
+
+                <!-- INFORMATION -->
+                <Border
+                    BackgroundColor="#252525"
+                    Stroke="#424242"
+                    StrokeThickness="1"
+                    Padding="14"
+                    Margin="0,5,0,20">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="10" />
+                    </Border.StrokeShape>
+
+                    <Label
+                        Text="Job assignments, reopened jobs and completion updates will appear here."
+                        TextColor="#9E9E9E"
+                        FontSize="12"
+                        HorizontalTextAlignment="Center" />
+
+                </Border>
+
+            </VerticalStackLayout>
+
+        </ScrollView>
+
+    </Grid>
+
+</ContentPage>

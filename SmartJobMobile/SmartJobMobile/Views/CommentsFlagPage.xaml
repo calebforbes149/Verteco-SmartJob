@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="SmartJobMobile.Views.CommentsFlagPage"
+    BackgroundColor="#121212"
+    Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- HEADER -->
+        <Grid
+            Grid.Row="0"
+            Padding="20,18"
+            ColumnDefinitions="Auto,*"
+            BackgroundColor="#181818">
+
+            <Button
+                Grid.Column="0"
+                Text="‹"
+                FontSize="30"
+                TextColor="White"
+                BackgroundColor="Transparent"
+                Padding="0"
+                WidthRequest="45"
+                Clicked="BackButton_Clicked"
+                SemanticProperties.Description="Go back" />
+
+            <VerticalStackLayout
+                Grid.Column="1"
+                Spacing="2"
+                VerticalOptions="Center">
+
+                <Label
+                    Text="COMMENTS &amp; FLAG"
+                    TextColor="#E53935"
+                    FontSize="20"
+                    FontAttributes="Bold" />
+
+                <Label
+                    Text="Add comments or report an issue"
+                    TextColor="#9E9E9E"
+                    FontSize="12" />
+
+            </VerticalStackLayout>
+
+        </Grid>
+
+        <!-- CONTENT -->
+        <ScrollView Grid.Row="1">
+
+            <VerticalStackLayout
+                Padding="20"
+                Spacing="18">
+
+                <!-- JOB INFORMATION -->
+                <Border
+                    BackgroundColor="#1E1E1E"
+                    Stroke="#383838"
+                    StrokeThickness="1"
+                    Padding="18">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="12" />
+                    </Border.StrokeShape>
+
+                    <VerticalStackLayout Spacing="6">
+
+                        <Label
+                            Text="JOB-1001"
+                            TextColor="#E53935"
+                            FontSize="13"
+                            FontAttributes="Bold" />
+
+                        <Label
+                            Text="Equipment Inspection"
+                            TextColor="White"
+                            FontSize="20"
+                            FontAttributes="Bold" />
+
+                        <Label
+                            Text="Verteco Client Site"
+                            TextColor="#BDBDBD"
+                            FontSize="13" />
+
+                    </VerticalStackLayout>
+
+                </Border>
+
+                <!-- COMMENTS -->
+                <VerticalStackLayout Spacing="7">
+
+                    <Label
+                        Text="Technician Comments"
+                        TextColor="White"
+                        FontSize="16"
+                        FontAttributes="Bold" />
+
+                    <Label
+                        Text="Add any additional comments about the work completed."
+                        TextColor="#9E9E9E"
+                        FontSize="13" />
+
+                    <Border
+                        BackgroundColor="#1E1E1E"
+                        Stroke="#424242"
+                        StrokeThickness="1"
+                        Padding="10"
+                        Margin="0,5,0,0">
+
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="10" />
+                        </Border.StrokeShape>
+
+                        <Editor
+                            Text="{Binding Comments}"
+                            Placeholder="Enter comments about the job..."
+                            PlaceholderColor="#757575"
+                            TextColor="White"
+                            BackgroundColor="Transparent"
+                            AutoSize="TextChanges"
+                            MinimumHeightRequest="120"
+                            SemanticProperties.Description="Technician job comments" />
+
+                    </Border>
+
+                </VerticalStackLayout>
+
+                <!-- FLAG SECTION -->
+                <Border
+                    BackgroundColor="#1E1E1E"
+                    Stroke="#383838"
+                    StrokeThickness="1"
+                    Padding="18">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="12" />
+                    </Border.StrokeShape>
+
+                    <VerticalStackLayout Spacing="14">
+
+                        <Grid ColumnDefinitions="*,Auto">
+
+                            <VerticalStackLayout
+                                Grid.Column="0"
+                                Spacing="4">
+
+                                <Label
+                                    Text="Flag this job"
+                                    TextColor="White"
+                                    FontSize="16"
+                                    FontAttributes="Bold" />
+
+                                <Label
+                                    Text="Report an issue that requires Manager attention."
+                                    TextColor="#9E9E9E"
+                                    FontSize="12" />
+
+                            </VerticalStackLayout>
+
+                            <Switch
+                                Grid.Column="1"
+                                IsToggled="{Binding IsFlagged}"
+                                OnColor="#E53935"
+                                VerticalOptions="Center"
+                                SemanticProperties.Description="Flag this job for Manager attention" />
+
+                        </Grid>
+
+                        <!-- Only visible when flagged -->
+                        <VerticalStackLayout
+                            IsVisible="{Binding IsFlagged}"
+                            Spacing="14">
+
+                            <BoxView
+                                HeightRequest="1"
+                                Color="#383838" />
+
+                            <Label
+                                Text="Flag Reason *"
+                                TextColor="#BDBDBD"
+                                FontSize="13" />
+
+                            <Border
+                                BackgroundColor="#252525"
+                                Stroke="#424242"
+                                StrokeThickness="1"
+                                Padding="5">
+
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="10" />
+                                </Border.StrokeShape>
+
+                                <Picker
+                                    Title="Select a reason"
+                                    ItemsSource="{Binding FlagReasons}"
+                                    SelectedItem="{Binding SelectedFlagReason}"
+                                    TextColor="White"
+                                    TitleColor="#757575"
+                                    BackgroundColor="Transparent"
+                                    SemanticProperties.Description="Reason for flagging the job" />
+
+                            </Border>
+
+                            <Label
+                                Text="Issue Details *"
+                                TextColor="#BDBDBD"
+                                FontSize="13" />
+
+                            <Border
+                                BackgroundColor="#252525"
+                                Stroke="#424242"
+                                StrokeThickness="1"
+                                Padding="10">
+
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="10" />
+                                </Border.StrokeShape>
+
+                                <Editor
+                                    Text="{Binding FlagDetails}"
+                                    Placeholder="Describe the issue that requires attention..."
+                                    PlaceholderColor="#757575"
+                                    TextColor="White"
+                                    BackgroundColor="Transparent"
+                                    AutoSize="TextChanges"
+                                    MinimumHeightRequest="100"
+                                    SemanticProperties.Description="Details about the flagged issue" />
+
+                            </Border>
+
+                        </VerticalStackLayout>
+
+                    </VerticalStackLayout>
+
+                </Border>
+
+                <!-- FLAG STATUS -->
+                <Border
+                    IsVisible="{Binding IsFlagged}"
+                    BackgroundColor="#3D2424"
+                    Stroke="#E53935"
+                    StrokeThickness="1"
+                    Padding="12">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8" />
+                    </Border.StrokeShape>
+
+                    <Label
+                        Text="⚠ This job will be flagged for Manager attention."
+                        TextColor="#EF5350"
+                        FontSize="13"
+                        HorizontalTextAlignment="Center" />
+
+                </Border>
+
+                <!-- ERROR -->
+                <Label
+                    Text="{Binding ErrorMessage}"
+                    TextColor="#EF5350"
+                    FontSize="13"
+                    IsVisible="{Binding HasError}"
+                    HorizontalTextAlignment="Center" />
+
+                <!-- CONTINUE -->
+                <Button
+                    Text="CONTINUE"
+                    Command="{Binding ContinueCommand}"
+                    BackgroundColor="#E53935"
+                    TextColor="White"
+                    FontSize="15"
+                    FontAttributes="Bold"
+                    HeightRequest="52"
+                    CornerRadius="10"
+                    Margin="0,10,0,20"
+                    SemanticProperties.Description="Save comments and continue" />
+
+            </VerticalStackLayout>
+
+        </ScrollView>
+
+    </Grid>
+
+</ContentPage>

@@ -1,0 +1,308 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="SmartJobMobile.Views.SignaturePage"
+    BackgroundColor="#121212"
+    Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- HEADER -->
+        <Grid
+            Grid.Row="0"
+            Padding="20,18"
+            ColumnDefinitions="Auto,*"
+            BackgroundColor="#181818">
+
+            <Button
+                Grid.Column="0"
+                Text="‹"
+                FontSize="30"
+                TextColor="White"
+                BackgroundColor="Transparent"
+                Padding="0"
+                WidthRequest="45"
+                Clicked="BackButton_Clicked"
+                SemanticProperties.Description="Go back" />
+
+            <VerticalStackLayout
+                Grid.Column="1"
+                Spacing="2"
+                VerticalOptions="Center">
+
+                <Label
+                    Text="SIGNATURES"
+                    TextColor="#E53935"
+                    FontSize="20"
+                    FontAttributes="Bold" />
+
+                <Label
+                    Text="Confirm completion of the work"
+                    TextColor="#9E9E9E"
+                    FontSize="12" />
+
+            </VerticalStackLayout>
+
+        </Grid>
+
+        <ScrollView Grid.Row="1">
+
+            <VerticalStackLayout
+                Padding="20"
+                Spacing="18">
+
+                <!-- JOB INFORMATION -->
+                <Border
+                    BackgroundColor="#1E1E1E"
+                    Stroke="#383838"
+                    StrokeThickness="1"
+                    Padding="18">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="12" />
+                    </Border.StrokeShape>
+
+                    <VerticalStackLayout Spacing="6">
+
+                        <Label
+                            Text="JOB-1001"
+                            TextColor="#E53935"
+                            FontSize="13"
+                            FontAttributes="Bold" />
+
+                        <Label
+                            Text="Equipment Inspection"
+                            TextColor="White"
+                            FontSize="20"
+                            FontAttributes="Bold" />
+
+                        <Label
+                            Text="Verteco Client Site"
+                            TextColor="#BDBDBD"
+                            FontSize="13" />
+
+                    </VerticalStackLayout>
+
+                </Border>
+
+                <!-- TECHNICIAN SIGNATURE -->
+                <Label
+                    Text="Technician Confirmation"
+                    TextColor="White"
+                    FontSize="17"
+                    FontAttributes="Bold" />
+
+                <Border
+                    BackgroundColor="#1E1E1E"
+                    Stroke="#383838"
+                    StrokeThickness="1"
+                    Padding="18">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="12" />
+                    </Border.StrokeShape>
+
+                    <VerticalStackLayout Spacing="14">
+
+                        <Label
+                            Text="Technician Name *"
+                            TextColor="#BDBDBD"
+                            FontSize="13" />
+
+                        <Border
+                            BackgroundColor="#252525"
+                            Stroke="#424242"
+                            StrokeThickness="1"
+                            Padding="5">
+
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="10" />
+                            </Border.StrokeShape>
+
+                            <Entry
+                                Text="{Binding TechnicianName}"
+                                Placeholder="Enter technician full name"
+                                PlaceholderColor="#757575"
+                                TextColor="White"
+                                BackgroundColor="Transparent"
+                                Margin="8,0"
+                                SemanticProperties.Description="Technician full name" />
+
+                        </Border>
+
+                        <Grid ColumnDefinitions="Auto,*"
+                              ColumnSpacing="10">
+
+                            <CheckBox
+                                IsChecked="{Binding TechnicianConfirmed}"
+                                Color="#E53935"
+                                VerticalOptions="Center"
+                                SemanticProperties.Description="Technician confirms the work information is correct" />
+
+                            <Label
+                                Grid.Column="1"
+                                Text="I confirm that the recorded job information is accurate and the work has been completed as stated."
+                                TextColor="#BDBDBD"
+                                FontSize="13"
+                                VerticalOptions="Center" />
+
+                        </Grid>
+
+                        <Border
+                            IsVisible="{Binding TechnicianConfirmed}"
+                            BackgroundColor="#263D2A"
+                            Stroke="#4CAF50"
+                            StrokeThickness="1"
+                            Padding="10">
+
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="8" />
+                            </Border.StrokeShape>
+
+                            <Label
+                                Text="✓ Technician confirmation recorded"
+                                TextColor="#66BB6A"
+                                FontSize="13"
+                                HorizontalTextAlignment="Center" />
+
+                        </Border>
+
+                    </VerticalStackLayout>
+
+                </Border>
+
+                <!-- CLIENT SIGNATURE -->
+                <Label
+                    Text="Client Confirmation"
+                    TextColor="White"
+                    FontSize="17"
+                    FontAttributes="Bold" />
+
+                <Border
+                    BackgroundColor="#1E1E1E"
+                    Stroke="#383838"
+                    StrokeThickness="1"
+                    Padding="18">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="12" />
+                    </Border.StrokeShape>
+
+                    <VerticalStackLayout Spacing="14">
+
+                        <Label
+                            Text="Client Name *"
+                            TextColor="#BDBDBD"
+                            FontSize="13" />
+
+                        <Border
+                            BackgroundColor="#252525"
+                            Stroke="#424242"
+                            StrokeThickness="1"
+                            Padding="5">
+
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="10" />
+                            </Border.StrokeShape>
+
+                            <Entry
+                                Text="{Binding ClientName}"
+                                Placeholder="Enter client full name"
+                                PlaceholderColor="#757575"
+                                TextColor="White"
+                                BackgroundColor="Transparent"
+                                Margin="8,0"
+                                SemanticProperties.Description="Client full name" />
+
+                        </Border>
+
+                        <Grid ColumnDefinitions="Auto,*"
+                              ColumnSpacing="10">
+
+                            <CheckBox
+                                IsChecked="{Binding ClientConfirmed}"
+                                Color="#E53935"
+                                VerticalOptions="Center"
+                                SemanticProperties.Description="Client confirms the work was completed" />
+
+                            <Label
+                                Grid.Column="1"
+                                Text="The client confirms that the work has been completed and the job details have been reviewed."
+                                TextColor="#BDBDBD"
+                                FontSize="13"
+                                VerticalOptions="Center" />
+
+                        </Grid>
+
+                        <Border
+                            IsVisible="{Binding ClientConfirmed}"
+                            BackgroundColor="#263D2A"
+                            Stroke="#4CAF50"
+                            StrokeThickness="1"
+                            Padding="10">
+
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="8" />
+                            </Border.StrokeShape>
+
+                            <Label
+                                Text="✓ Client confirmation recorded"
+                                TextColor="#66BB6A"
+                                FontSize="13"
+                                HorizontalTextAlignment="Center" />
+
+                        </Border>
+
+                    </VerticalStackLayout>
+
+                </Border>
+
+                <!-- NOTICE -->
+                <Border
+                    BackgroundColor="#252525"
+                    Stroke="#424242"
+                    StrokeThickness="1"
+                    Padding="14">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="10" />
+                    </Border.StrokeShape>
+
+                    <Label
+                        Text="Both confirmations are required before the job can proceed to final review."
+                        TextColor="#BDBDBD"
+                        FontSize="12"
+                        HorizontalTextAlignment="Center" />
+
+                </Border>
+
+                <!-- ERROR -->
+                <Label
+                    Text="{Binding ErrorMessage}"
+                    TextColor="#EF5350"
+                    FontSize="13"
+                    IsVisible="{Binding HasError}"
+                    HorizontalTextAlignment="Center" />
+
+                <!-- CONTINUE -->
+                <Button
+                    Text="CONTINUE TO REVIEW"
+                    Command="{Binding ContinueCommand}"
+                    BackgroundColor="#E53935"
+                    TextColor="White"
+                    FontSize="15"
+                    FontAttributes="Bold"
+                    HeightRequest="52"
+                    CornerRadius="10"
+                    Margin="0,10,0,20"
+                    SemanticProperties.Description="Continue to final job review" />
+
+            </VerticalStackLayout>
+
+        </ScrollView>
+
+    </Grid>
+
+</ContentPage>
