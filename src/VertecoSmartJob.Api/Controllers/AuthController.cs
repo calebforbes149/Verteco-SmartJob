@@ -15,6 +15,8 @@ namespace VertecoSmartJob.Api.Controllers;
 public class AuthController(
     IUserRepository users,
     IPasswordResetTokenRepository resetTokens,
+    IAuditLogRepository audit,
+    ICurrentUser currentUser,
     IUnitOfWork unitOfWork,
     PasswordHashingService hasher,
     JwtTokenService tokens,
@@ -34,7 +36,14 @@ public class AuthController(
         // Deliberately identical response whether the email doesn't exist or the password is wrong —
         // telling an attacker "that email isn't registered" is itself useful information to withhold.
         if (user is null || user.IsSuspended)
+        {
+            if (user is not null)
+            {
+                await LogAuthEventAsync(user.Id, "LoginFailed", $"Email: {request.Email}", ct);
+                await unitOfWork.SaveChangesAsync(ct);
+            }
             return Unauthorized(new ProblemDetails { Title = "Invalid email or password." });
+        }
 
         if (user.IsCurrentlyLockedOut())
             return StatusCode(StatusCodes.Status423Locked,
@@ -43,6 +52,8 @@ public class AuthController(
         if (!hasher.Verify(user, request.Password))
         {
             user.RegisterFailedLogin(MaxFailedAttempts, LockoutDuration);
+            var action = user.IsCurrentlyLockedOut() ? "AccountLockedOut" : "LoginFailed";
+            await LogAuthEventAsync(user.Id, action, $"Failed attempt {user.FailedLoginAttempts}/{MaxFailedAttempts}", ct);
             await unitOfWork.SaveChangesAsync(ct);
             return Unauthorized(new ProblemDetails { Title = "Invalid email or password." });
         }
@@ -52,6 +63,7 @@ public class AuthController(
                 new ProblemDetails { Title = "Confirm your email before signing in." });
 
         user.ResetFailedLogins();
+        await LogAuthEventAsync(user.Id, "LoginSucceeded", user.Email, ct);
         await unitOfWork.SaveChangesAsync(ct);
 
         var accessToken = tokens.IssueAccessToken(user);
@@ -77,6 +89,7 @@ public class AuthController(
         user.SetPasswordHash(hash);
         user.ConfirmEmail();          // a Manager-set password implies the account is now usable
         user.ResetFailedLogins();     // clear any prior lockout state on this account
+        await LogAuthEventAsync(currentUser.UserId, "PasswordSetByManager", $"Target user: {user.Email}", ct);
         await unitOfWork.SaveChangesAsync(ct);
 
         return NoContent();
@@ -102,6 +115,7 @@ public class AuthController(
                 TokenHash = tokenHash,
                 ExpiresAtUtc = DateTime.UtcNow.AddHours(1)
             }, ct);
+            await LogAuthEventAsync(user.Id, "PasswordResetRequested", user.Email, ct);
             await unitOfWork.SaveChangesAsync(ct);
 
             var webBaseUrl = configuration["WebApp:BaseUrl"] ?? "https://localhost:7088";
@@ -138,8 +152,14 @@ public class AuthController(
         user.ConfirmEmail();
         user.ResetFailedLogins();
         resetToken.MarkUsed();
+        await LogAuthEventAsync(user.Id, "PasswordReset", user.Email, ct);
 
         await unitOfWork.SaveChangesAsync(ct);
         return NoContent();
+    }
+
+    private async Task LogAuthEventAsync(Guid? actorUserId, string action, string details, CancellationToken ct)
+    {
+        await audit.AddAsync(new AuditLog { ActorUserId = actorUserId, Action = action, Details = details }, ct);
     }
 }
