@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using SmartJobMobile.Models;
 using SmartJobMobile.Services;
 using SmartJobMobile.ViewModels;
 
@@ -6,7 +7,7 @@ namespace SmartJobMobile.Views;
 
 public partial class ChecklistPage : ContentPage
 {
-    public ChecklistPage()
+    public ChecklistPage(Job job)
     {
         InitializeComponent();
 
@@ -17,9 +18,18 @@ public partial class ChecklistPage : ContentPage
                 .Services
                 .GetRequiredService<LocalDatabaseService>();
 
+        ApiService apiService =
+            Application.Current!
+                .Handler!
+                .MauiContext!
+                .Services
+                .GetRequiredService<ApiService>();
+
         BindingContext =
             new ChecklistViewModel(
-                localDatabaseService);
+                job,
+                localDatabaseService,
+                apiService);
     }
 
     private async void BackButton_Clicked(

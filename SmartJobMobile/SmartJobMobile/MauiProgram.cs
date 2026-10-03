@@ -22,6 +22,7 @@ namespace SmartJobMobile
 
             builder.Services.AddSingleton<ConnectivityService>();
             builder.Services.AddSingleton<LocalDatabaseService>();
+            builder.Services.AddSingleton<ApiService>();
 
             return builder.Build();
         }

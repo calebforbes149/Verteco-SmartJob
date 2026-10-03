@@ -9,7 +9,10 @@
 
     <Grid RowDefinitions="Auto,*">
 
+        <!-- ================================================= -->
         <!-- HEADER -->
+        <!-- ================================================= -->
+
         <Grid
             Grid.Row="0"
             Padding="20,18"
@@ -47,14 +50,22 @@
 
         </Grid>
 
+
+        <!-- ================================================= -->
         <!-- PAGE CONTENT -->
+        <!-- ================================================= -->
+
         <ScrollView Grid.Row="1">
 
             <VerticalStackLayout
                 Padding="20"
                 Spacing="18">
 
-                <!-- JOB INFORMATION -->
+
+                <!-- ========================================= -->
+                <!-- REAL JOB INFORMATION -->
+                <!-- ========================================= -->
+
                 <Border
                     BackgroundColor="#1E1E1E"
                     Stroke="#383838"
@@ -68,19 +79,19 @@
                     <VerticalStackLayout Spacing="6">
 
                         <Label
-                            Text="JOB-1001"
+                            Text="{Binding JobNumber}"
                             TextColor="#E53935"
                             FontSize="13"
                             FontAttributes="Bold" />
 
                         <Label
-                            Text="Equipment Inspection"
+                            Text="{Binding JobTitle}"
                             TextColor="White"
                             FontSize="20"
                             FontAttributes="Bold" />
 
                         <Label
-                            Text="Verteco Client Site"
+                            Text="{Binding JobLocation}"
                             TextColor="#BDBDBD"
                             FontSize="13" />
 
@@ -88,7 +99,11 @@
 
                 </Border>
 
+
+                <!-- ========================================= -->
                 <!-- PROGRESS -->
+                <!-- ========================================= -->
+
                 <Grid ColumnDefinitions="*,Auto">
 
                     <Label
@@ -111,183 +126,97 @@
                     BackgroundColor="#424242"
                     HeightRequest="7" />
 
-                <!-- CHECK 1 -->
-                <Border
-                    BackgroundColor="#1E1E1E"
-                    Stroke="#383838"
-                    StrokeThickness="1"
-                    Padding="16">
 
-                    <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="12" />
-                    </Border.StrokeShape>
+                <!-- ========================================= -->
+                <!-- LOADING MESSAGE -->
+                <!-- ========================================= -->
 
-                    <Grid
-                        ColumnDefinitions="Auto,*"
-                        ColumnSpacing="12">
+                <VerticalStackLayout
+                    IsVisible="{Binding IsLoading}"
+                    Spacing="10"
+                    Padding="0,20">
 
-                        <CheckBox
-                            Grid.Column="0"
-                            IsChecked="{Binding Check1Completed}"
-                            Color="#E53935"
-                            VerticalOptions="Center"
-                            SemanticProperties.Description="Visual equipment inspection completed" />
+                    <ActivityIndicator
+                        IsRunning="{Binding IsLoading}"
+                        Color="#E53935"
+                        HeightRequest="40"
+                        WidthRequest="40" />
 
-                        <VerticalStackLayout
-                            Grid.Column="1"
-                            Spacing="5"
-                            VerticalOptions="Center">
+                    <Label
+                        Text="Loading checklist..."
+                        TextColor="#9E9E9E"
+                        FontSize="13"
+                        HorizontalTextAlignment="Center" />
 
-                            <Label
-                                Text="1. Visual equipment inspection"
-                                TextColor="White"
-                                FontSize="16"
-                                FontAttributes="Bold" />
+                </VerticalStackLayout>
 
-                            <Label
-                                Text="Check equipment for visible damage, wear or defects."
-                                TextColor="#9E9E9E"
-                                FontSize="13" />
 
-                        </VerticalStackLayout>
+                <!-- ========================================= -->
+                <!-- REAL API CHECKLIST ITEMS -->
+                <!-- ========================================= -->
 
-                    </Grid>
+                <VerticalStackLayout
+                    BindableLayout.ItemsSource="{Binding ChecklistItems}"
+                    Spacing="12">
 
-                </Border>
+                    <BindableLayout.ItemTemplate>
 
-                <!-- CHECK 2 -->
-                <Border
-                    BackgroundColor="#1E1E1E"
-                    Stroke="#383838"
-                    StrokeThickness="1"
-                    Padding="16">
+                        <DataTemplate>
 
-                    <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="12" />
-                    </Border.StrokeShape>
+                            <Border
+                                BackgroundColor="#1E1E1E"
+                                Stroke="#383838"
+                                StrokeThickness="1"
+                                Padding="16">
 
-                    <Grid
-                        ColumnDefinitions="Auto,*"
-                        ColumnSpacing="12">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="12" />
+                                </Border.StrokeShape>
 
-                        <CheckBox
-                            Grid.Column="0"
-                            IsChecked="{Binding Check2Completed}"
-                            Color="#E53935"
-                            VerticalOptions="Center"
-                            SemanticProperties.Description="Safety components check completed" />
+                                <Grid
+                                    ColumnDefinitions="Auto,*"
+                                    ColumnSpacing="12">
 
-                        <VerticalStackLayout
-                            Grid.Column="1"
-                            Spacing="5"
-                            VerticalOptions="Center">
+                                    <CheckBox
+                                        Grid.Column="0"
+                                        IsChecked="{Binding IsCompleted, Mode=TwoWay}"
+                                        Color="#E53935"
+                                        VerticalOptions="Center"
+                                        SemanticProperties.Description="Checklist item completed" />
 
-                            <Label
-                                Text="2. Safety components"
-                                TextColor="White"
-                                FontSize="16"
-                                FontAttributes="Bold" />
+                                    <VerticalStackLayout
+                                        Grid.Column="1"
+                                        Spacing="5"
+                                        VerticalOptions="Center">
 
-                            <Label
-                                Text="Confirm all safety guards and components are secure."
-                                TextColor="#9E9E9E"
-                                FontSize="13" />
+                                        <Label
+                                            Text="{Binding DisplayText}"
+                                            TextColor="White"
+                                            FontSize="16"
+                                            FontAttributes="Bold" />
 
-                        </VerticalStackLayout>
+                                        <Label
+                                            Text="Tick when this check has been completed."
+                                            TextColor="#9E9E9E"
+                                            FontSize="13" />
 
-                    </Grid>
+                                    </VerticalStackLayout>
 
-                </Border>
+                                </Grid>
 
-                <!-- CHECK 3 -->
-                <Border
-                    BackgroundColor="#1E1E1E"
-                    Stroke="#383838"
-                    StrokeThickness="1"
-                    Padding="16">
+                            </Border>
 
-                    <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="12" />
-                    </Border.StrokeShape>
+                        </DataTemplate>
 
-                    <Grid
-                        ColumnDefinitions="Auto,*"
-                        ColumnSpacing="12">
+                    </BindableLayout.ItemTemplate>
 
-                        <CheckBox
-                            Grid.Column="0"
-                            IsChecked="{Binding Check3Completed}"
-                            Color="#E53935"
-                            VerticalOptions="Center"
-                            SemanticProperties.Description="Electrical connections check completed" />
+                </VerticalStackLayout>
 
-                        <VerticalStackLayout
-                            Grid.Column="1"
-                            Spacing="5"
-                            VerticalOptions="Center">
 
-                            <Label
-                                Text="3. Electrical connections"
-                                TextColor="White"
-                                FontSize="16"
-                                FontAttributes="Bold" />
-
-                            <Label
-                                Text="Inspect cables and electrical connections."
-                                TextColor="#9E9E9E"
-                                FontSize="13" />
-
-                        </VerticalStackLayout>
-
-                    </Grid>
-
-                </Border>
-
-                <!-- CHECK 4 -->
-                <Border
-                    BackgroundColor="#1E1E1E"
-                    Stroke="#383838"
-                    StrokeThickness="1"
-                    Padding="16">
-
-                    <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="12" />
-                    </Border.StrokeShape>
-
-                    <Grid
-                        ColumnDefinitions="Auto,*"
-                        ColumnSpacing="12">
-
-                        <CheckBox
-                            Grid.Column="0"
-                            IsChecked="{Binding Check4Completed}"
-                            Color="#E53935"
-                            VerticalOptions="Center"
-                            SemanticProperties.Description="Operational test completed" />
-
-                        <VerticalStackLayout
-                            Grid.Column="1"
-                            Spacing="5"
-                            VerticalOptions="Center">
-
-                            <Label
-                                Text="4. Operational test"
-                                TextColor="White"
-                                FontSize="16"
-                                FontAttributes="Bold" />
-
-                            <Label
-                                Text="Confirm the equipment operates as expected."
-                                TextColor="#9E9E9E"
-                                FontSize="13" />
-
-                        </VerticalStackLayout>
-
-                    </Grid>
-
-                </Border>
-
+                <!-- ========================================= -->
                 <!-- TECHNICIAN NOTES -->
+                <!-- ========================================= -->
+
                 <Label
                     Text="Technician Notes"
                     TextColor="White"
@@ -316,7 +245,11 @@
 
                 </Border>
 
+
+                <!-- ========================================= -->
                 <!-- CONTINUE -->
+                <!-- ========================================= -->
+
                 <Button
                     Text="CONTINUE"
                     Command="{Binding ContinueCommand}"

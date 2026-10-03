@@ -1,51 +1,78 @@
 ﻿using System.Collections.ObjectModel;
 using SmartJobMobile.Models;
+using SmartJobMobile.Services;
 
 namespace SmartJobMobile.ViewModels;
 
 public class MyJobsViewModel
 {
-    public ObservableCollection<Job> Jobs { get; }
+    private readonly ApiService _apiService;
 
-    public MyJobsViewModel()
+    public ObservableCollection<Job> Jobs { get; } = new();
+
+    public MyJobsViewModel(ApiService apiService)
     {
-        Jobs = new ObservableCollection<Job>
+        _apiService = apiService;
+
+        _ = LoadJobsAsync();
+    }
+
+    private async Task LoadJobsAsync()
+    {
+        try
         {
-            new Job
-            {
-                Id = 1,
-                JobNumber = "JOB-1001",
-                Title = "Equipment Inspection",
-                CustomerName = "Verteco Client Site",
-                Location = "Johannesburg",
-                Status = "Assigned",
-                Priority = "High",
-                ScheduledDate = DateTime.Today.AddHours(9)
-            },
+            MyJobsResponse? response =
+                await _apiService.GetMyJobsAsync();
 
-            new Job
-            {
-                Id = 2,
-                JobNumber = "JOB-1002",
-                Title = "Preventative Maintenance",
-                CustomerName = "Verteco Client Site",
-                Location = "Midrand",
-                Status = "In Progress",
-                Priority = "Medium",
-                ScheduledDate = DateTime.Today.AddHours(11)
-            },
+            if (response == null)
+                return;
 
-            new Job
+            Jobs.Clear();
+
+            foreach (ApiJobSummary apiJob in response.Items)
             {
-                Id = 3,
-                JobNumber = "JOB-1003",
-                Title = "System Inspection",
-                CustomerName = "Verteco Client Site",
-                Location = "Sandton",
-                Status = "Assigned",
-                Priority = "Normal",
-                ScheduledDate = DateTime.Today.AddDays(1).AddHours(8)
+                Jobs.Add(new Job
+                {
+                    ApiId = apiJob.Id,
+                    Id = Jobs.Count + 1,
+
+                    JobNumber = apiJob.Number,
+
+                    Title = apiJob.TemplateName,
+
+                    CustomerName = apiJob.CustomerName,
+
+                    Location = apiJob.SiteName,
+
+                    Status = FormatStatus(apiJob.Status),
+
+                    Priority = apiJob.Priority,
+
+                    ScheduledDate =
+                        apiJob.ScheduledDate.ToDateTime(
+                            TimeOnly.MinValue)
+                });
             }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"Failed to load SmartJob jobs: {ex.Message}");
+
+            await Shell.Current.DisplayAlert(
+                "Unable to Load Jobs",
+                "SmartJob could not retrieve your assigned jobs from the server.",
+                "OK");
+        }
+    }
+
+    private static string FormatStatus(string status)
+    {
+        return status switch
+        {
+            "InProgress" => "In Progress",
+            "AwaitingApproval" => "Awaiting Approval",
+            _ => status
         };
     }
 }

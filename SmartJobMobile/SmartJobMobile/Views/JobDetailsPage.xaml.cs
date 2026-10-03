@@ -1,4 +1,6 @@
+using Microsoft.Extensions.DependencyInjection;
 using SmartJobMobile.Models;
+using SmartJobMobile.Services;
 using SmartJobMobile.ViewModels;
 
 namespace SmartJobMobile.Views;
@@ -9,7 +11,17 @@ public partial class JobDetailsPage : ContentPage
     {
         InitializeComponent();
 
-        BindingContext = new JobDetailsViewModel(job);
+        ApiService apiService =
+            Application.Current!
+                .Handler!
+                .MauiContext!
+                .Services
+                .GetRequiredService<ApiService>();
+
+        BindingContext =
+            new JobDetailsViewModel(
+                job,
+                apiService);
     }
 
     private async void BackButton_Clicked(
