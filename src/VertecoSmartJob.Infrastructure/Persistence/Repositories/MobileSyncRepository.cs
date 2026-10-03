@@ -54,6 +54,21 @@ public class MobileSyncRepository(AppDbContext db)
                 ct);
     }
 
+    public async Task<List<Guid>> GetRemovedJobIdsAsync(Guid technicianId,
+        IReadOnlyCollection<Guid> knownJobIds, CancellationToken ct = default)
+    {
+        if (knownJobIds.Count == 0)
+            return [];
+
+        var assignedIds = await db.JobCards
+            .Where(job => knownJobIds.Contains(job.Id) &&
+                          job.TechnicianId == technicianId)
+            .Select(job => job.Id)
+            .ToListAsync(ct);
+
+        return knownJobIds.Except(assignedIds).Distinct().ToList();
+    }
+
     public async Task AddOperationAsync(
         MobileSyncOperation operation,
         CancellationToken ct = default)

@@ -13,7 +13,7 @@ All jobs use one **Standard Job Card** and its six checklist items. Clients do n
 - Customer, site, user, and technician management services, soft deletion, and audit records.
 - Flagged jobs and persisted corrective actions with manager resolution and audit records.
 - Azure SQL EF Core provider, seed data, migrations, and an idempotent SQL deployment script.
-- Private Azure Blob Storage adapter. The technician upload and sync HTTP routes belong to Person 4 and are not in this collection yet.
+- Private Azure Blob Storage adapter, technician job routes, scoped evidence and signature uploads, and offline mobile sync. See [the mobile API guide](docs/mobile-api-testing.md) and its separate Postman collection.
 - `/api/v1` manager endpoints, dashboard aggregates, monthly reports, optional Gemini commentary, CSV/PDF exports, Swagger, and a Postman collection.
 
 ## Open the solution
@@ -156,7 +156,7 @@ The job steps require the Standard Job Card template. Confirm **Standard job car
 | 6 | **Edit draft job** | **200**; verify the `priority` and `notes` in **Get job**. This only works while status is `Draft`. |
 | 7 | **Assign technician** | **200** after a job and technician exist. Use **Create technician and account** and copy its `id` to `technicianId`. Once assigned, the draft edit request correctly returns **409 Conflict**. Assigning now also sends the technician an email notification (Person 3) if SMTP is configured — see below. |
 
-The collection's **Approve submitted job** request cannot approve a newly assigned job. A technician must accept it, start it, complete its checklist, add evidence and both signatures, then submit it for review. Those technician HTTP routes are not yet in the Person 1 collection. Wait for Person 4's technician routes to create an approval-ready job through the real workflow.
+The collection's **Approve submitted job** request cannot approve a newly assigned job. A technician must accept it, start it, complete its checklist, add evidence and both signatures, then submit it for review. Use the technician routes and the separate mobile Postman collection described in [the mobile API guide](docs/mobile-api-testing.md) to complete that workflow. The Person 1 collection still covers manager requests.
 
 Next, use that completed job to send **Reopen job**. Expect **200** and status `Reopened`. To test **Cancel active job**, first set `jobId` to a *different* job in `Draft`, `Assigned`, `Accepted`, `InProgress`, `AwaitingApproval`, or `Reopened`; expect **200** and `Cancelled`. Cancelling a `Completed` or already `Cancelled` job correctly returns **409**. These requests change shared Azure data, so choose disposable records when possible.
 

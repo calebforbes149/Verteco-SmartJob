@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using VertecoSmartJob.Api.Mapping;
 using VertecoSmartJob.Application.Files;
 using VertecoSmartJob.Application.Jobs;
@@ -15,7 +16,8 @@ namespace VertecoSmartJob.Api.Controllers.Mobile;
 [Route("api/v1/mobile/jobs")]
 public class MobileJobsController(
     JobCardService jobCardService,
-    IFieldFileStore fileStore) : ControllerBase
+    IFieldFileStore fileStore,
+    MobileUploadTokenService uploadTokens) : ControllerBase
 {
     private Guid ActorTechnicianId =>
         Guid.TryParse(User.FindFirstValue("TechnicianId"), out var id)
@@ -167,36 +169,26 @@ public class MobileJobsController(
 
     // Creates a temporary upload link for the mobile app
     [HttpPost("{id:guid}/evidence/upload-instructions")]
+    [EnableRateLimiting("evidence")]
     public async Task<ActionResult<MobileEvidenceUploadResponse>>
         CreateEvidenceUpload(
             Guid id,
             [FromBody] MobileEvidenceUploadRequest request,
             CancellationToken ct)
     {
-        if (!await CanAccessJob(id, ct))
-            return Forbid();
-
-        // Evidence can only be added while the job is in progress
-        await jobCardService.EnsureFieldEditAllowedAsync(
-            id,
-            ActorTechnicianId,
-            ct);
-
-        var instruction =
-            await fileStore.CreateUploadInstructionAsync(
-                request.Extension,
-                ct);
-
-        return Ok(new MobileEvidenceUploadResponse
-        {
-            UploadToken = instruction.UploadToken,
-            UploadUrl = instruction.UploadUrl,
-            ExpiresAtUtc = instruction.ExpiresAtUtc
-        });
+        return await CreateUploadAsync(id, request, MobileUploadKind.Evidence, ct);
     }
+
+    [HttpPost("{id:guid}/signatures/upload-instructions")]
+    [EnableRateLimiting("evidence")]
+    public async Task<ActionResult<MobileEvidenceUploadResponse>>
+        CreateSignatureUpload(Guid id, [FromBody] MobileEvidenceUploadRequest request,
+            CancellationToken ct) =>
+        await CreateUploadAsync(id, request, MobileUploadKind.Signature, ct);
 
     // Confirms the uploaded file and adds it to the job
     [HttpPost("{id:guid}/evidence/confirm")]
+    [EnableRateLimiting("evidence")]
     public async Task<ActionResult<JobCardDetailDto>> ConfirmEvidence(
         Guid id,
         [FromBody] MobileEvidenceConfirmRequest request,
@@ -210,27 +202,20 @@ public class MobileJobsController(
             ActorTechnicianId,
             ct);
 
+        if (!uploadTokens.TryRead(request.UploadToken, id, ActorTechnicianId,
+                MobileUploadKind.Evidence, out var blobName))
+            return BadRequest(new ProblemDetails { Title = "Invalid or expired evidence upload token", Status = 400 });
+
         // Checks the file size, type and checksum before using it
         var reference = await fileStore.ConfirmUploadAsync(
-            request.UploadToken,
+            blobName,
             request.Sha256,
             ct);
 
-        try
-        {
-            await jobCardService.AddEvidenceAsync(
-                id,
-                ActorTechnicianId,
-                reference,
-                request.Caption,
-                ct);
-        }
-        catch
-        {
-            // Removes the uploaded file if the evidence record cannot be saved
-            await fileStore.DeleteAsync(reference, ct);
-            throw;
-        }
+        var job = await jobCardService.GetByIdAsync(id, ct);
+        if (job!.Evidence.All(item => item.Reference != reference))
+            await jobCardService.AddEvidenceAsync(id, ActorTechnicianId,
+                reference, request.Caption, ct);
 
         return Ok(
             (await jobCardService.GetByIdAsync(id, ct))!.ToDetailDto());
@@ -238,6 +223,7 @@ public class MobileJobsController(
 
     // Confirms an uploaded signature and adds it to the job
     [HttpPost("{id:guid}/signatures/confirm")]
+    [EnableRateLimiting("evidence")]
     public async Task<ActionResult<JobCardDetailDto>> ConfirmSignature(
         Guid id,
         [FromBody] MobileSignatureConfirmRequest request,
@@ -251,28 +237,20 @@ public class MobileJobsController(
             ActorTechnicianId,
             ct);
 
+        if (!uploadTokens.TryRead(request.UploadToken, id, ActorTechnicianId,
+                MobileUploadKind.Signature, out var blobName))
+            return BadRequest(new ProblemDetails { Title = "Invalid or expired signature upload token", Status = 400 });
+
         // Checks the signature file before adding it to the job
         var reference = await fileStore.ConfirmUploadAsync(
-            request.UploadToken,
+            blobName,
             request.Sha256,
             ct);
 
-        try
-        {
-            await jobCardService.AddSignatureAsync(
-                id,
-                ActorTechnicianId,
-                request.SignerName,
-                request.Type,
-                reference,
-                ct);
-        }
-        catch
-        {
-            // Removes the file if the signature cannot be saved
-            await fileStore.DeleteAsync(reference, ct);
-            throw;
-        }
+        var job = await jobCardService.GetByIdAsync(id, ct);
+        if (job!.Signatures.All(item => item.Reference != reference))
+            await jobCardService.AddSignatureAsync(id, ActorTechnicianId,
+                request.SignerName, request.Type, reference, ct);
 
         return Ok(
             (await jobCardService.GetByIdAsync(id, ct))!.ToDetailDto());
@@ -308,5 +286,23 @@ public class MobileJobsController(
 
         return job is not null &&
                job.TechnicianId == ActorTechnicianId;
+    }
+
+    private async Task<ActionResult<MobileEvidenceUploadResponse>> CreateUploadAsync(
+        Guid id, MobileEvidenceUploadRequest request, MobileUploadKind kind,
+        CancellationToken ct)
+    {
+        if (!await CanAccessJob(id, ct))
+            return Forbid();
+
+        await jobCardService.EnsureFieldEditAllowedAsync(id, ActorTechnicianId, ct);
+        var instruction = await fileStore.CreateUploadInstructionAsync(request.Extension, ct);
+        return Ok(new MobileEvidenceUploadResponse
+        {
+            UploadToken = uploadTokens.Issue(instruction.UploadToken, id,
+                ActorTechnicianId, kind, instruction.ExpiresAtUtc),
+            UploadUrl = instruction.UploadUrl,
+            ExpiresAtUtc = instruction.ExpiresAtUtc
+        });
     }
 }

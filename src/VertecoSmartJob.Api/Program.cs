@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.OpenApi;
 using VertecoSmartJob.Application.Abstractions;
+using VertecoSmartJob.Api.Controllers.Mobile;
 
 var builder = WebApplication.CreateBuilder(args);
 if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing"))
@@ -34,6 +35,7 @@ builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment.IsEnvironment("Testing"));
+builder.Services.AddSingleton<MobileUploadTokenService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
 builder.Services.AddAuthentication(options =>
@@ -133,6 +135,12 @@ builder.Services.AddRateLimiter(options =>
     options.AddFixedWindowLimiter("auth", o =>
     {
         o.Window = TimeSpan.FromMinutes(5);
+        o.PermitLimit = 10;
+        o.QueueLimit = 0;
+    });
+    options.AddFixedWindowLimiter("evidence", o =>
+    {
+        o.Window = TimeSpan.FromMinutes(1);
         o.PermitLimit = 10;
         o.QueueLimit = 0;
     });

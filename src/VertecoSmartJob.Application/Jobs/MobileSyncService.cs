@@ -1,6 +1,8 @@
 ﻿using System.Text.Json;
 using VertecoSmartJob.Application.Abstractions;
 using VertecoSmartJob.Domain.Entities;
+using VertecoSmartJob.Domain.Enums;
+using VertecoSmartJob.Domain.Exceptions;
 
 namespace VertecoSmartJob.Application.Jobs;
 
@@ -9,12 +11,14 @@ public class MobileSyncService(
     IJobCardRepository jobCards,
     IMobileSyncRepository syncRepository,
     IAuditLogRepository audit,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    JobCardService jobCardService)
 {
     // Returns jobs changed since the mobile app's last successful pull
     public async Task<MobileSyncPullResult> PullAsync(
         Guid technicianId,
         DateTime? sinceUtc,
+        IReadOnlyCollection<Guid>? knownJobIds = null,
         CancellationToken ct = default)
     {
         // Capture the sync boundary before reading changes
@@ -26,9 +30,13 @@ public class MobileSyncService(
             serverTimeUtc,
             ct);
 
+        var removedJobIds = await syncRepository.GetRemovedJobIdsAsync(
+            technicianId, knownJobIds ?? [], ct);
+
         return new MobileSyncPullResult
         {
             ServerTimeUtc = serverTimeUtc,
+            RemovedJobIds = removedJobIds,
 
             Jobs = jobs.Select(job => new MobileSyncJob
             {
@@ -61,12 +69,14 @@ public class MobileSyncService(
         CancellationToken ct = default)
     {
         var response = new MobileSyncPushResult();
+        var jobsAdvancedInBatch = new HashSet<Guid>();
 
         foreach (var operation in operations)
         {
             var result = await ProcessOperationAsync(
                 technicianId,
                 operation,
+                jobsAdvancedInBatch,
                 ct);
 
             response.Results.Add(result);
@@ -78,6 +88,7 @@ public class MobileSyncService(
     private async Task<MobileSyncOperationOutput> ProcessOperationAsync(
         Guid technicianId,
         MobileSyncOperationInput request,
+        HashSet<Guid> jobsAdvancedInBatch,
         CancellationToken ct)
     {
         if (request.OperationId == Guid.Empty)
@@ -97,6 +108,10 @@ public class MobileSyncService(
                 null,
                 "JobCardId is required.");
         }
+
+        if (string.IsNullOrWhiteSpace(request.OperationType))
+            return CreateResult(request, "Rejected", null,
+                "OperationType is required.");
 
         // Returns the old result if the phone retries the same operation
         var previousOperation =
@@ -178,7 +193,18 @@ public class MobileSyncService(
                     job,
                     request,
                     jobChanged,
+                    jobsAdvancedInBatch,
                     ct);
+
+            case "accept":
+            case "start":
+            case "submit":
+                return await ApplyLifecycleOperationAsync(technicianId, job,
+                    request, jobChanged, jobsAdvancedInBatch, ct);
+
+            case "captureequipment":
+                return await ApplyEquipmentOperationAsync(technicianId, job,
+                    request, jobChanged, ct);
 
             default:
                 if (jobChanged)
@@ -206,12 +232,96 @@ public class MobileSyncService(
         }
     }
 
+    private async Task<MobileSyncOperationOutput> ApplyLifecycleOperationAsync(
+        Guid technicianId, JobCard job, MobileSyncOperationInput request,
+        bool jobChanged, HashSet<Guid> jobsAdvancedInBatch,
+        CancellationToken ct)
+    {
+        var type = request.OperationType.Trim().ToLowerInvariant();
+        var alreadyApplied = type switch
+        {
+            "accept" => job.Status == JobStatus.Accepted,
+            "start" => job.Status == JobStatus.InProgress,
+            "submit" => job.Status == JobStatus.AwaitingApproval,
+            _ => false
+        };
+
+        if (alreadyApplied)
+            return await SaveResultAsync(technicianId, request,
+                CreateResult(request, "Applied", GetRowVersion(job),
+                    "The job already has the requested status."), ct);
+
+        if (jobChanged && !jobsAdvancedInBatch.Contains(job.Id))
+            return await SaveResultAsync(technicianId, request,
+                CreateResult(request, "Conflict", GetRowVersion(job),
+                    "The job status changed while the device was offline. Review it before retrying."), ct);
+
+        try
+        {
+            switch (type)
+            {
+                case "accept":
+                    await jobCardService.AcceptAsync(job.Id, technicianId, ct);
+                    break;
+                case "start":
+                    await jobCardService.StartAsync(job.Id, technicianId, ct);
+                    break;
+                case "submit":
+                    await jobCardService.SubmitForReviewAsync(job.Id, technicianId, ct);
+                    break;
+            }
+        }
+        catch (DomainException ex)
+        {
+            return await SaveResultAsync(technicianId, request,
+                CreateResult(request, "Rejected", GetRowVersion(job), ex.Message), ct);
+        }
+
+        jobsAdvancedInBatch.Add(job.Id);
+        return await SaveResultAsync(technicianId, request,
+            CreateResult(request, "Applied", GetRowVersion(job),
+                "Job status synced."), ct);
+    }
+
+    private async Task<MobileSyncOperationOutput> ApplyEquipmentOperationAsync(
+        Guid technicianId, JobCard job, MobileSyncOperationInput request,
+        bool jobChanged, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(request.EquipmentName) ||
+            string.IsNullOrWhiteSpace(request.SerialNumber))
+            return await SaveResultAsync(technicianId, request,
+                CreateResult(request, "Rejected", GetRowVersion(job),
+                    "EquipmentName and SerialNumber are required."), ct);
+
+        if (job.Status != JobStatus.InProgress)
+            return await SaveResultAsync(technicianId, request,
+                CreateResult(request, jobChanged ? "Conflict" : "Rejected",
+                    GetRowVersion(job), "Equipment can only be captured while the job is in progress."), ct);
+
+        try
+        {
+            var equipment = await jobCardService.CaptureEquipmentAsync(
+                job.Id, technicianId, request.EquipmentName,
+                request.SerialNumber, request.EquipmentDescription, ct);
+            return await SaveResultAsync(technicianId, request,
+                CreateResult(request, "Applied", GetRowVersion(job),
+                    jobChanged ? "Equipment merged with newer job changes." : "Equipment synced.",
+                    equipment.Id), ct);
+        }
+        catch (Exception ex) when (ex is DomainException or ArgumentException)
+        {
+            return await SaveResultAsync(technicianId, request,
+                CreateResult(request, "Rejected", GetRowVersion(job), ex.Message), ct);
+        }
+    }
+
     private async Task<MobileSyncOperationOutput>
         ApplyChecklistOperationAsync(
             Guid technicianId,
             JobCard job,
             MobileSyncOperationInput request,
             bool jobChanged,
+            HashSet<Guid> jobsAdvancedInBatch,
             CancellationToken ct)
     {
         if (request.ChecklistItemId is null ||
@@ -307,21 +417,9 @@ public class MobileSyncService(
                 ct);
         }
 
-        // A stale job is safe when this specific item did not change
-        if (jobChanged && !checklistItemChanged)
-        {
-            job.SetChecklistItem(
-                request.ChecklistItemId.Value,
-                request.IsDone.Value,
-                technicianId);
-        }
-        else
-        {
-            job.SetChecklistItem(
-                request.ChecklistItemId.Value,
-                request.IsDone.Value,
-                technicianId);
-        }
+        // A stale parent job is safe when this specific item did not change.
+        job.SetChecklistItem(request.ChecklistItemId.Value,
+            request.IsDone.Value, technicianId);
 
         // Marks the parent job as changed for mobile conflict detection
         job.RowVersion = Guid.NewGuid().ToByteArray();
@@ -337,7 +435,7 @@ public class MobileSyncService(
             TechnicianId = technicianId,
             JobCardId = job.Id,
             OperationId = request.OperationId,
-            OperationType = request.OperationType.Trim(),
+            OperationType = request.OperationType?.Trim() ?? string.Empty,
             Result = JsonSerializer.Serialize(temporaryResult),
             ProcessedAtUtc = DateTime.UtcNow
         };
@@ -358,6 +456,7 @@ public class MobileSyncService(
             ct);
 
         await unitOfWork.SaveChangesAsync(ct);
+        jobsAdvancedInBatch.Add(job.Id);
 
         // Save the final RowVersion so retries return the same result
         var finalResult = CreateResult(
@@ -390,7 +489,7 @@ public class MobileSyncService(
             TechnicianId = technicianId,
             JobCardId = request.JobCardId,
             OperationId = request.OperationId,
-            OperationType = request.OperationType.Trim(),
+            OperationType = request.OperationType?.Trim() ?? string.Empty,
             Result = JsonSerializer.Serialize(result),
             ProcessedAtUtc = DateTime.UtcNow
         };
@@ -408,7 +507,8 @@ public class MobileSyncService(
         MobileSyncOperationInput request,
         string status,
         string? rowVersion,
-        string? message)
+        string? message,
+        Guid? equipmentId = null)
     {
         return new MobileSyncOperationOutput
         {
@@ -416,7 +516,8 @@ public class MobileSyncService(
             JobCardId = request.JobCardId,
             Status = status,
             RowVersion = rowVersion,
-            Message = message
+            Message = message,
+            EquipmentId = equipmentId
         };
     }
 

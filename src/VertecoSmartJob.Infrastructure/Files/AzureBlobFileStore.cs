@@ -41,6 +41,11 @@ public sealed class AzureBlobFileStore(
                 "File size must be between 1 byte and 10 MB.",
                 nameof(content));
 
+        if (!MatchesFileSignature(buffer.ToArray(), extension))
+            throw new ArgumentException(
+                "The file contents do not match its extension.",
+                nameof(content));
+
         var hash = Convert.ToHexString(
             SHA256.HashData(buffer.ToArray()));
 
@@ -214,9 +219,18 @@ public sealed class AzureBlobFileStore(
 
         await using var content = await blob.OpenReadAsync(
             cancellationToken: ct);
+        await using var buffer = new MemoryStream();
+        await content.CopyToAsync(buffer, ct);
+        if (buffer.Length is <= 0 or > MaxFileSize)
+            throw new InvalidOperationException(
+                "File size must be between 1 byte and 10 MB.");
 
-        var actualHash = Convert.ToHexString(
-            await SHA256.HashDataAsync(content, ct));
+        var bytes = buffer.ToArray();
+        if (!MatchesFileSignature(bytes, extension))
+            throw new InvalidOperationException(
+                "The uploaded file contents do not match its extension.");
+
+        var actualHash = Convert.ToHexString(SHA256.HashData(bytes));
 
         var suppliedHash = expectedSha256
             .Trim()
@@ -246,6 +260,15 @@ public sealed class AzureBlobFileStore(
 
         return extension.ToLowerInvariant();
     }
+
+    private static bool MatchesFileSignature(ReadOnlySpan<byte> content, string extension) =>
+        extension switch
+        {
+            ".jpg" => content.StartsWith(new byte[] { 0xFF, 0xD8, 0xFF }),
+            ".png" => content.StartsWith(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }),
+            ".pdf" => content.StartsWith("%PDF-"u8),
+            _ => false
+        };
 
     private static byte[] ParseHash(string hash)
     {

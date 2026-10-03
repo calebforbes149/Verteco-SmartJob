@@ -11,6 +11,9 @@ public interface IMobileSyncRepository
         DateTime serverTimeUtc,
         CancellationToken ct = default);
 
+    Task<List<Guid>> GetRemovedJobIdsAsync(Guid technicianId,
+        IReadOnlyCollection<Guid> knownJobIds, CancellationToken ct = default);
+
     Task<MobileSyncOperation?> GetOperationAsync(
         Guid technicianId,
         Guid operationId,

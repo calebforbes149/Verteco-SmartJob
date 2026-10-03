@@ -1,10 +1,12 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using VertecoSmartJob.Application.Abstractions;
 using VertecoSmartJob.Application.Jobs;
 using VertecoSmartJob.Domain.Enums;
 using VertecoSmartJob.Infrastructure.Persistence;
 using VertecoSmartJob.Infrastructure.Persistence.Repositories;
 using VertecoSmartJob.Infrastructure.Persistence.Seed;
+using VertecoSmartJob.Tests.Integration;
 
 namespace VertecoSmartJob.Tests.Application;
 
@@ -421,12 +423,128 @@ public class MobileSyncServiceTests
                      x.Action == "MobileChecklistSynced"));
     }
 
+    [Fact]
+    public async Task Push_AcceptThenStartInOneOfflineBatch_AppliesInOrder()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection).Options;
+        await using var db = new AppDbContext(options);
+        await db.Database.EnsureCreatedAsync();
+        await DbSeeder.SeedAsync(db);
+
+        var job = await db.JobCards.FirstAsync(j => j.Status == JobStatus.Assigned);
+        var technicianId = job.TechnicianId!.Value;
+        var originalVersion = Convert.ToBase64String(job.RowVersion);
+        var acceptId = Guid.NewGuid();
+        var startId = Guid.NewGuid();
+        var service = CreateService(db);
+        var operations = new[]
+        {
+            new MobileSyncOperationInput
+            {
+                OperationId = acceptId, JobCardId = job.Id,
+                OperationType = "Accept", RowVersion = originalVersion
+            },
+            new MobileSyncOperationInput
+            {
+                OperationId = startId, JobCardId = job.Id,
+                OperationType = "Start", RowVersion = originalVersion
+            }
+        };
+
+        var result = await service.PushAsync(technicianId, operations);
+        Assert.All(result.Results, item => Assert.Equal("Applied", item.Status));
+        Assert.Equal(JobStatus.InProgress, job.Status);
+        Assert.Equal(2, await db.MobileSyncOperations.CountAsync(
+            entry => entry.JobCardId == job.Id &&
+                     (entry.OperationId == acceptId || entry.OperationId == startId)));
+
+        var retried = await service.PushAsync(technicianId, operations);
+        Assert.All(retried.Results, item => Assert.Equal("Applied", item.Status));
+        Assert.Equal(2, await db.MobileSyncOperations.CountAsync(
+            entry => entry.OperationId == acceptId || entry.OperationId == startId));
+    }
+
+    [Fact]
+    public async Task Push_CaptureEquipment_AddsItToAssignedJobSite()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection).Options;
+        await using var db = new AppDbContext(options);
+        await db.Database.EnsureCreatedAsync();
+        await DbSeeder.SeedAsync(db);
+
+        var job = await db.JobCards.FirstAsync(j => j.Status == JobStatus.InProgress);
+        var result = await CreateService(db).PushAsync(job.TechnicianId!.Value,
+            [new MobileSyncOperationInput
+            {
+                OperationId = Guid.NewGuid(), JobCardId = job.Id,
+                OperationType = "CaptureEquipment",
+                RowVersion = Convert.ToBase64String(job.RowVersion),
+                EquipmentName = "Field inverter",
+                SerialNumber = "OFFLINE-INV-001"
+            }]);
+
+        var applied = Assert.Single(result.Results);
+        Assert.Equal("Applied", applied.Status);
+        Assert.NotNull(applied.EquipmentId);
+        Assert.Equal(job.SiteId, (await db.Equipment.SingleAsync(
+            equipment => equipment.SerialNumber == "OFFLINE-INV-001")).SiteId);
+    }
+
+    [Fact]
+    public async Task Pull_ReportsPreviouslyKnownJobAfterReassignment()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection).Options;
+        await using var db = new AppDbContext(options);
+        await db.Database.EnsureCreatedAsync();
+        await DbSeeder.SeedAsync(db);
+
+        var job = await db.JobCards.FirstAsync(j => j.TechnicianId != null);
+        var originalTechnicianId = job.TechnicianId!.Value;
+        var otherTechnicianId = await db.Technicians
+            .Where(t => t.Id != originalTechnicianId)
+            .Select(t => t.Id).FirstAsync();
+        var service = CreateService(db);
+
+        var firstPull = await service.PullAsync(originalTechnicianId, null,
+            [job.Id]);
+        Assert.Contains(firstPull.Jobs, item => item.Id == job.Id);
+        Assert.DoesNotContain(job.Id, firstPull.RemovedJobIds);
+
+        db.Entry(job).Property(j => j.TechnicianId).CurrentValue = otherTechnicianId;
+        await db.SaveChangesAsync();
+
+        var nextPull = await service.PullAsync(originalTechnicianId,
+            firstPull.ServerTimeUtc, [job.Id]);
+        Assert.Contains(job.Id, nextPull.RemovedJobIds);
+        Assert.DoesNotContain(nextPull.Jobs, item => item.Id == job.Id);
+    }
+
     private static MobileSyncService CreateService(AppDbContext db)
     {
+        var jobService = new JobCardService(
+            new JobCardRepository(db), new TechnicianRepository(db),
+            new JobTemplateRepository(db), new CustomerRepository(db),
+            new SiteRepository(db), new AuditLogRepository(db),
+            new NoOpNotificationService(),
+            new ISubmissionValidationStrategy[]
+            {
+                new RequiredFieldsStrategy(), new EvidencePresenceStrategy(),
+                new SignaturePresenceStrategy()
+            }, db);
         return new MobileSyncService(
             new JobCardRepository(db),
             new MobileSyncRepository(db),
             new AuditLogRepository(db),
-            db);
+            db,
+            jobService);
     }
 }

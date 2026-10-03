@@ -22,19 +22,25 @@ public class MobileSyncController(
     [HttpGet("pull")]
     public async Task<ActionResult<MobileSyncPullResponse>> Pull(
         [FromQuery] DateTime? since,
+        [FromQuery] List<Guid>? knownJobIds,
         CancellationToken ct)
     {
         if (ActorTechnicianId == Guid.Empty)
             return Forbid();
 
+        if (knownJobIds is { Count: > 500 })
+            return BadRequest(new ProblemDetails { Title = "At most 500 known job IDs are allowed", Status = 400 });
+
         var result = await syncService.PullAsync(
             ActorTechnicianId,
             since,
+            knownJobIds,
             ct);
 
         return Ok(new MobileSyncPullResponse
         {
             ServerTimeUtc = result.ServerTimeUtc,
+            RemovedJobIds = result.RemovedJobIds,
 
             Jobs = result.Jobs.Select(job =>
                 new MobileSyncJobDto
@@ -70,6 +76,10 @@ public class MobileSyncController(
         if (ActorTechnicianId == Guid.Empty)
             return Forbid();
 
+        if (request.Operations is null || request.Operations.Count > 100 ||
+            request.Operations.Any(operation => operation is null))
+            return BadRequest(new ProblemDetails { Title = "Provide at most 100 valid operations per push", Status = 400 });
+
         var operations = request.Operations
             .Select(operation =>
                 new MobileSyncOperationInput
@@ -81,7 +91,10 @@ public class MobileSyncController(
                     ChecklistItemId = operation.ChecklistItemId,
                     ChecklistItemRowVersion =
                         operation.ChecklistItemRowVersion,
-                    IsDone = operation.IsDone
+                    IsDone = operation.IsDone,
+                    EquipmentName = operation.EquipmentName,
+                    SerialNumber = operation.SerialNumber,
+                    EquipmentDescription = operation.EquipmentDescription
                 })
             .ToList();
 
@@ -100,7 +113,8 @@ public class MobileSyncController(
                         JobCardId = operation.JobCardId,
                         Status = operation.Status,
                         RowVersion = operation.RowVersion,
-                        Message = operation.Message
+                        Message = operation.Message,
+                        EquipmentId = operation.EquipmentId
                     })
                 .ToList()
         });

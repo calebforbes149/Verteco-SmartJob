@@ -26,6 +26,7 @@ public sealed class MobileSyncPullResponse
 {
     public DateTime ServerTimeUtc { get; init; }
     public List<MobileSyncJobDto> Jobs { get; init; } = [];
+    public List<Guid> RemovedJobIds { get; init; } = [];
 }
 
 // Operations waiting in the mobile offline queue
@@ -44,6 +45,9 @@ public sealed class MobileSyncOperationRequest
     public Guid? ChecklistItemId { get; init; }
     public string? ChecklistItemRowVersion { get; init; }
     public bool? IsDone { get; init; }
+    public string? EquipmentName { get; init; }
+    public string? SerialNumber { get; init; }
+    public string? EquipmentDescription { get; init; }
 }
 
 // Results returned after processing the offline queue
@@ -60,4 +64,6 @@ public sealed class MobileSyncOperationResult
     public string Status { get; init; } = string.Empty;
     public string? RowVersion { get; init; }
     public string? Message { get; init; }
+    public Guid? EquipmentId { get; init; }
+    public bool RequiresReview => Status == "Conflict";
 }
