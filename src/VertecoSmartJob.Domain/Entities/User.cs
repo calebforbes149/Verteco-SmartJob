@@ -13,8 +13,32 @@ public class User : SoftDeletableEntity
     public Technician? Technician { get; set; }
     public bool IsSuspended { get; private set; }
 
+    public string? PasswordHash { get; private set; }
+    public bool IsEmailConfirmed { get; private set; }
+    public int FailedLoginAttempts { get; private set; }
+    public DateTime? LockedOutUntilUtc { get; private set; }
+
     public void Suspend() => IsSuspended = true;
     public void Reactivate() => IsSuspended = false;
+
+    public void SetPasswordHash(string hash) => PasswordHash = hash;
+
+    public void ConfirmEmail() => IsEmailConfirmed = true;
+
+    public void RegisterFailedLogin(int maxAttempts, TimeSpan lockoutDuration)
+    {
+        FailedLoginAttempts++;
+        if (FailedLoginAttempts >= maxAttempts)
+            LockedOutUntilUtc = DateTime.UtcNow.Add(lockoutDuration);
+    }
+
+    public void ResetFailedLogins()
+    {
+        FailedLoginAttempts = 0;
+        LockedOutUntilUtc = null;
+    }
+
+    public bool IsCurrentlyLockedOut() => LockedOutUntilUtc is { } until && until > DateTime.UtcNow;
 }
 
 public class AuditLog : Entity

@@ -32,6 +32,7 @@ public class JobCardPersistenceTests
         var service = new JobCardService(repo, new TechnicianRepository(db),
             new JobTemplateRepository(db), new CustomerRepository(db), new SiteRepository(db),
             new AuditLogRepository(db),
+            new NoOpNotificationService(),
             new ISubmissionValidationStrategy[]
             {
                 new RequiredFieldsStrategy(), new EvidencePresenceStrategy(), new SignaturePresenceStrategy()

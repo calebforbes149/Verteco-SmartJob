@@ -36,8 +36,43 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment.IsEnvironment("Testing"));
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
-builder.Services.AddAuthentication(ApiKeyAuthenticationHandler.SchemeName)
-    .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(ApiKeyAuthenticationHandler.SchemeName, _ => { });
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = "SmartJobScheme";
+    options.DefaultChallengeScheme = "SmartJobScheme";
+})
+.AddPolicyScheme("SmartJobScheme", "API Key or Bearer", options =>
+{
+    options.ForwardDefaultSelector = context =>
+        context.Request.Headers.ContainsKey("Authorization")
+            ? Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme
+            : ApiKeyAuthenticationHandler.SchemeName;
+})
+.AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(ApiKeyAuthenticationHandler.SchemeName, _ => { })
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidateAudience = true,
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+            System.Text.Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SigningKey"]!))
+    };
+    options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+            var logger = context.HttpContext.RequestServices
+                .GetRequiredService<ILoggerFactory>().CreateLogger("JwtBearer");
+            logger.LogWarning(context.Exception, "JWT authentication failed: {Message}", context.Exception.Message);
+            return Task.CompletedTask;
+        }
+    };
+});
 builder.Services.AddAuthorization();
 
 builder.Services.AddEndpointsApiExplorer();
@@ -72,10 +107,24 @@ builder.Services.AddRateLimiter(options =>
         o.PermitLimit = 20;
         o.QueueLimit = 0;
     });
+    options.AddFixedWindowLimiter("auth", o =>
+    {
+        o.Window = TimeSpan.FromMinutes(5);
+        o.PermitLimit = 10;
+        o.QueueLimit = 0;
+    });
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
 
 var app = builder.Build();
+
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+    context.Response.Headers.Append("X-Frame-Options", "DENY");
+    context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+    await next();
+});
 
 app.UseExceptionHandler();
 
