@@ -4,7 +4,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:Class="SmartJobMobile.Views.ChecklistPage"
-    BackgroundColor="#121212"
+    BackgroundColor="#0A0C0F"
     Shell.NavBarIsVisible="False">
 
     <Grid RowDefinitions="Auto,*">
@@ -13,42 +13,94 @@
         <!-- HEADER -->
         <!-- ================================================= -->
 
-        <Grid
+        <VerticalStackLayout
             Grid.Row="0"
-            Padding="20,18"
-            ColumnDefinitions="Auto,*"
-            BackgroundColor="#181818">
+            Padding="24,22,24,0"
+            Spacing="0">
 
-            <Button
-                Grid.Column="0"
-                Text="‹"
-                FontSize="30"
-                TextColor="White"
-                BackgroundColor="Transparent"
-                Padding="0"
-                WidthRequest="45"
-                Clicked="BackButton_Clicked"
-                SemanticProperties.Description="Go back" />
+            <Grid
+                ColumnDefinitions="Auto,*"
+                ColumnSpacing="14">
 
-            <VerticalStackLayout
-                Grid.Column="1"
-                Spacing="2"
-                VerticalOptions="Center">
+                <!-- BACK BUTTON -->
+                <Border
+                    Grid.Column="0"
+                    BackgroundColor="#111419"
+                    Stroke="#272B31"
+                    StrokeThickness="1"
+                    WidthRequest="48"
+                    HeightRequest="48"
+                    Padding="0"
+                    VerticalOptions="Center">
 
-                <Label
-                    Text="JOB CHECKLIST"
-                    TextColor="#E53935"
-                    FontSize="20"
-                    FontAttributes="Bold" />
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8" />
+                    </Border.StrokeShape>
 
-                <Label
-                    Text="Tick each item once the check is complete"
-                    TextColor="#9E9E9E"
-                    FontSize="12" />
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer
+                            Tapped="BackButton_Clicked" />
+                    </Border.GestureRecognizers>
 
-            </VerticalStackLayout>
+                    <Label
+                        Text="‹"
+                        TextColor="#B8BCC2"
+                        FontSize="30"
+                        HorizontalTextAlignment="Center"
+                        VerticalTextAlignment="Center"
+                        Margin="0,-3,0,0"
+                        SemanticProperties.Description="Go back" />
 
-        </Grid>
+                </Border>
+
+
+                <!-- BRAND -->
+                <VerticalStackLayout
+                    Grid.Column="1"
+                    Spacing="2"
+                    VerticalOptions="Center">
+
+                    <Label
+                        Text="VERTECO"
+                        TextColor="#F2F2F2"
+                        FontSize="9"
+                        FontAttributes="Bold"
+                        CharacterSpacing="2.2" />
+
+                    <HorizontalStackLayout Spacing="4">
+
+                        <Label
+                            Text="SMART"
+                            TextColor="#FFFFFF"
+                            FontSize="20"
+                            FontAttributes="Bold" />
+
+                        <Label
+                            Text="JOB"
+                            TextColor="#ED3B3B"
+                            FontSize="20"
+                            FontAttributes="Bold" />
+
+                    </HorizontalStackLayout>
+
+                    <Label
+                        Text="TECHNICIAN CONSOLE"
+                        TextColor="#686E76"
+                        FontSize="7"
+                        FontAttributes="Bold"
+                        CharacterSpacing="1.6" />
+
+                </VerticalStackLayout>
+
+            </Grid>
+
+
+            <BoxView
+                HeightRequest="1"
+                Color="#24282E"
+                Margin="0,20,0,0" />
+
+        </VerticalStackLayout>
 
 
         <!-- ================================================= -->
@@ -58,132 +110,224 @@
         <ScrollView Grid.Row="1">
 
             <VerticalStackLayout
-                Padding="20"
-                Spacing="18">
+                Padding="24,26,24,32"
+                Spacing="0">
 
 
-                <!-- ========================================= -->
-                <!-- REAL JOB INFORMATION -->
-                <!-- ========================================= -->
+                <!-- PAGE INTRO -->
+                <VerticalStackLayout Spacing="5">
+
+                    <Label
+                        Text="FIELD WORKFLOW"
+                        TextColor="#ED3B3B"
+                        FontSize="9"
+                        FontAttributes="Bold"
+                        CharacterSpacing="2" />
+
+                    <Label
+                        Text="Job Checklist"
+                        TextColor="#FFFFFF"
+                        FontSize="30"
+                        FontAttributes="Bold"
+                        SemanticProperties.HeadingLevel="Level1" />
+
+                    <Label
+                        Text="Complete each required check before continuing."
+                        TextColor="#7C828A"
+                        FontSize="12" />
+
+                </VerticalStackLayout>
+
+
+                <!-- ================================================= -->
+                <!-- CURRENT JOB -->
+                <!-- ================================================= -->
 
                 <Border
-                    BackgroundColor="#1E1E1E"
-                    Stroke="#383838"
+                    BackgroundColor="#111419"
+                    Stroke="#292D33"
                     StrokeThickness="1"
-                    Padding="18">
+                    Padding="0"
+                    Margin="0,24,0,0">
 
                     <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="12" />
+                        <RoundRectangle CornerRadius="8" />
                     </Border.StrokeShape>
 
-                    <VerticalStackLayout Spacing="6">
+                    <VerticalStackLayout Spacing="0">
 
-                        <Label
-                            Text="{Binding JobNumber}"
-                            TextColor="#E53935"
-                            FontSize="13"
-                            FontAttributes="Bold" />
+                        <BoxView
+                            HeightRequest="2"
+                            Color="#ED3B3B" />
 
-                        <Label
-                            Text="{Binding JobTitle}"
-                            TextColor="White"
-                            FontSize="20"
-                            FontAttributes="Bold" />
+                        <VerticalStackLayout
+                            Padding="18"
+                            Spacing="0">
 
-                        <Label
-                            Text="{Binding JobLocation}"
-                            TextColor="#BDBDBD"
-                            FontSize="13" />
+                            <Label
+                                Text="CURRENT JOB"
+                                TextColor="#646A72"
+                                FontSize="8"
+                                FontAttributes="Bold"
+                                CharacterSpacing="1.4" />
+
+                            <Label
+                                Text="{Binding JobNumber}"
+                                TextColor="#ED3B3B"
+                                FontSize="12"
+                                FontAttributes="Bold"
+                                CharacterSpacing="0.5"
+                                Margin="0,4,0,0" />
+
+                            <Label
+                                Text="{Binding JobTitle}"
+                                TextColor="#FFFFFF"
+                                FontSize="19"
+                                FontAttributes="Bold"
+                                Margin="0,9,0,0"
+                                LineBreakMode="WordWrap" />
+
+                            <Label
+                                Text="{Binding JobLocation}"
+                                TextColor="#7C828A"
+                                FontSize="11"
+                                Margin="0,5,0,0"
+                                LineBreakMode="WordWrap" />
+
+                        </VerticalStackLayout>
 
                     </VerticalStackLayout>
 
                 </Border>
 
 
-                <!-- ========================================= -->
+                <!-- ================================================= -->
                 <!-- PROGRESS -->
-                <!-- ========================================= -->
+                <!-- ================================================= -->
 
-                <Grid ColumnDefinitions="*,Auto">
+                <Grid
+                    ColumnDefinitions="*,Auto"
+                    Margin="0,28,0,8">
 
-                    <Label
-                        Text="Checklist Progress"
-                        TextColor="White"
-                        FontSize="15"
-                        FontAttributes="Bold" />
+                    <VerticalStackLayout
+                        Grid.Column="0"
+                        Spacing="2">
+
+                        <Label
+                            Text="CHECKLIST PROGRESS"
+                            TextColor="#FFFFFF"
+                            FontSize="14"
+                            FontAttributes="Bold"
+                            CharacterSpacing="0.5" />
+
+                        <Label
+                            Text="Required inspection checks"
+                            TextColor="#646A72"
+                            FontSize="10" />
+
+                    </VerticalStackLayout>
 
                     <Label
                         Grid.Column="1"
                         Text="{Binding ProgressText}"
-                        TextColor="#E53935"
-                        FontAttributes="Bold" />
+                        TextColor="#ED3B3B"
+                        FontSize="11"
+                        FontAttributes="Bold"
+                        VerticalOptions="Center" />
 
                 </Grid>
 
+
                 <ProgressBar
                     Progress="{Binding Progress}"
-                    ProgressColor="#E53935"
-                    BackgroundColor="#424242"
-                    HeightRequest="7" />
+                    ProgressColor="#ED3B3B"
+                    BackgroundColor="#25292F"
+                    HeightRequest="5"
+                    Margin="0,4,0,0" />
 
 
-                <!-- ========================================= -->
-                <!-- LOADING MESSAGE -->
-                <!-- ========================================= -->
+                <!-- ================================================= -->
+                <!-- LOADING -->
+                <!-- ================================================= -->
 
                 <VerticalStackLayout
                     IsVisible="{Binding IsLoading}"
                     Spacing="10"
-                    Padding="0,20">
+                    Padding="0,30">
 
                     <ActivityIndicator
                         IsRunning="{Binding IsLoading}"
-                        Color="#E53935"
-                        HeightRequest="40"
-                        WidthRequest="40" />
+                        Color="#ED3B3B"
+                        HeightRequest="36"
+                        WidthRequest="36" />
 
                     <Label
                         Text="Loading checklist..."
-                        TextColor="#9E9E9E"
-                        FontSize="13"
+                        TextColor="#7C828A"
+                        FontSize="11"
                         HorizontalTextAlignment="Center" />
 
                 </VerticalStackLayout>
 
 
-                <!-- ========================================= -->
-                <!-- REAL API CHECKLIST ITEMS -->
-                <!-- ========================================= -->
+                <!-- ================================================= -->
+                <!-- CHECKLIST SECTION -->
+                <!-- ================================================= -->
 
                 <VerticalStackLayout
+                    Spacing="2"
+                    Margin="0,26,0,12">
+
+                    <Label
+                        Text="REQUIRED CHECKS"
+                        TextColor="#FFFFFF"
+                        FontSize="14"
+                        FontAttributes="Bold"
+                        CharacterSpacing="0.5" />
+
+                    <Label
+                        Text="Mark each item after completing the check"
+                        TextColor="#646A72"
+                        FontSize="10" />
+
+                </VerticalStackLayout>
+
+
+                <!-- REAL API CHECKLIST ITEMS -->
+                <VerticalStackLayout
                     BindableLayout.ItemsSource="{Binding ChecklistItems}"
-                    Spacing="12">
+                    Spacing="8">
 
                     <BindableLayout.ItemTemplate>
 
                         <DataTemplate>
 
                             <Border
-                                BackgroundColor="#1E1E1E"
-                                Stroke="#383838"
+                                BackgroundColor="#111419"
+                                Stroke="#292D33"
                                 StrokeThickness="1"
                                 Padding="16">
 
                                 <Border.StrokeShape>
-                                    <RoundRectangle CornerRadius="12" />
+                                    <RoundRectangle CornerRadius="8" />
                                 </Border.StrokeShape>
 
                                 <Grid
                                     ColumnDefinitions="Auto,*"
-                                    ColumnSpacing="12">
+                                    ColumnSpacing="14">
 
+                                    <!-- CHECKBOX -->
                                     <CheckBox
                                         Grid.Column="0"
                                         IsChecked="{Binding IsCompleted, Mode=TwoWay}"
-                                        Color="#E53935"
+                                        Color="#ED3B3B"
                                         VerticalOptions="Center"
+                                        MinimumWidthRequest="44"
+                                        MinimumHeightRequest="44"
                                         SemanticProperties.Description="Checklist item completed" />
 
+
+                                    <!-- CHECK DETAILS -->
                                     <VerticalStackLayout
                                         Grid.Column="1"
                                         Spacing="5"
@@ -191,14 +335,16 @@
 
                                         <Label
                                             Text="{Binding DisplayText}"
-                                            TextColor="White"
-                                            FontSize="16"
-                                            FontAttributes="Bold" />
+                                            TextColor="#E4E5E7"
+                                            FontSize="13"
+                                            FontAttributes="Bold"
+                                            LineBreakMode="WordWrap" />
 
                                         <Label
-                                            Text="Tick when this check has been completed."
-                                            TextColor="#9E9E9E"
-                                            FontSize="13" />
+                                            Text="Mark complete after this check has been verified."
+                                            TextColor="#686E76"
+                                            FontSize="10"
+                                            LineBreakMode="WordWrap" />
 
                                     </VerticalStackLayout>
 
@@ -213,55 +359,98 @@
                 </VerticalStackLayout>
 
 
-                <!-- ========================================= -->
+                <!-- ================================================= -->
                 <!-- TECHNICIAN NOTES -->
-                <!-- ========================================= -->
+                <!-- ================================================= -->
 
-                <Label
-                    Text="Technician Notes"
-                    TextColor="White"
-                    FontSize="15"
-                    FontAttributes="Bold"
-                    Margin="0,5,0,0" />
+                <VerticalStackLayout
+                    Spacing="2"
+                    Margin="0,28,0,12">
+
+                    <Label
+                        Text="TECHNICIAN NOTES"
+                        TextColor="#FFFFFF"
+                        FontSize="14"
+                        FontAttributes="Bold"
+                        CharacterSpacing="0.5" />
+
+                    <Label
+                        Text="Optional field observations"
+                        TextColor="#646A72"
+                        FontSize="10" />
+
+                </VerticalStackLayout>
+
 
                 <Border
-                    BackgroundColor="#1E1E1E"
-                    Stroke="#424242"
+                    BackgroundColor="#111419"
+                    Stroke="#292D33"
                     StrokeThickness="1"
-                    Padding="10">
+                    Padding="14">
 
                     <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="10" />
+                        <RoundRectangle CornerRadius="8" />
                     </Border.StrokeShape>
 
                     <Editor
                         Text="{Binding TechnicianNotes}"
                         Placeholder="Add notes about the inspection..."
-                        PlaceholderColor="#757575"
-                        TextColor="White"
+                        PlaceholderColor="#5F656D"
+                        TextColor="#E4E5E7"
+                        BackgroundColor="Transparent"
                         AutoSize="TextChanges"
-                        MinimumHeightRequest="100"
+                        MinimumHeightRequest="105"
+                        FontSize="12"
                         SemanticProperties.Description="Technician checklist notes" />
 
                 </Border>
 
 
-                <!-- ========================================= -->
+                <!-- ================================================= -->
                 <!-- CONTINUE -->
-                <!-- ========================================= -->
+                <!-- ================================================= -->
 
                 <Button
                     Text="CONTINUE"
                     Command="{Binding ContinueCommand}"
                     IsEnabled="{Binding CanContinue}"
-                    BackgroundColor="#E53935"
-                    TextColor="White"
-                    FontSize="15"
+                    BackgroundColor="#ED3B3B"
+                    TextColor="#FFFFFF"
+                    FontSize="12"
                     FontAttributes="Bold"
+                    CharacterSpacing="0.8"
                     HeightRequest="52"
-                    CornerRadius="10"
-                    Margin="0,10,0,20"
+                    CornerRadius="6"
+                    Margin="0,28,0,0"
                     SemanticProperties.Description="Continue to the next stage of the job" />
+
+
+                <!-- FOOTER -->
+                <BoxView
+                    HeightRequest="1"
+                    Color="#20242A"
+                    Margin="0,28,0,0" />
+
+
+                <Grid
+                    ColumnDefinitions="*,Auto"
+                    Margin="0,12,0,0">
+
+                    <Label
+                        Text="VERTECO SMARTJOB"
+                        TextColor="#50555C"
+                        FontSize="8"
+                        FontAttributes="Bold"
+                        CharacterSpacing="1.5" />
+
+                    <Label
+                        Grid.Column="1"
+                        Text="CHECKLIST"
+                        TextColor="#50555C"
+                        FontSize="8"
+                        CharacterSpacing="1.2" />
+
+                </Grid>
 
             </VerticalStackLayout>
 

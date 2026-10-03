@@ -5,157 +5,302 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
     x:Class="SmartJobMobile.Views.SignaturePage"
-    BackgroundColor="#121212"
+    BackgroundColor="#0A0C0F"
     Shell.NavBarIsVisible="False">
 
     <Grid RowDefinitions="Auto,*">
 
+        <!-- ================================================= -->
         <!-- HEADER -->
-        <Grid
+        <!-- ================================================= -->
+
+        <VerticalStackLayout
             Grid.Row="0"
-            Padding="20,18"
-            ColumnDefinitions="Auto,*"
-            BackgroundColor="#181818">
+            Padding="24,22,24,0"
+            Spacing="0">
 
-            <Button
-                Grid.Column="0"
-                Text="‹"
-                FontSize="30"
-                TextColor="White"
-                BackgroundColor="Transparent"
-                Padding="0"
-                WidthRequest="45"
-                Clicked="BackButton_Clicked"
-                SemanticProperties.Description="Go back" />
+            <Grid
+                ColumnDefinitions="Auto,*"
+                ColumnSpacing="14">
 
-            <VerticalStackLayout
-                Grid.Column="1"
-                Spacing="2"
-                VerticalOptions="Center">
-
-                <Label
-                    Text="SIGNATURES"
-                    TextColor="#E53935"
-                    FontSize="20"
-                    FontAttributes="Bold" />
-
-                <Label
-                    Text="Confirm completion of the work"
-                    TextColor="#9E9E9E"
-                    FontSize="12" />
-
-            </VerticalStackLayout>
-
-        </Grid>
-
-        <ScrollView Grid.Row="1">
-
-            <VerticalStackLayout
-                Padding="20"
-                Spacing="18">
-
-                <!-- JOB INFORMATION -->
+                <!-- BACK -->
                 <Border
-                    BackgroundColor="#1E1E1E"
-                    Stroke="#383838"
+                    Grid.Column="0"
+                    BackgroundColor="#111419"
+                    Stroke="#272B31"
                     StrokeThickness="1"
-                    Padding="18">
+                    WidthRequest="48"
+                    HeightRequest="48"
+                    Padding="0"
+                    VerticalOptions="Center">
 
                     <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="12" />
+                        <RoundRectangle CornerRadius="8" />
                     </Border.StrokeShape>
 
-                    <VerticalStackLayout Spacing="6">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer
+                            Tapped="BackButton_Clicked" />
+                    </Border.GestureRecognizers>
+
+                    <Label
+                        Text="‹"
+                        TextColor="#B8BCC2"
+                        FontSize="30"
+                        HorizontalTextAlignment="Center"
+                        VerticalTextAlignment="Center"
+                        Margin="0,-3,0,0"
+                        SemanticProperties.Description="Go back" />
+
+                </Border>
+
+                <!-- BRAND -->
+                <VerticalStackLayout
+                    Grid.Column="1"
+                    Spacing="2"
+                    VerticalOptions="Center">
+
+                    <Label
+                        Text="VERTECO"
+                        TextColor="#F2F2F2"
+                        FontSize="9"
+                        FontAttributes="Bold"
+                        CharacterSpacing="2.2" />
+
+                    <HorizontalStackLayout Spacing="4">
 
                         <Label
-                            Text="{Binding JobNumber}"
-                            TextColor="#E53935"
-                            FontSize="13"
-                            FontAttributes="Bold" />
-
-                        <Label
-                            Text="{Binding JobTitle}"
-                            TextColor="White"
+                            Text="SMART"
+                            TextColor="#FFFFFF"
                             FontSize="20"
                             FontAttributes="Bold" />
 
                         <Label
-                            Text="{Binding JobLocation}"
-                            TextColor="#BDBDBD"
-                            FontSize="13" />
+                            Text="JOB"
+                            TextColor="#ED3B3B"
+                            FontSize="20"
+                            FontAttributes="Bold" />
+
+                    </HorizontalStackLayout>
+
+                    <Label
+                        Text="TECHNICIAN CONSOLE"
+                        TextColor="#686E76"
+                        FontSize="7"
+                        FontAttributes="Bold"
+                        CharacterSpacing="1.6" />
+
+                </VerticalStackLayout>
+
+            </Grid>
+
+            <BoxView
+                HeightRequest="1"
+                Color="#24282E"
+                Margin="0,20,0,0" />
+
+        </VerticalStackLayout>
+
+
+        <!-- ================================================= -->
+        <!-- CONTENT -->
+        <!-- ================================================= -->
+
+        <ScrollView Grid.Row="1">
+
+            <VerticalStackLayout
+                Padding="24,26,24,32"
+                Spacing="0">
+
+                <!-- PAGE INTRO -->
+                <VerticalStackLayout Spacing="5">
+
+                    <Label
+                        Text="FIELD WORKFLOW"
+                        TextColor="#ED3B3B"
+                        FontSize="9"
+                        FontAttributes="Bold"
+                        CharacterSpacing="2" />
+
+                    <Label
+                        Text="Signatures"
+                        TextColor="#FFFFFF"
+                        FontSize="30"
+                        FontAttributes="Bold"
+                        SemanticProperties.HeadingLevel="Level1" />
+
+                    <Label
+                        Text="Confirm completion of the work with technician and client approval."
+                        TextColor="#7C828A"
+                        FontSize="12"
+                        LineBreakMode="WordWrap" />
+
+                </VerticalStackLayout>
+
+
+                <!-- ================================================= -->
+                <!-- CURRENT JOB -->
+                <!-- ================================================= -->
+
+                <Border
+                    BackgroundColor="#111419"
+                    Stroke="#292D33"
+                    StrokeThickness="1"
+                    Padding="0"
+                    Margin="0,24,0,0">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8" />
+                    </Border.StrokeShape>
+
+                    <VerticalStackLayout Spacing="0">
+
+                        <BoxView
+                            HeightRequest="2"
+                            Color="#ED3B3B" />
+
+                        <VerticalStackLayout
+                            Padding="18"
+                            Spacing="0">
+
+                            <Label
+                                Text="CURRENT JOB"
+                                TextColor="#646A72"
+                                FontSize="8"
+                                FontAttributes="Bold"
+                                CharacterSpacing="1.4" />
+
+                            <Label
+                                Text="{Binding JobNumber}"
+                                TextColor="#ED3B3B"
+                                FontSize="12"
+                                FontAttributes="Bold"
+                                Margin="0,4,0,0" />
+
+                            <Label
+                                Text="{Binding JobTitle}"
+                                TextColor="#FFFFFF"
+                                FontSize="19"
+                                FontAttributes="Bold"
+                                Margin="0,9,0,0"
+                                LineBreakMode="WordWrap" />
+
+                            <Label
+                                Text="{Binding JobLocation}"
+                                TextColor="#7C828A"
+                                FontSize="11"
+                                Margin="0,5,0,0"
+                                LineBreakMode="WordWrap" />
+
+                        </VerticalStackLayout>
 
                     </VerticalStackLayout>
 
                 </Border>
 
+
+                <!-- ================================================= -->
                 <!-- TECHNICIAN -->
-                <Label
-                    Text="Technician Confirmation"
-                    TextColor="White"
-                    FontSize="17"
-                    FontAttributes="Bold" />
+                <!-- ================================================= -->
+
+                <VerticalStackLayout
+                    Spacing="2"
+                    Margin="0,28,0,12">
+
+                    <Label
+                        Text="TECHNICIAN CONFIRMATION"
+                        TextColor="#FFFFFF"
+                        FontSize="14"
+                        FontAttributes="Bold"
+                        CharacterSpacing="0.5" />
+
+                    <Label
+                        Text="Technician details and signature"
+                        TextColor="#646A72"
+                        FontSize="10" />
+
+                </VerticalStackLayout>
+
 
                 <Border
-                    BackgroundColor="#1E1E1E"
-                    Stroke="#383838"
+                    BackgroundColor="#111419"
+                    Stroke="#292D33"
                     StrokeThickness="1"
                     Padding="18">
 
                     <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="12" />
+                        <RoundRectangle CornerRadius="8" />
                     </Border.StrokeShape>
 
-                    <VerticalStackLayout Spacing="14">
+                    <VerticalStackLayout Spacing="0">
 
+                        <!-- TECHNICIAN NAME -->
                         <Label
-                            Text="Technician Name *"
-                            TextColor="#BDBDBD"
-                            FontSize="13" />
+                            Text="TECHNICIAN NAME *"
+                            TextColor="#8D939A"
+                            FontSize="9"
+                            FontAttributes="Bold"
+                            CharacterSpacing="0.8" />
 
                         <Border
-                            BackgroundColor="#252525"
-                            Stroke="#424242"
+                            BackgroundColor="#171A1F"
+                            Stroke="#30343A"
                             StrokeThickness="1"
-                            Padding="5">
+                            Padding="5"
+                            Margin="0,7,0,0">
 
                             <Border.StrokeShape>
-                                <RoundRectangle CornerRadius="10" />
+                                <RoundRectangle CornerRadius="8" />
                             </Border.StrokeShape>
 
                             <Entry
                                 Text="{Binding TechnicianName}"
                                 Placeholder="Enter technician full name"
-                                PlaceholderColor="#757575"
-                                TextColor="White"
+                                PlaceholderColor="#5F656D"
+                                TextColor="#E4E5E7"
                                 BackgroundColor="Transparent"
                                 Margin="8,0"
+                                MinimumHeightRequest="48"
+                                FontSize="12"
                                 SemanticProperties.Description="Technician full name" />
 
                         </Border>
 
-                        <!-- TECHNICIAN SIGNATURE PAD -->
+
+                        <!-- TECHNICIAN SIGNATURE -->
                         <Label
-                            Text="Technician Signature *"
-                            TextColor="#BDBDBD"
-                            FontSize="13" />
+                            Text="TECHNICIAN SIGNATURE *"
+                            TextColor="#8D939A"
+                            FontSize="9"
+                            FontAttributes="Bold"
+                            CharacterSpacing="0.8"
+                            Margin="0,20,0,0" />
+
+                        <Label
+                            Text="Use your finger or pointer to sign inside the area below."
+                            TextColor="#646A72"
+                            FontSize="10"
+                            Margin="0,4,0,8" />
 
                         <Border
-                            BackgroundColor="White"
-                            Stroke="#E53935"
+                            BackgroundColor="#F5F5F3"
+                            Stroke="#444950"
                             StrokeThickness="1"
                             HeightRequest="180"
                             Padding="0">
 
                             <Border.StrokeShape>
-                                <RoundRectangle CornerRadius="10" />
+                                <RoundRectangle CornerRadius="8" />
                             </Border.StrokeShape>
 
                             <Grid>
 
                                 <Label
-                                    Text="Sign here"
-                                    TextColor="#BDBDBD"
-                                    FontSize="14"
+                                    Text="SIGN HERE"
+                                    TextColor="#B0B2B5"
+                                    FontSize="10"
+                                    FontAttributes="Bold"
+                                    CharacterSpacing="1.2"
                                     HorizontalOptions="Center"
                                     VerticalOptions="Center"
                                     InputTransparent="True" />
@@ -164,57 +309,77 @@
                                     x:Name="TechnicianSignaturePad"
                                     BackgroundColor="Transparent"
                                     LineColor="Black"
-                                    LineWidth="4" />
+                                    LineWidth="4"
+                                    SemanticProperties.Description="Technician signature pad" />
 
                             </Grid>
 
                         </Border>
 
+
+                        <!-- CLEAR TECHNICIAN SIGNATURE -->
                         <Button
-                            Text="CLEAR TECHNICIAN SIGNATURE"
+                            Text="CLEAR SIGNATURE"
                             Clicked="ClearTechnicianSignature_Clicked"
-                            BackgroundColor="#252525"
-                            TextColor="White"
-                            BorderColor="#616161"
+                            BackgroundColor="#171A1F"
+                            TextColor="#BFC3C8"
+                            BorderColor="#34383E"
                             BorderWidth="1"
-                            HeightRequest="44"
-                            CornerRadius="10"
+                            FontSize="10"
+                            FontAttributes="Bold"
+                            CharacterSpacing="0.6"
+                            HeightRequest="46"
+                            CornerRadius="6"
+                            Margin="0,10,0,0"
                             SemanticProperties.Description="Clear technician signature" />
 
+
+                        <!-- TECHNICIAN CONFIRMATION -->
                         <Grid
                             ColumnDefinitions="Auto,*"
-                            ColumnSpacing="10">
+                            ColumnSpacing="12"
+                            Margin="0,18,0,0">
 
                             <CheckBox
+                                Grid.Column="0"
                                 IsChecked="{Binding TechnicianConfirmed}"
-                                Color="#E53935"
-                                VerticalOptions="Center"
+                                Color="#ED3B3B"
+                                VerticalOptions="Start"
+                                MinimumWidthRequest="44"
+                                MinimumHeightRequest="44"
                                 SemanticProperties.Description="Technician confirms the work information is correct" />
 
                             <Label
                                 Grid.Column="1"
                                 Text="I confirm that the recorded job information is accurate and the work has been completed as stated."
-                                TextColor="#BDBDBD"
-                                FontSize="13"
-                                VerticalOptions="Center" />
+                                TextColor="#A0A5AB"
+                                FontSize="11"
+                                LineHeight="1.25"
+                                VerticalOptions="Center"
+                                LineBreakMode="WordWrap" />
 
                         </Grid>
 
+
+                        <!-- TECHNICIAN CONFIRMED -->
                         <Border
                             IsVisible="{Binding TechnicianConfirmed}"
-                            BackgroundColor="#263D2A"
-                            Stroke="#4CAF50"
+                            BackgroundColor="#111916"
+                            Stroke="#263C2E"
                             StrokeThickness="1"
-                            Padding="10">
+                            Padding="12"
+                            Margin="0,12,0,0">
 
                             <Border.StrokeShape>
-                                <RoundRectangle CornerRadius="8" />
+                                <RoundRectangle CornerRadius="6" />
                             </Border.StrokeShape>
 
                             <Label
-                                Text="✓ Technician confirmation recorded"
-                                TextColor="#66BB6A"
-                                FontSize="13"
+                                Text="TECHNICIAN CONFIRMATION RECORDED"
+                                TextColor="#73B986"
+                                FontSize="9"
+                                FontAttributes="Bold"
+                                CharacterSpacing="0.5"
                                 HorizontalTextAlignment="Center" />
 
                         </Border>
@@ -223,74 +388,109 @@
 
                 </Border>
 
+
+                <!-- ================================================= -->
                 <!-- CLIENT -->
-                <Label
-                    Text="Client Confirmation"
-                    TextColor="White"
-                    FontSize="17"
-                    FontAttributes="Bold" />
+                <!-- ================================================= -->
+
+                <VerticalStackLayout
+                    Spacing="2"
+                    Margin="0,28,0,12">
+
+                    <Label
+                        Text="CLIENT CONFIRMATION"
+                        TextColor="#FFFFFF"
+                        FontSize="14"
+                        FontAttributes="Bold"
+                        CharacterSpacing="0.5" />
+
+                    <Label
+                        Text="Client approval and signature"
+                        TextColor="#646A72"
+                        FontSize="10" />
+
+                </VerticalStackLayout>
+
 
                 <Border
-                    BackgroundColor="#1E1E1E"
-                    Stroke="#383838"
+                    BackgroundColor="#111419"
+                    Stroke="#292D33"
                     StrokeThickness="1"
                     Padding="18">
 
                     <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="12" />
+                        <RoundRectangle CornerRadius="8" />
                     </Border.StrokeShape>
 
-                    <VerticalStackLayout Spacing="14">
+                    <VerticalStackLayout Spacing="0">
 
+                        <!-- CLIENT NAME -->
                         <Label
-                            Text="Client Name *"
-                            TextColor="#BDBDBD"
-                            FontSize="13" />
+                            Text="CLIENT NAME *"
+                            TextColor="#8D939A"
+                            FontSize="9"
+                            FontAttributes="Bold"
+                            CharacterSpacing="0.8" />
 
                         <Border
-                            BackgroundColor="#252525"
-                            Stroke="#424242"
+                            BackgroundColor="#171A1F"
+                            Stroke="#30343A"
                             StrokeThickness="1"
-                            Padding="5">
+                            Padding="5"
+                            Margin="0,7,0,0">
 
                             <Border.StrokeShape>
-                                <RoundRectangle CornerRadius="10" />
+                                <RoundRectangle CornerRadius="8" />
                             </Border.StrokeShape>
 
                             <Entry
                                 Text="{Binding ClientName}"
                                 Placeholder="Enter client full name"
-                                PlaceholderColor="#757575"
-                                TextColor="White"
+                                PlaceholderColor="#5F656D"
+                                TextColor="#E4E5E7"
                                 BackgroundColor="Transparent"
                                 Margin="8,0"
+                                MinimumHeightRequest="48"
+                                FontSize="12"
                                 SemanticProperties.Description="Client full name" />
 
                         </Border>
 
-                        <!-- CLIENT SIGNATURE PAD -->
+
+                        <!-- CLIENT SIGNATURE -->
                         <Label
-                            Text="Client Signature *"
-                            TextColor="#BDBDBD"
-                            FontSize="13" />
+                            Text="CLIENT SIGNATURE *"
+                            TextColor="#8D939A"
+                            FontSize="9"
+                            FontAttributes="Bold"
+                            CharacterSpacing="0.8"
+                            Margin="0,20,0,0" />
+
+                        <Label
+                            Text="Ask the client to sign inside the area below."
+                            TextColor="#646A72"
+                            FontSize="10"
+                            Margin="0,4,0,8" />
 
                         <Border
-                            BackgroundColor="White"
-                            Stroke="#E53935"
+                            BackgroundColor="#F5F5F3"
+                            Stroke="#444950"
                             StrokeThickness="1"
                             HeightRequest="180"
                             Padding="0">
 
                             <Border.StrokeShape>
-                                <RoundRectangle CornerRadius="10" />
+                                <RoundRectangle CornerRadius="8" />
                             </Border.StrokeShape>
 
                             <Grid>
 
                                 <Label
-                                    Text="Sign here"
-                                    TextColor="#BDBDBD"
-                                    FontSize="14"
+                                    Text="SIGN HERE"
+                                    TextColor="#B0B2B5"
+                                    FontSize="10"
+                                    FontAttributes="Bold"
+                                    CharacterSpacing="1.2"
                                     HorizontalOptions="Center"
                                     VerticalOptions="Center"
                                     InputTransparent="True" />
@@ -299,57 +499,77 @@
                                     x:Name="ClientSignaturePad"
                                     BackgroundColor="Transparent"
                                     LineColor="Black"
-                                    LineWidth="4" />
+                                    LineWidth="4"
+                                    SemanticProperties.Description="Client signature pad" />
 
                             </Grid>
 
                         </Border>
 
+
+                        <!-- CLEAR CLIENT SIGNATURE -->
                         <Button
-                            Text="CLEAR CLIENT SIGNATURE"
+                            Text="CLEAR SIGNATURE"
                             Clicked="ClearClientSignature_Clicked"
-                            BackgroundColor="#252525"
-                            TextColor="White"
-                            BorderColor="#616161"
+                            BackgroundColor="#171A1F"
+                            TextColor="#BFC3C8"
+                            BorderColor="#34383E"
                             BorderWidth="1"
-                            HeightRequest="44"
-                            CornerRadius="10"
+                            FontSize="10"
+                            FontAttributes="Bold"
+                            CharacterSpacing="0.6"
+                            HeightRequest="46"
+                            CornerRadius="6"
+                            Margin="0,10,0,0"
                             SemanticProperties.Description="Clear client signature" />
 
+
+                        <!-- CLIENT CONFIRMATION -->
                         <Grid
                             ColumnDefinitions="Auto,*"
-                            ColumnSpacing="10">
+                            ColumnSpacing="12"
+                            Margin="0,18,0,0">
 
                             <CheckBox
+                                Grid.Column="0"
                                 IsChecked="{Binding ClientConfirmed}"
-                                Color="#E53935"
-                                VerticalOptions="Center"
+                                Color="#ED3B3B"
+                                VerticalOptions="Start"
+                                MinimumWidthRequest="44"
+                                MinimumHeightRequest="44"
                                 SemanticProperties.Description="Client confirms the work was completed" />
 
                             <Label
                                 Grid.Column="1"
                                 Text="The client confirms that the work has been completed and the job details have been reviewed."
-                                TextColor="#BDBDBD"
-                                FontSize="13"
-                                VerticalOptions="Center" />
+                                TextColor="#A0A5AB"
+                                FontSize="11"
+                                LineHeight="1.25"
+                                VerticalOptions="Center"
+                                LineBreakMode="WordWrap" />
 
                         </Grid>
 
+
+                        <!-- CLIENT CONFIRMED -->
                         <Border
                             IsVisible="{Binding ClientConfirmed}"
-                            BackgroundColor="#263D2A"
-                            Stroke="#4CAF50"
+                            BackgroundColor="#111916"
+                            Stroke="#263C2E"
                             StrokeThickness="1"
-                            Padding="10">
+                            Padding="12"
+                            Margin="0,12,0,0">
 
                             <Border.StrokeShape>
-                                <RoundRectangle CornerRadius="8" />
+                                <RoundRectangle CornerRadius="6" />
                             </Border.StrokeShape>
 
                             <Label
-                                Text="✓ Client confirmation recorded"
-                                TextColor="#66BB6A"
-                                FontSize="13"
+                                Text="CLIENT CONFIRMATION RECORDED"
+                                TextColor="#73B986"
+                                FontSize="9"
+                                FontAttributes="Bold"
+                                CharacterSpacing="0.5"
                                 HorizontalTextAlignment="Center" />
 
                         </Border>
@@ -358,45 +578,125 @@
 
                 </Border>
 
-                <!-- NOTICE -->
+
+                <!-- ================================================= -->
+                <!-- REQUIREMENT NOTICE -->
+                <!-- ================================================= -->
+
                 <Border
-                    BackgroundColor="#252525"
-                    Stroke="#424242"
+                    BackgroundColor="#111419"
+                    Stroke="#292D33"
                     StrokeThickness="1"
-                    Padding="14">
+                    Padding="14"
+                    Margin="0,18,0,0">
 
                     <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="10" />
+                        <RoundRectangle CornerRadius="6" />
                     </Border.StrokeShape>
 
-                    <Label
-                        Text="Both signatures and confirmations are required before the job can proceed to final review."
-                        TextColor="#BDBDBD"
-                        FontSize="12"
-                        HorizontalTextAlignment="Center" />
+                    <Grid
+                        ColumnDefinitions="3,*"
+                        ColumnSpacing="12">
+
+                        <BoxView
+                            Grid.Column="0"
+                            WidthRequest="3"
+                            Color="#ED3B3B"
+                            CornerRadius="2" />
+
+                        <VerticalStackLayout
+                            Grid.Column="1"
+                            Spacing="3">
+
+                            <Label
+                                Text="SIGNATURE REQUIREMENT"
+                                TextColor="#DADDE0"
+                                FontSize="9"
+                                FontAttributes="Bold"
+                                CharacterSpacing="0.7" />
+
+                            <Label
+                                Text="Both signatures and confirmations are required before the job can proceed to final review."
+                                TextColor="#7C828A"
+                                FontSize="10"
+                                LineBreakMode="WordWrap" />
+
+                        </VerticalStackLayout>
+
+                    </Grid>
 
                 </Border>
 
-                <!-- ERROR -->
-                <Label
-                    Text="{Binding ErrorMessage}"
-                    TextColor="#EF5350"
-                    FontSize="13"
-                    IsVisible="{Binding HasError}"
-                    HorizontalTextAlignment="Center" />
 
+                <!-- ================================================= -->
+                <!-- ERROR -->
+                <!-- ================================================= -->
+
+                <Border
+                    IsVisible="{Binding HasError}"
+                    BackgroundColor="#241416"
+                    Stroke="#5A292D"
+                    StrokeThickness="1"
+                    Padding="14"
+                    Margin="0,18,0,0">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="6" />
+                    </Border.StrokeShape>
+
+                    <Label
+                        Text="{Binding ErrorMessage}"
+                        TextColor="#EF7777"
+                        FontSize="11"
+                        HorizontalTextAlignment="Center"
+                        LineBreakMode="WordWrap" />
+
+                </Border>
+
+
+                <!-- ================================================= -->
                 <!-- CONTINUE -->
+                <!-- ================================================= -->
+
                 <Button
                     Text="CONTINUE TO REVIEW"
                     Clicked="ContinueToReview_Clicked"
-                    BackgroundColor="#E53935"
-                    TextColor="White"
-                    FontSize="15"
+                    BackgroundColor="#ED3B3B"
+                    TextColor="#FFFFFF"
+                    FontSize="12"
                     FontAttributes="Bold"
+                    CharacterSpacing="0.8"
                     HeightRequest="52"
-                    CornerRadius="10"
-                    Margin="0,10,0,20"
+                    CornerRadius="6"
+                    Margin="0,28,0,0"
                     SemanticProperties.Description="Continue to final job review" />
+
+
+                <!-- FOOTER -->
+                <BoxView
+                    HeightRequest="1"
+                    Color="#20242A"
+                    Margin="0,28,0,0" />
+
+                <Grid
+                    ColumnDefinitions="*,Auto"
+                    Margin="0,12,0,0">
+
+                    <Label
+                        Text="VERTECO SMARTJOB"
+                        TextColor="#50555C"
+                        FontSize="8"
+                        FontAttributes="Bold"
+                        CharacterSpacing="1.5" />
+
+                    <Label
+                        Grid.Column="1"
+                        Text="SIGNATURES"
+                        TextColor="#50555C"
+                        FontSize="8"
+                        CharacterSpacing="1.2" />
+
+                </Grid>
 
             </VerticalStackLayout>
 

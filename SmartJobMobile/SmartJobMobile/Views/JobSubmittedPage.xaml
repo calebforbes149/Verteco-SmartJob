@@ -4,212 +4,388 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:Class="SmartJobMobile.Views.JobSubmittedPage"
-    BackgroundColor="#121212"
+    BackgroundColor="#0A0C0F"
     Shell.NavBarIsVisible="False">
 
     <ScrollView>
 
         <VerticalStackLayout
-            Padding="25"
-            Spacing="22"
-            VerticalOptions="Center">
+            Padding="24,24,24,32"
+            Spacing="0">
 
-            <!-- SUCCESS ICON -->
-            <Border
-                BackgroundColor="#263D2A"
-                Stroke="#4CAF50"
-                StrokeThickness="2"
-                HeightRequest="100"
-                WidthRequest="100"
-                HorizontalOptions="Center">
+            <!-- ================================================= -->
+            <!-- BRAND -->
+            <!-- ================================================= -->
 
-                <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="50" />
-                </Border.StrokeShape>
+            <VerticalStackLayout
+                HorizontalOptions="Center"
+                Spacing="2">
 
                 <Label
-                    Text="✓"
-                    TextColor="#66BB6A"
-                    FontSize="52"
+                    Text="VERTECO"
+                    TextColor="#F2F2F2"
+                    FontSize="9"
                     FontAttributes="Bold"
-                    HorizontalTextAlignment="Center"
-                    VerticalTextAlignment="Center"
-                    SemanticProperties.Description="Job submitted successfully" />
-
-            </Border>
-
-            <!-- SUCCESS MESSAGE -->
-            <VerticalStackLayout Spacing="8">
-
-                <Label
-                    Text="JOB SUBMITTED"
-                    TextColor="White"
-                    FontSize="25"
-                    FontAttributes="Bold"
+                    CharacterSpacing="2.2"
                     HorizontalTextAlignment="Center" />
 
+                <HorizontalStackLayout
+                    Spacing="4"
+                    HorizontalOptions="Center">
+
+                    <Label
+                        Text="SMART"
+                        TextColor="#FFFFFF"
+                        FontSize="20"
+                        FontAttributes="Bold" />
+
+                    <Label
+                        Text="JOB"
+                        TextColor="#ED3B3B"
+                        FontSize="20"
+                        FontAttributes="Bold" />
+
+                </HorizontalStackLayout>
+
                 <Label
-                    Text="Your job has been submitted successfully."
-                    TextColor="#BDBDBD"
-                    FontSize="14"
+                    Text="TECHNICIAN CONSOLE"
+                    TextColor="#686E76"
+                    FontSize="7"
+                    FontAttributes="Bold"
+                    CharacterSpacing="1.6"
                     HorizontalTextAlignment="Center" />
 
             </VerticalStackLayout>
 
-            <!-- JOB SUMMARY -->
-            <Border
-                BackgroundColor="#1E1E1E"
-                Stroke="#383838"
-                StrokeThickness="1"
-                Padding="20">
 
-                <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="12" />
-                </Border.StrokeShape>
+            <BoxView
+                HeightRequest="1"
+                Color="#24282E"
+                Margin="0,20,0,0" />
 
-                <VerticalStackLayout Spacing="12">
+
+            <!-- ================================================= -->
+            <!-- SUCCESS -->
+            <!-- ================================================= -->
+
+            <VerticalStackLayout
+                Spacing="0"
+                Margin="0,42,0,0">
+
+                <!-- SUCCESS ICON -->
+                <Border
+                    BackgroundColor="#111916"
+                    Stroke="#2D5238"
+                    StrokeThickness="1"
+                    HeightRequest="82"
+                    WidthRequest="82"
+                    HorizontalOptions="Center"
+                    Padding="0">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="41" />
+                    </Border.StrokeShape>
 
                     <Label
-                        Text="Submission Details"
-                        TextColor="White"
-                        FontSize="17"
-                        FontAttributes="Bold" />
+                        Text="✓"
+                        TextColor="#73B986"
+                        FontSize="38"
+                        FontAttributes="Bold"
+                        HorizontalTextAlignment="Center"
+                        VerticalTextAlignment="Center"
+                        SemanticProperties.Description="Job submitted successfully" />
 
+                </Border>
+
+
+                <Label
+                    Text="SUBMISSION COMPLETE"
+                    TextColor="#73B986"
+                    FontSize="9"
+                    FontAttributes="Bold"
+                    CharacterSpacing="1.8"
+                    HorizontalTextAlignment="Center"
+                    Margin="0,20,0,0" />
+
+                <Label
+                    Text="Job Submitted"
+                    TextColor="#FFFFFF"
+                    FontSize="30"
+                    FontAttributes="Bold"
+                    HorizontalTextAlignment="Center"
+                    Margin="0,6,0,0"
+                    SemanticProperties.HeadingLevel="Level1" />
+
+                <Label
+                    Text="The completed job has been submitted successfully."
+                    TextColor="#7C828A"
+                    FontSize="12"
+                    HorizontalTextAlignment="Center"
+                    LineBreakMode="WordWrap"
+                    Margin="15,7,15,0" />
+
+            </VerticalStackLayout>
+
+
+            <!-- ================================================= -->
+            <!-- SUBMISSION DETAILS -->
+            <!-- ================================================= -->
+
+            <VerticalStackLayout
+                Spacing="2"
+                Margin="0,34,0,12">
+
+                <Label
+                    Text="SUBMISSION DETAILS"
+                    TextColor="#FFFFFF"
+                    FontSize="14"
+                    FontAttributes="Bold"
+                    CharacterSpacing="0.5" />
+
+                <Label
+                    Text="Submitted job information"
+                    TextColor="#646A72"
+                    FontSize="10" />
+
+            </VerticalStackLayout>
+
+
+            <Border
+                BackgroundColor="#111419"
+                Stroke="#292D33"
+                StrokeThickness="1"
+                Padding="0">
+
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="8" />
+                </Border.StrokeShape>
+
+                <VerticalStackLayout Spacing="0">
+
+                    <!-- RED ACCENT -->
                     <BoxView
-                        HeightRequest="1"
-                        Color="#383838" />
+                        HeightRequest="2"
+                        Color="#ED3B3B" />
 
-                    <Grid
-                        ColumnDefinitions="*,Auto"
-                        RowDefinitions="Auto,Auto,Auto,Auto"
-                        RowSpacing="12">
+
+                    <VerticalStackLayout
+                        Padding="18"
+                        Spacing="0">
 
                         <!-- JOB NUMBER -->
                         <Label
-                            Grid.Row="0"
-                            Grid.Column="0"
-                            Text="Job Number"
-                            TextColor="#9E9E9E"
-                            FontSize="13" />
+                            Text="JOB NUMBER"
+                            TextColor="#646A72"
+                            FontSize="8"
+                            FontAttributes="Bold"
+                            CharacterSpacing="1" />
 
                         <Label
-                            Grid.Row="0"
-                            Grid.Column="1"
                             Text="{Binding JobNumber}"
-                            TextColor="White"
-                            FontSize="13"
-                            FontAttributes="Bold" />
+                            TextColor="#ED3B3B"
+                            FontSize="15"
+                            FontAttributes="Bold"
+                            Margin="0,5,0,0" />
+
+
+                        <BoxView
+                            HeightRequest="1"
+                            Color="#292D33"
+                            Margin="0,16,0,16" />
+
 
                         <!-- JOB TYPE -->
-                        <Label
-                            Grid.Row="1"
-                            Grid.Column="0"
-                            Text="Job Type"
-                            TextColor="#9E9E9E"
-                            FontSize="13" />
+                        <Grid
+                            ColumnDefinitions="95,*"
+                            ColumnSpacing="12">
 
-                        <Label
-                            Grid.Row="1"
-                            Grid.Column="1"
-                            Text="{Binding Title}"
-                            TextColor="White"
-                            FontSize="13" />
+                            <Label
+                                Grid.Column="0"
+                                Text="JOB TYPE"
+                                TextColor="#646A72"
+                                FontSize="9"
+                                FontAttributes="Bold"
+                                CharacterSpacing="0.5" />
+
+                            <Label
+                                Grid.Column="1"
+                                Text="{Binding Title}"
+                                TextColor="#C4C7CB"
+                                FontSize="11"
+                                HorizontalTextAlignment="End"
+                                LineBreakMode="WordWrap" />
+
+                        </Grid>
+
 
                         <!-- STATUS -->
-                        <Label
-                            Grid.Row="2"
-                            Grid.Column="0"
-                            Text="Status"
-                            TextColor="#9E9E9E"
-                            FontSize="13" />
+                        <Grid
+                            ColumnDefinitions="95,*"
+                            ColumnSpacing="12"
+                            Margin="0,14,0,0">
 
-                        <Label
-                            Grid.Row="2"
-                            Grid.Column="1"
-                            Text="{Binding Status}"
-                            TextColor="#66BB6A"
-                            FontSize="13"
-                            FontAttributes="Bold" />
+                            <Label
+                                Grid.Column="0"
+                                Text="STATUS"
+                                TextColor="#646A72"
+                                FontSize="9"
+                                FontAttributes="Bold"
+                                CharacterSpacing="0.5" />
+
+                            <Label
+                                Grid.Column="1"
+                                Text="{Binding Status}"
+                                TextColor="#73B986"
+                                FontSize="11"
+                                FontAttributes="Bold"
+                                HorizontalTextAlignment="End" />
+
+                        </Grid>
+
 
                         <!-- SITE -->
-                        <Label
-                            Grid.Row="3"
-                            Grid.Column="0"
-                            Text="Site"
-                            TextColor="#9E9E9E"
-                            FontSize="13" />
+                        <Grid
+                            ColumnDefinitions="95,*"
+                            ColumnSpacing="12"
+                            Margin="0,14,0,0">
 
-                        <Label
-                            Grid.Row="3"
-                            Grid.Column="1"
-                            Text="{Binding Location}"
-                            TextColor="White"
-                            FontSize="13"
-                            HorizontalTextAlignment="End"
-                            LineBreakMode="TailTruncation"
-                            MaximumWidthRequest="220" />
+                            <Label
+                                Grid.Column="0"
+                                Text="SITE"
+                                TextColor="#646A72"
+                                FontSize="9"
+                                FontAttributes="Bold"
+                                CharacterSpacing="0.5" />
 
-                    </Grid>
+                            <Label
+                                Grid.Column="1"
+                                Text="{Binding Location}"
+                                TextColor="#C4C7CB"
+                                FontSize="11"
+                                HorizontalTextAlignment="End"
+                                LineBreakMode="WordWrap" />
+
+                        </Grid>
+
+                    </VerticalStackLayout>
 
                 </VerticalStackLayout>
 
             </Border>
 
-            <!-- INFORMATION -->
+
+            <!-- ================================================= -->
+            <!-- WHAT HAPPENS NEXT -->
+            <!-- ================================================= -->
+
             <Border
-                BackgroundColor="#252525"
-                Stroke="#424242"
+                BackgroundColor="#111419"
+                Stroke="#292D33"
                 StrokeThickness="1"
-                Padding="15">
+                Padding="16"
+                Margin="0,18,0,0">
 
                 <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="10" />
+                    <RoundRectangle CornerRadius="8" />
                 </Border.StrokeShape>
 
-                <VerticalStackLayout Spacing="6">
+                <Grid
+                    ColumnDefinitions="3,*"
+                    ColumnSpacing="13">
 
-                    <Label
-                        Text="What happens next?"
-                        TextColor="#E53935"
-                        FontSize="14"
-                        FontAttributes="Bold"
-                        HorizontalTextAlignment="Center" />
+                    <BoxView
+                        Grid.Column="0"
+                        WidthRequest="3"
+                        Color="#ED3B3B"
+                        CornerRadius="2" />
 
-                    <Label
-                        Text="The submitted job will be available for Manager review. You can return to My Jobs to continue working on your assigned jobs."
-                        TextColor="#BDBDBD"
-                        FontSize="12"
-                        HorizontalTextAlignment="Center" />
+                    <VerticalStackLayout
+                        Grid.Column="1"
+                        Spacing="5">
 
-                </VerticalStackLayout>
+                        <Label
+                            Text="WHAT HAPPENS NEXT?"
+                            TextColor="#E4E5E7"
+                            FontSize="9"
+                            FontAttributes="Bold"
+                            CharacterSpacing="0.8" />
+
+                        <Label
+                            Text="The submitted job will be available for Manager review. You can return to My Jobs to continue working on your assigned jobs."
+                            TextColor="#7C828A"
+                            FontSize="10"
+                            LineHeight="1.25"
+                            LineBreakMode="WordWrap" />
+
+                    </VerticalStackLayout>
+
+                </Grid>
 
             </Border>
 
-            <!-- MY JOBS -->
+
+            <!-- ================================================= -->
+            <!-- ACTIONS -->
+            <!-- ================================================= -->
+
             <Button
                 Text="RETURN TO MY JOBS"
-                BackgroundColor="#E53935"
-                TextColor="White"
-                FontSize="15"
+                BackgroundColor="#ED3B3B"
+                TextColor="#FFFFFF"
+                FontSize="12"
                 FontAttributes="Bold"
+                CharacterSpacing="0.8"
                 HeightRequest="52"
-                CornerRadius="10"
+                CornerRadius="6"
+                Margin="0,30,0,0"
                 Clicked="MyJobsButton_Clicked"
                 SemanticProperties.Description="Return to My Jobs" />
 
-            <!-- DASHBOARD -->
+
             <Button
                 Text="RETURN TO DASHBOARD"
-                BackgroundColor="#252525"
-                TextColor="White"
-                BorderColor="#555555"
+                BackgroundColor="#111419"
+                TextColor="#BFC3C8"
+                BorderColor="#34383E"
                 BorderWidth="1"
-                FontSize="14"
+                FontSize="11"
                 FontAttributes="Bold"
+                CharacterSpacing="0.7"
                 HeightRequest="50"
-                CornerRadius="10"
+                CornerRadius="6"
+                Margin="0,10,0,0"
                 Clicked="DashboardButton_Clicked"
                 SemanticProperties.Description="Return to dashboard" />
+
+
+            <!-- ================================================= -->
+            <!-- FOOTER -->
+            <!-- ================================================= -->
+
+            <BoxView
+                HeightRequest="1"
+                Color="#20242A"
+                Margin="0,30,0,0" />
+
+            <Grid
+                ColumnDefinitions="*,Auto"
+                Margin="0,12,0,0">
+
+                <Label
+                    Text="VERTECO SMARTJOB"
+                    TextColor="#50555C"
+                    FontSize="8"
+                    FontAttributes="Bold"
+                    CharacterSpacing="1.5" />
+
+                <Label
+                    Grid.Column="1"
+                    Text="SUBMITTED"
+                    TextColor="#50555C"
+                    FontSize="8"
+                    CharacterSpacing="1.2" />
+
+            </Grid>
 
         </VerticalStackLayout>
 

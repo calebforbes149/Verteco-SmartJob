@@ -28,7 +28,7 @@
 		<MauiXamlInflator>SourceGen</MauiXamlInflator>
 
 		<!-- Display name -->
-		<ApplicationTitle>SmartJobMobile</ApplicationTitle>
+		<ApplicationTitle>SmartJob</ApplicationTitle>
 
 		<!-- App Identifier -->
 		<ApplicationId>com.companyname.smartjobmobile</ApplicationId>

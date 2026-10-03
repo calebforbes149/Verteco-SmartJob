@@ -4,195 +4,432 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:Class="SmartJobMobile.Views.MyJobsPage"
-    BackgroundColor="#121212"
+    BackgroundColor="#0A0C0F"
     Shell.NavBarIsVisible="False">
 
     <Grid RowDefinitions="Auto,*">
 
-        <!-- Header -->
-        <Grid
+        <!-- ================================================= -->
+        <!-- HEADER -->
+        <!-- ================================================= -->
+
+        <VerticalStackLayout
             Grid.Row="0"
-            ColumnDefinitions="Auto,*"
-            Padding="20,25,20,15"
-            BackgroundColor="#121212">
+            Padding="24,22,24,0"
+            Spacing="0">
 
-            <Button
-                Grid.Column="0"
-                Text="‹"
-                FontSize="28"
-                TextColor="White"
-                BackgroundColor="Transparent"
-                WidthRequest="50"
-                HeightRequest="50"
-                Clicked="BackButton_Clicked"
-                SemanticProperties.Description="Go back" />
+            <Grid
+                ColumnDefinitions="Auto,*"
+                ColumnSpacing="14">
 
+                <!-- BACK BUTTON -->
+                <Border
+                    Grid.Column="0"
+                    BackgroundColor="#111419"
+                    Stroke="#272B31"
+                    StrokeThickness="1"
+                    WidthRequest="48"
+                    HeightRequest="48"
+                    Padding="0"
+                    VerticalOptions="Center">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8" />
+                    </Border.StrokeShape>
+
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer
+                            Tapped="BackButton_Clicked" />
+                    </Border.GestureRecognizers>
+
+                    <Label
+                        Text="‹"
+                        TextColor="#B8BCC2"
+                        FontSize="30"
+                        HorizontalTextAlignment="Center"
+                        VerticalTextAlignment="Center"
+                        Margin="0,-3,0,0"
+                        SemanticProperties.Description="Go back" />
+
+                </Border>
+
+
+                <!-- BRAND -->
+                <VerticalStackLayout
+                    Grid.Column="1"
+                    Spacing="2"
+                    VerticalOptions="Center">
+
+                    <Label
+                        Text="VERTECO"
+                        TextColor="#F2F2F2"
+                        FontSize="9"
+                        FontAttributes="Bold"
+                        CharacterSpacing="2.2" />
+
+                    <HorizontalStackLayout Spacing="4">
+
+                        <Label
+                            Text="SMART"
+                            TextColor="#FFFFFF"
+                            FontSize="20"
+                            FontAttributes="Bold" />
+
+                        <Label
+                            Text="JOB"
+                            TextColor="#ED3B3B"
+                            FontSize="20"
+                            FontAttributes="Bold" />
+
+                    </HorizontalStackLayout>
+
+                    <Label
+                        Text="TECHNICIAN CONSOLE"
+                        TextColor="#686E76"
+                        FontSize="7"
+                        FontAttributes="Bold"
+                        CharacterSpacing="1.6" />
+
+                </VerticalStackLayout>
+
+            </Grid>
+
+
+            <!-- HEADER DIVIDER -->
+            <BoxView
+                HeightRequest="1"
+                Color="#24282E"
+                Margin="0,20,0,0" />
+
+
+            <!-- PAGE INTRODUCTION -->
             <VerticalStackLayout
-                Grid.Column="1"
-                VerticalOptions="Center"
-                Spacing="2">
+                Spacing="5"
+                Margin="0,26,0,18">
 
                 <Label
-                    Text="MY JOBS"
-                    TextColor="#E53935"
-                    FontSize="24"
+                    Text="FIELD OPERATIONS"
+                    TextColor="#ED3B3B"
+                    FontSize="9"
+                    FontAttributes="Bold"
+                    CharacterSpacing="2" />
+
+                <Label
+                    Text="My Jobs"
+                    TextColor="#FFFFFF"
+                    FontSize="30"
                     FontAttributes="Bold"
                     SemanticProperties.HeadingLevel="Level1" />
 
                 <Label
-                    Text="Your assigned SmartJob work"
-                    TextColor="#9E9E9E"
+                    Text="Review and manage your assigned SmartJob work."
+                    TextColor="#7C828A"
                     FontSize="12" />
 
             </VerticalStackLayout>
 
-        </Grid>
 
-        <!-- Job List -->
+            <!-- SECTION HEADER -->
+            <Grid
+                ColumnDefinitions="*,Auto"
+                Margin="0,5,0,10">
+
+                <VerticalStackLayout Spacing="2">
+
+                    <Label
+                        Text="ASSIGNED WORK"
+                        TextColor="#FFFFFF"
+                        FontSize="14"
+                        FontAttributes="Bold"
+                        CharacterSpacing="0.5" />
+
+                    <Label
+                        Text="Jobs allocated to your account"
+                        TextColor="#646A72"
+                        FontSize="10" />
+
+                </VerticalStackLayout>
+
+                <Label
+                    Grid.Column="1"
+                    Text="LIVE"
+                    TextColor="#ED3B3B"
+                    FontSize="8"
+                    FontAttributes="Bold"
+                    CharacterSpacing="1.5"
+                    VerticalOptions="Center" />
+
+            </Grid>
+
+        </VerticalStackLayout>
+
+
+        <!-- ================================================= -->
+        <!-- JOB LIST -->
+        <!-- ================================================= -->
+
         <CollectionView
             Grid.Row="1"
             ItemsSource="{Binding Jobs}"
             SelectionMode="None"
-            Margin="20,5,20,20">
+            Margin="24,0,24,24">
 
+            <!-- EMPTY STATE -->
             <CollectionView.EmptyView>
 
                 <VerticalStackLayout
-                    Padding="20"
-                    VerticalOptions="Center"
-                    HorizontalOptions="Center">
+                    Padding="20,50"
+                    Spacing="10"
+                    HorizontalOptions="Fill">
 
-                    <Label
-                        Text="No jobs assigned"
-                        TextColor="White"
-                        FontSize="18"
-                        FontAttributes="Bold"
-                        HorizontalTextAlignment="Center" />
+                    <Border
+                        BackgroundColor="#111419"
+                        Stroke="#292D33"
+                        StrokeThickness="1"
+                        Padding="30">
 
-                    <Label
-                        Text="Your assigned jobs will appear here."
-                        TextColor="#9E9E9E"
-                        FontSize="13"
-                        HorizontalTextAlignment="Center" />
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="8" />
+                        </Border.StrokeShape>
+
+                        <VerticalStackLayout
+                            Spacing="8"
+                            HorizontalOptions="Center">
+
+                            <Label
+                                Text="NO ASSIGNED JOBS"
+                                TextColor="#FFFFFF"
+                                FontSize="13"
+                                FontAttributes="Bold"
+                                CharacterSpacing="1"
+                                HorizontalTextAlignment="Center" />
+
+                            <Label
+                                Text="Your assigned jobs will appear here when work is allocated to you."
+                                TextColor="#70767E"
+                                FontSize="11"
+                                HorizontalTextAlignment="Center" />
+
+                        </VerticalStackLayout>
+
+                    </Border>
 
                 </VerticalStackLayout>
 
             </CollectionView.EmptyView>
+
+
+            <!-- ================================================= -->
+            <!-- JOB CARD -->
+            <!-- ================================================= -->
 
             <CollectionView.ItemTemplate>
 
                 <DataTemplate>
 
                     <Border
-                        BackgroundColor="#1E1E1E"
-                        Stroke="#424242"
+                        BackgroundColor="#111419"
+                        Stroke="#292D33"
                         StrokeThickness="1"
-                        Padding="18"
-                        Margin="0,7">
+                        Padding="0"
+                        Margin="0,6">
 
                         <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="12" />
+                            <RoundRectangle CornerRadius="8" />
                         </Border.StrokeShape>
 
-                        <VerticalStackLayout Spacing="10">
+                        <VerticalStackLayout Spacing="0">
 
-                            <!-- Job number and priority -->
-                            <Grid ColumnDefinitions="*,Auto">
 
+                            <!-- TOP ACCENT -->
+                            <BoxView
+                                HeightRequest="2"
+                                Color="#ED3B3B"
+                                HorizontalOptions="Fill" />
+
+
+                            <VerticalStackLayout
+                                Padding="18"
+                                Spacing="0">
+
+
+                                <!-- JOB NUMBER / PRIORITY -->
+                                <Grid
+                                    ColumnDefinitions="*,Auto"
+                                    ColumnSpacing="10">
+
+                                    <VerticalStackLayout
+                                        Grid.Column="0"
+                                        Spacing="3">
+
+                                        <Label
+                                            Text="JOB CARD"
+                                            TextColor="#646A72"
+                                            FontSize="8"
+                                            FontAttributes="Bold"
+                                            CharacterSpacing="1.4" />
+
+                                        <Label
+                                            Text="{Binding JobNumber}"
+                                            TextColor="#ED3B3B"
+                                            FontSize="13"
+                                            FontAttributes="Bold"
+                                            CharacterSpacing="0.5" />
+
+                                    </VerticalStackLayout>
+
+
+                                    <!-- PRIORITY -->
+                                    <Border
+                                        Grid.Column="1"
+                                        BackgroundColor="#181B20"
+                                        Stroke="#343941"
+                                        StrokeThickness="1"
+                                        Padding="9,5"
+                                        VerticalOptions="Center">
+
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="5" />
+                                        </Border.StrokeShape>
+
+                                        <Label
+                                            Text="{Binding Priority}"
+                                            TextColor="#D6D8DB"
+                                            FontSize="9"
+                                            FontAttributes="Bold"
+                                            CharacterSpacing="0.5" />
+
+                                    </Border>
+
+                                </Grid>
+
+
+                                <!-- JOB TITLE -->
                                 <Label
-                                    Grid.Column="0"
-                                    Text="{Binding JobNumber}"
-                                    TextColor="#E53935"
-                                    FontSize="13"
-                                    FontAttributes="Bold" />
+                                    Text="{Binding Title}"
+                                    TextColor="#FFFFFF"
+                                    FontSize="18"
+                                    FontAttributes="Bold"
+                                    Margin="0,14,0,0"
+                                    LineBreakMode="WordWrap" />
 
+
+                                <!-- CUSTOMER -->
                                 <Label
-                                    Grid.Column="1"
-                                    Text="{Binding Priority}"
-                                    TextColor="#FFC107"
-                                    FontSize="12"
-                                    FontAttributes="Bold" />
+                                    Text="{Binding CustomerName}"
+                                    TextColor="#8A9097"
+                                    FontSize="11"
+                                    Margin="0,4,0,0"
+                                    LineBreakMode="TailTruncation" />
 
-                            </Grid>
 
-                            <!-- Job title -->
-                            <Label
-                                Text="{Binding Title}"
-                                TextColor="White"
-                                FontSize="19"
-                                FontAttributes="Bold" />
+                                <!-- DIVIDER -->
+                                <BoxView
+                                    HeightRequest="1"
+                                    Color="#25292F"
+                                    Margin="0,16,0,14" />
 
-                            <!-- Customer -->
-                            <Label
-                                Text="{Binding CustomerName}"
-                                TextColor="#BDBDBD"
-                                FontSize="13" />
 
-                            <!-- Location -->
-                            <Grid ColumnDefinitions="80,*">
+                                <!-- LOCATION -->
+                                <Grid
+                                    ColumnDefinitions="95,*"
+                                    ColumnSpacing="8"
+                                    Margin="0,0,0,10">
 
-                                <Label
-                                    Grid.Column="0"
-                                    Text="Location"
-                                    TextColor="#757575"
-                                    FontSize="12" />
+                                    <Label
+                                        Grid.Column="0"
+                                        Text="LOCATION"
+                                        TextColor="#5F656D"
+                                        FontSize="8"
+                                        FontAttributes="Bold"
+                                        CharacterSpacing="1" />
 
-                                <Label
-                                    Grid.Column="1"
-                                    Text="{Binding Location}"
-                                    TextColor="#BDBDBD"
-                                    FontSize="12" />
+                                    <Label
+                                        Grid.Column="1"
+                                        Text="{Binding Location}"
+                                        TextColor="#C0C3C7"
+                                        FontSize="11"
+                                        LineBreakMode="WordWrap" />
 
-                            </Grid>
+                                </Grid>
 
-                            <!-- Scheduled date -->
-                            <Grid ColumnDefinitions="80,*">
 
-                                <Label
-                                    Grid.Column="0"
-                                    Text="Scheduled"
-                                    TextColor="#757575"
-                                    FontSize="12" />
+                                <!-- SCHEDULE -->
+                                <Grid
+                                    ColumnDefinitions="95,*"
+                                    ColumnSpacing="8"
+                                    Margin="0,0,0,10">
 
-                                <Label
-                                    Grid.Column="1"
-                                    Text="{Binding ScheduledDateDisplay}"
-                                    TextColor="#BDBDBD"
-                                    FontSize="12" />
+                                    <Label
+                                        Grid.Column="0"
+                                        Text="SCHEDULED"
+                                        TextColor="#5F656D"
+                                        FontSize="8"
+                                        FontAttributes="Bold"
+                                        CharacterSpacing="1" />
 
-                            </Grid>
+                                    <Label
+                                        Grid.Column="1"
+                                        Text="{Binding ScheduledDateDisplay}"
+                                        TextColor="#C0C3C7"
+                                        FontSize="11" />
 
-                            <!-- Status -->
-                            <Grid ColumnDefinitions="80,*">
+                                </Grid>
 
-                                <Label
-                                    Grid.Column="0"
-                                    Text="Status"
-                                    TextColor="#757575"
-                                    FontSize="12" />
 
-                                <Label
-                                    Grid.Column="1"
-                                    Text="{Binding Status}"
-                                    TextColor="#4CAF50"
-                                    FontSize="12"
-                                    FontAttributes="Bold" />
+                                <!-- STATUS -->
+                                <Grid
+                                    ColumnDefinitions="95,*"
+                                    ColumnSpacing="8">
 
-                            </Grid>
+                                    <Label
+                                        Grid.Column="0"
+                                        Text="STATUS"
+                                        TextColor="#5F656D"
+                                        FontSize="8"
+                                        FontAttributes="Bold"
+                                        CharacterSpacing="1"
+                                        VerticalOptions="Center" />
 
-                            <Button
-                                Text="VIEW JOB"
-                                BackgroundColor="#2A2A2A"
-                                BorderColor="#E53935"
-                                BorderWidth="1"
-                                TextColor="#E53935"
-                                FontAttributes="Bold"
-                                HeightRequest="46"
-                                CornerRadius="9"
-                                Margin="0,8,0,0"
-                                CommandParameter="{Binding .}"
-                                Clicked="ViewJobButton_Clicked"
-                                SemanticProperties.Description="View job details" />
+                                    <HorizontalStackLayout
+                                        Grid.Column="1"
+                                        Spacing="6">
+
+                                        <BoxView
+                                            WidthRequest="6"
+                                            HeightRequest="6"
+                                            CornerRadius="3"
+                                            Color="#ED3B3B"
+                                            VerticalOptions="Center" />
+
+                                        <Label
+                                            Text="{Binding Status}"
+                                            TextColor="#D5D7DA"
+                                            FontSize="10"
+                                            FontAttributes="Bold"
+                                            VerticalOptions="Center" />
+
+                                    </HorizontalStackLayout>
+
+                                </Grid>
+
+
+                                <!-- VIEW JOB -->
+                                <Button
+                                    Text="VIEW JOB"
+                                    BackgroundColor="#ED3B3B"
+                                    TextColor="#FFFFFF"
+                                    FontAttributes="Bold"
+                                    FontSize="11"
+                                    CharacterSpacing="0.8"
+                                    HeightRequest="48"
+                                    CornerRadius="6"
+                                    Margin="0,18,0,0"
+                                    CommandParameter="{Binding .}"
+                                    Clicked="ViewJobButton_Clicked"
+                                    SemanticProperties.Description="View job details" />
+
+                            </VerticalStackLayout>
 
                         </VerticalStackLayout>
 

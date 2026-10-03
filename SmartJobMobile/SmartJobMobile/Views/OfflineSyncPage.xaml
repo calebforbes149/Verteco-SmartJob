@@ -4,235 +4,288 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:Class="SmartJobMobile.Views.OfflineSyncPage"
-    BackgroundColor="#121212"
+    BackgroundColor="#0A0C0F"
     Shell.NavBarIsVisible="False">
 
     <Grid RowDefinitions="Auto,*">
 
         <!-- HEADER -->
-        <Grid
+        <VerticalStackLayout
             Grid.Row="0"
-            Padding="20,18"
-            ColumnDefinitions="Auto,*"
-            BackgroundColor="#181818">
+            Padding="24,22,24,0"
+            Spacing="0">
 
-            <Button
-                Grid.Column="0"
-                Text="‹"
-                FontSize="30"
-                TextColor="White"
-                BackgroundColor="Transparent"
-                Padding="0"
-                WidthRequest="45"
-                Clicked="BackButton_Clicked"
-                SemanticProperties.Description="Go back" />
+            <Grid
+                ColumnDefinitions="Auto,*"
+                ColumnSpacing="14">
 
-            <VerticalStackLayout
-                Grid.Column="1"
-                Spacing="2"
-                VerticalOptions="Center">
+                <Border
+                    Grid.Column="0"
+                    BackgroundColor="#111419"
+                    Stroke="#272B31"
+                    StrokeThickness="1"
+                    WidthRequest="48"
+                    HeightRequest="48"
+                    Padding="0"
+                    VerticalOptions="Center">
 
-                <Label
-                    Text="OFFLINE SYNC"
-                    TextColor="#E53935"
-                    FontSize="20"
-                    FontAttributes="Bold" />
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8" />
+                    </Border.StrokeShape>
 
-                <Label
-                    Text="Manage offline data and synchronisation"
-                    TextColor="#9E9E9E"
-                    FontSize="12" />
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer
+                            Tapped="BackButton_Clicked" />
+                    </Border.GestureRecognizers>
 
-            </VerticalStackLayout>
+                    <Label
+                        Text="‹"
+                        TextColor="#B8BCC2"
+                        FontSize="30"
+                        HorizontalTextAlignment="Center"
+                        VerticalTextAlignment="Center"
+                        Margin="0,-3,0,0"
+                        SemanticProperties.Description="Go back" />
 
-        </Grid>
+                </Border>
+
+                <VerticalStackLayout
+                    Grid.Column="1"
+                    Spacing="2"
+                    VerticalOptions="Center">
+
+                    <Label
+                        Text="VERTECO"
+                        TextColor="#F2F2F2"
+                        FontSize="9"
+                        FontAttributes="Bold"
+                        CharacterSpacing="2.2" />
+
+                    <HorizontalStackLayout Spacing="4">
+
+                        <Label
+                            Text="SMART"
+                            TextColor="#FFFFFF"
+                            FontSize="20"
+                            FontAttributes="Bold" />
+
+                        <Label
+                            Text="JOB"
+                            TextColor="#ED3B3B"
+                            FontSize="20"
+                            FontAttributes="Bold" />
+
+                    </HorizontalStackLayout>
+
+                    <Label
+                        Text="TECHNICIAN CONSOLE"
+                        TextColor="#686E76"
+                        FontSize="7"
+                        FontAttributes="Bold"
+                        CharacterSpacing="1.6" />
+
+                </VerticalStackLayout>
+
+            </Grid>
+
+            <BoxView
+                HeightRequest="1"
+                Color="#24282E"
+                Margin="0,20,0,0" />
+
+        </VerticalStackLayout>
+
 
         <!-- CONTENT -->
         <ScrollView Grid.Row="1">
 
             <VerticalStackLayout
-                Padding="20"
-                Spacing="18">
+                Padding="24,26,24,32"
+                Spacing="0">
+
+                <!-- INTRO -->
+                <VerticalStackLayout Spacing="5">
+
+                    <Label
+                        Text="DATA &amp; CONNECTIVITY"
+                        TextColor="#ED3B3B"
+                        FontSize="9"
+                        FontAttributes="Bold"
+                        CharacterSpacing="2" />
+
+                    <Label
+                        Text="Offline Sync"
+                        TextColor="#FFFFFF"
+                        FontSize="30"
+                        FontAttributes="Bold"
+                        SemanticProperties.HeadingLevel="Level1" />
+
+                    <Label
+                        Text="Manage connectivity, pending changes and synchronisation."
+                        TextColor="#7C828A"
+                        FontSize="12"
+                        LineBreakMode="WordWrap" />
+
+                </VerticalStackLayout>
+
 
                 <!-- CONNECTION STATUS -->
-                <Label
-                    Text="CONNECTION STATUS"
-                    TextColor="#BDBDBD"
-                    FontSize="12"
-                    FontAttributes="Bold"
-                    CharacterSpacing="1" />
+                <VerticalStackLayout
+                    Spacing="2"
+                    Margin="0,28,0,12">
+
+                    <Label
+                        Text="CONNECTION STATUS"
+                        TextColor="#FFFFFF"
+                        FontSize="14"
+                        FontAttributes="Bold"
+                        CharacterSpacing="0.5" />
+
+                    <Label
+                        Text="Current device connectivity"
+                        TextColor="#646A72"
+                        FontSize="10" />
+
+                </VerticalStackLayout>
+
 
                 <Border
-                    BackgroundColor="#1E1E1E"
-                    Stroke="#383838"
+                    BackgroundColor="#111419"
+                    Stroke="#292D33"
                     StrokeThickness="1"
                     Padding="18">
 
                     <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="12" />
+                        <RoundRectangle CornerRadius="8" />
                     </Border.StrokeShape>
 
-                    <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Grid
+                        ColumnDefinitions="Auto,*"
+                        ColumnSpacing="14">
 
-                        <BoxView
+                        <Border
                             Grid.Column="0"
-                            Color="{Binding ConnectionColor}"
-                            WidthRequest="12"
-                            HeightRequest="12"
-                            CornerRadius="6"
-                            VerticalOptions="Center"
-                            Margin="0,0,12,0" />
+                            WidthRequest="42"
+                            HeightRequest="42"
+                            BackgroundColor="#171A1F"
+                            Stroke="#30343A"
+                            StrokeThickness="1"
+                            Padding="0"
+                            VerticalOptions="Center">
+
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="21" />
+                            </Border.StrokeShape>
+
+                            <BoxView
+                                Color="{Binding ConnectionColor}"
+                                WidthRequest="12"
+                                HeightRequest="12"
+                                CornerRadius="6"
+                                HorizontalOptions="Center"
+                                VerticalOptions="Center" />
+
+                        </Border>
 
                         <VerticalStackLayout
                             Grid.Column="1"
-                            Spacing="3">
+                            Spacing="3"
+                            VerticalOptions="Center">
 
                             <Label
                                 Text="{Binding ConnectionStatus}"
-                                TextColor="White"
-                                FontSize="17"
+                                TextColor="#FFFFFF"
+                                FontSize="16"
                                 FontAttributes="Bold" />
 
                             <Label
                                 Text="{Binding ConnectionMessage}"
-                                TextColor="#9E9E9E"
-                                FontSize="12" />
+                                TextColor="#7C828A"
+                                FontSize="10"
+                                LineBreakMode="WordWrap" />
 
                         </VerticalStackLayout>
-
-                        <Label
-                            Grid.Column="2"
-                            Text="{Binding ConnectionIcon}"
-                            FontSize="22"
-                            VerticalOptions="Center" />
 
                     </Grid>
 
                 </Border>
 
-                <!-- SYNC STATUS -->
-                <Label
-                    Text="SYNCHRONISATION"
-                    TextColor="#BDBDBD"
-                    FontSize="12"
-                    FontAttributes="Bold"
-                    CharacterSpacing="1" />
+
+                <!-- SYNCHRONISATION -->
+                <VerticalStackLayout
+                    Spacing="2"
+                    Margin="0,28,0,12">
+
+                    <Label
+                        Text="SYNCHRONISATION"
+                        TextColor="#FFFFFF"
+                        FontSize="14"
+                        FontAttributes="Bold"
+                        CharacterSpacing="0.5" />
+
+                    <Label
+                        Text="Server synchronisation status"
+                        TextColor="#646A72"
+                        FontSize="10" />
+
+                </VerticalStackLayout>
+
 
                 <Border
-                    BackgroundColor="#1E1E1E"
-                    Stroke="#383838"
+                    BackgroundColor="#111419"
+                    Stroke="#292D33"
                     StrokeThickness="1"
                     Padding="18">
 
                     <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="12" />
+                        <RoundRectangle CornerRadius="8" />
                     </Border.StrokeShape>
 
-                    <VerticalStackLayout Spacing="15">
+                    <VerticalStackLayout Spacing="0">
 
-                        <Grid ColumnDefinitions="*,Auto">
+                        <Grid
+                            ColumnDefinitions="*,Auto"
+                            ColumnSpacing="12">
 
-                            <VerticalStackLayout Spacing="3">
+                            <VerticalStackLayout
+                                Grid.Column="0"
+                                Spacing="4">
 
                                 <Label
-                                    Text="Sync Status"
-                                    TextColor="#9E9E9E"
-                                    FontSize="12" />
+                                    Text="SYNC STATUS"
+                                    TextColor="#646A72"
+                                    FontSize="8"
+                                    FontAttributes="Bold"
+                                    CharacterSpacing="0.8" />
 
                                 <Label
                                     Text="{Binding SyncStatus}"
                                     TextColor="{Binding SyncStatusColor}"
-                                    FontSize="16"
+                                    FontSize="15"
                                     FontAttributes="Bold" />
-
-                            </VerticalStackLayout>
-
-                            <Label
-                                Grid.Column="1"
-                                Text="↻"
-                                TextColor="#E53935"
-                                FontSize="28"
-                                VerticalOptions="Center" />
-
-                        </Grid>
-
-                        <BoxView
-                            HeightRequest="1"
-                            Color="#333333" />
-
-                        <Grid ColumnDefinitions="*,Auto">
-
-                            <Label
-                                Text="Last successful sync"
-                                TextColor="#9E9E9E"
-                                FontSize="13" />
-
-                            <Label
-                                Grid.Column="1"
-                                Text="{Binding LastSync}"
-                                TextColor="White"
-                                FontSize="13" />
-
-                        </Grid>
-
-                    </VerticalStackLayout>
-
-                </Border>
-
-                <!-- PENDING OPERATIONS -->
-                <Label
-                    Text="OFFLINE QUEUE"
-                    TextColor="#BDBDBD"
-                    FontSize="12"
-                    FontAttributes="Bold"
-                    CharacterSpacing="1" />
-
-                <Border
-                    BackgroundColor="#1E1E1E"
-                    Stroke="#383838"
-                    StrokeThickness="1"
-                    Padding="18">
-
-                    <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="12" />
-                    </Border.StrokeShape>
-
-                    <VerticalStackLayout Spacing="15">
-
-                        <Grid ColumnDefinitions="*,Auto">
-
-                            <VerticalStackLayout Spacing="3">
-
-                                <Label
-                                    Text="Pending Operations"
-                                    TextColor="White"
-                                    FontSize="16"
-                                    FontAttributes="Bold" />
-
-                                <Label
-                                    Text="Changes waiting to be sent to SmartJob"
-                                    TextColor="#9E9E9E"
-                                    FontSize="12" />
 
                             </VerticalStackLayout>
 
                             <Border
                                 Grid.Column="1"
-                                BackgroundColor="#3D2424"
-                                Stroke="#E53935"
+                                BackgroundColor="#241416"
+                                Stroke="#5A292D"
                                 StrokeThickness="1"
-                                Padding="10,5"
+                                WidthRequest="40"
+                                HeightRequest="40"
+                                Padding="0"
                                 VerticalOptions="Center">
 
                                 <Border.StrokeShape>
-                                    <RoundRectangle CornerRadius="15" />
+                                    <RoundRectangle CornerRadius="20" />
                                 </Border.StrokeShape>
 
                                 <Label
-                                    Text="{Binding PendingOperations}"
-                                    TextColor="#EF5350"
-                                    FontSize="13"
-                                    FontAttributes="Bold" />
+                                    Text="↻"
+                                    TextColor="#ED3B3B"
+                                    FontSize="22"
+                                    HorizontalTextAlignment="Center"
+                                    VerticalTextAlignment="Center" />
 
                             </Border>
 
@@ -240,73 +293,188 @@
 
                         <BoxView
                             HeightRequest="1"
-                            Color="#333333" />
+                            Color="#292D33"
+                            Margin="0,16" />
 
-                        <Grid ColumnDefinitions="Auto,*,Auto">
+                        <Grid
+                            ColumnDefinitions="*,Auto"
+                            ColumnSpacing="12">
 
                             <Label
                                 Grid.Column="0"
-                                Text="📋"
-                                FontSize="20"
-                                VerticalOptions="Center"
-                                Margin="0,0,10,0" />
+                                Text="LAST SUCCESSFUL SYNC"
+                                TextColor="#646A72"
+                                FontSize="8"
+                                FontAttributes="Bold"
+                                CharacterSpacing="0.7"
+                                VerticalOptions="Center" />
+
+                            <Label
+                                Grid.Column="1"
+                                Text="{Binding LastSync}"
+                                TextColor="#C4C7CB"
+                                FontSize="10"
+                                HorizontalTextAlignment="End"
+                                VerticalOptions="Center" />
+
+                        </Grid>
+
+                    </VerticalStackLayout>
+
+                </Border>
+
+
+                <!-- OFFLINE QUEUE -->
+                <VerticalStackLayout
+                    Spacing="2"
+                    Margin="0,28,0,12">
+
+                    <Label
+                        Text="OFFLINE QUEUE"
+                        TextColor="#FFFFFF"
+                        FontSize="14"
+                        FontAttributes="Bold"
+                        CharacterSpacing="0.5" />
+
+                    <Label
+                        Text="Changes waiting to be synchronised"
+                        TextColor="#646A72"
+                        FontSize="10" />
+
+                </VerticalStackLayout>
+
+
+                <Border
+                    BackgroundColor="#111419"
+                    Stroke="#292D33"
+                    StrokeThickness="1"
+                    Padding="18">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8" />
+                    </Border.StrokeShape>
+
+                    <VerticalStackLayout Spacing="0">
+
+                        <!-- TOTAL PENDING -->
+                        <Grid
+                            ColumnDefinitions="*,Auto"
+                            ColumnSpacing="14">
 
                             <VerticalStackLayout
-                                Grid.Column="1"
-                                Spacing="2">
+                                Grid.Column="0"
+                                Spacing="3">
 
                                 <Label
-                                    Text="Job updates"
-                                    TextColor="#BDBDBD"
-                                    FontSize="13" />
+                                    Text="Pending Operations"
+                                    TextColor="#E4E5E7"
+                                    FontSize="13"
+                                    FontAttributes="Bold" />
+
+                                <Label
+                                    Text="Changes waiting to be sent to SmartJob"
+                                    TextColor="#646A72"
+                                    FontSize="9" />
+
+                            </VerticalStackLayout>
+
+                            <Border
+                                Grid.Column="1"
+                                BackgroundColor="#241416"
+                                Stroke="#5A292D"
+                                StrokeThickness="1"
+                                Padding="12,6"
+                                VerticalOptions="Center">
+
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="5" />
+                                </Border.StrokeShape>
+
+                                <Label
+                                    Text="{Binding PendingOperations}"
+                                    TextColor="#ED7777"
+                                    FontSize="13"
+                                    FontAttributes="Bold" />
+
+                            </Border>
+
+                        </Grid>
+
+
+                        <BoxView
+                            HeightRequest="1"
+                            Color="#292D33"
+                            Margin="0,16" />
+
+
+                        <!-- JOB UPDATES -->
+                        <Grid
+                            ColumnDefinitions="*,Auto"
+                            ColumnSpacing="12">
+
+                            <VerticalStackLayout
+                                Grid.Column="0"
+                                Spacing="3">
+
+                                <Label
+                                    Text="JOB UPDATES"
+                                    TextColor="#8D939A"
+                                    FontSize="9"
+                                    FontAttributes="Bold"
+                                    CharacterSpacing="0.6" />
 
                                 <Label
                                     Text="Completed work waiting to sync"
-                                    TextColor="#757575"
-                                    FontSize="11" />
+                                    TextColor="#646A72"
+                                    FontSize="9" />
 
                             </VerticalStackLayout>
 
                             <Label
-                                Grid.Column="2"
+                                Grid.Column="1"
                                 Text="{Binding PendingJobUpdates}"
-                                TextColor="White"
-                                FontSize="15"
+                                TextColor="#FFFFFF"
+                                FontSize="16"
                                 FontAttributes="Bold"
                                 VerticalOptions="Center" />
 
                         </Grid>
 
-                        <Grid ColumnDefinitions="Auto,*,Auto">
 
-                            <Label
-                                Grid.Column="0"
-                                Text="📷"
-                                FontSize="20"
-                                VerticalOptions="Center"
-                                Margin="0,0,10,0" />
+                        <BoxView
+                            HeightRequest="1"
+                            Color="#292D33"
+                            Margin="0,16" />
+
+
+                        <!-- EVIDENCE -->
+                        <Grid
+                            ColumnDefinitions="*,Auto"
+                            ColumnSpacing="12">
 
                             <VerticalStackLayout
-                                Grid.Column="1"
-                                Spacing="2">
+                                Grid.Column="0"
+                                Spacing="3">
 
                                 <Label
-                                    Text="Evidence uploads"
-                                    TextColor="#BDBDBD"
-                                    FontSize="13" />
+                                    Text="EVIDENCE UPLOADS"
+                                    TextColor="#8D939A"
+                                    FontSize="9"
+                                    FontAttributes="Bold"
+                                    CharacterSpacing="0.6" />
 
                                 <Label
                                     Text="Photos waiting to upload"
-                                    TextColor="#757575"
-                                    FontSize="11" />
+                                    TextColor="#646A72"
+                                    FontSize="9" />
 
                             </VerticalStackLayout>
 
                             <Label
-                                Grid.Column="2"
+                                Grid.Column="1"
                                 Text="{Binding PendingEvidence}"
-                                TextColor="White"
-                                FontSize="15"
+                                TextColor="#FFFFFF"
+                                FontSize="16"
                                 FontAttributes="Bold"
                                 VerticalOptions="Center" />
 
@@ -316,55 +484,70 @@
 
                 </Border>
 
-                <!-- CONFLICTS -->
-                <Label
-                    Text="CONFLICTS"
-                    TextColor="#BDBDBD"
-                    FontSize="12"
-                    FontAttributes="Bold"
-                    CharacterSpacing="1" />
+
+                <!-- NEEDS REVIEW -->
+                <VerticalStackLayout
+                    Spacing="2"
+                    Margin="0,28,0,12">
+
+                    <Label
+                        Text="NEEDS REVIEW"
+                        TextColor="#FFFFFF"
+                        FontSize="14"
+                        FontAttributes="Bold"
+                        CharacterSpacing="0.5" />
+
+                    <Label
+                        Text="Synchronisation conflicts"
+                        TextColor="#646A72"
+                        FontSize="10" />
+
+                </VerticalStackLayout>
+
 
                 <Border
-                    BackgroundColor="#1E1E1E"
-                    Stroke="#383838"
+                    BackgroundColor="#111419"
+                    Stroke="#3B3525"
                     StrokeThickness="1"
                     Padding="18">
 
                     <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="12" />
+                        <RoundRectangle CornerRadius="8" />
                     </Border.StrokeShape>
 
-                    <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Grid
+                        ColumnDefinitions="3,*,Auto"
+                        ColumnSpacing="13">
 
-                        <Label
+                        <BoxView
                             Grid.Column="0"
-                            Text="⚠"
-                            TextColor="#FFC107"
-                            FontSize="23"
-                            VerticalOptions="Center"
-                            Margin="0,0,12,0" />
+                            WidthRequest="3"
+                            Color="#C79B43"
+                            CornerRadius="2" />
 
                         <VerticalStackLayout
                             Grid.Column="1"
                             Spacing="3">
 
                             <Label
-                                Text="Needs Review"
-                                TextColor="White"
-                                FontSize="15"
-                                FontAttributes="Bold" />
+                                Text="CONFLICTS REQUIRING ATTENTION"
+                                TextColor="#D2B46F"
+                                FontSize="9"
+                                FontAttributes="Bold"
+                                CharacterSpacing="0.5" />
 
                             <Label
-                                Text="Sync conflicts requiring attention"
-                                TextColor="#9E9E9E"
-                                FontSize="12" />
+                                Text="Review any changes that could not be synchronised automatically."
+                                TextColor="#7C7564"
+                                FontSize="9"
+                                LineBreakMode="WordWrap" />
 
                         </VerticalStackLayout>
 
                         <Label
                             Grid.Column="2"
                             Text="{Binding ConflictCount}"
-                            TextColor="#FFC107"
+                            TextColor="#D2B46F"
                             FontSize="20"
                             FontAttributes="Bold"
                             VerticalOptions="Center" />
@@ -373,69 +556,135 @@
 
                 </Border>
 
-                <!-- SYNC INFORMATION -->
+
+                <!-- OFFLINE INFORMATION -->
                 <Border
-                    BackgroundColor="#252525"
-                    Stroke="#424242"
+                    BackgroundColor="#0E1013"
+                    Stroke="#20242A"
                     StrokeThickness="1"
-                    Padding="14">
+                    Padding="15"
+                    Margin="0,18,0,0">
 
                     <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="10" />
+                        <RoundRectangle CornerRadius="6" />
                     </Border.StrokeShape>
 
-                    <VerticalStackLayout Spacing="6">
+                    <Grid
+                        ColumnDefinitions="3,*"
+                        ColumnSpacing="12">
 
-                        <Label
-                            Text="Offline Mode"
-                            TextColor="#E53935"
-                            FontSize="14"
-                            FontAttributes="Bold" />
+                        <BoxView
+                            Grid.Column="0"
+                            WidthRequest="3"
+                            Color="#ED3B3B"
+                            CornerRadius="2" />
 
-                        <Label
-                            Text="SmartJob can store job changes on this device while offline. Pending changes will synchronise when a connection becomes available."
-                            TextColor="#BDBDBD"
-                            FontSize="12" />
+                        <VerticalStackLayout
+                            Grid.Column="1"
+                            Spacing="4">
 
-                    </VerticalStackLayout>
+                            <Label
+                                Text="OFFLINE MODE"
+                                TextColor="#DADDE0"
+                                FontSize="9"
+                                FontAttributes="Bold"
+                                CharacterSpacing="0.7" />
+
+                            <Label
+                                Text="SmartJob can store job changes on this device while offline. Pending changes will synchronise when a connection becomes available."
+                                TextColor="#6F757D"
+                                FontSize="10"
+                                LineHeight="1.25"
+                                LineBreakMode="WordWrap" />
+
+                        </VerticalStackLayout>
+
+                    </Grid>
 
                 </Border>
 
-                <!-- ERROR -->
-                <Label
-                    Text="{Binding ErrorMessage}"
-                    TextColor="#EF5350"
-                    FontSize="13"
-                    IsVisible="{Binding HasError}"
-                    HorizontalTextAlignment="Center" />
 
-                <!-- SYNC BUTTON -->
+                <!-- ERROR -->
+                <Border
+                    IsVisible="{Binding HasError}"
+                    BackgroundColor="#241416"
+                    Stroke="#5A292D"
+                    StrokeThickness="1"
+                    Padding="14"
+                    Margin="0,18,0,0">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="6" />
+                    </Border.StrokeShape>
+
+                    <Label
+                        Text="{Binding ErrorMessage}"
+                        TextColor="#EF7777"
+                        FontSize="11"
+                        HorizontalTextAlignment="Center"
+                        LineBreakMode="WordWrap" />
+
+                </Border>
+
+
+                <!-- SYNC -->
                 <Button
                     Text="{Binding SyncButtonText}"
                     Command="{Binding SyncCommand}"
-                    BackgroundColor="#E53935"
-                    TextColor="White"
-                    FontSize="15"
-                    FontAttributes="Bold"
-                    HeightRequest="52"
-                    CornerRadius="10"
                     IsEnabled="{Binding CanSync}"
+                    BackgroundColor="#ED3B3B"
+                    TextColor="#FFFFFF"
+                    FontSize="12"
+                    FontAttributes="Bold"
+                    CharacterSpacing="0.8"
+                    HeightRequest="52"
+                    CornerRadius="6"
+                    Margin="0,28,0,0"
                     SemanticProperties.Description="Synchronise offline SmartJob data" />
+
 
                 <!-- REFRESH -->
                 <Button
                     Text="REFRESH STATUS"
                     Command="{Binding RefreshCommand}"
-                    BackgroundColor="#1E1E1E"
-                    BorderColor="#555555"
+                    BackgroundColor="#111419"
+                    BorderColor="#34383E"
                     BorderWidth="1"
-                    TextColor="White"
-                    FontSize="13"
+                    TextColor="#BFC3C8"
+                    FontSize="11"
                     FontAttributes="Bold"
-                    HeightRequest="48"
-                    CornerRadius="10"
-                    Margin="0,0,0,20"
+                    CharacterSpacing="0.7"
+                    HeightRequest="50"
+                    CornerRadius="6"
+                    Margin="0,10,0,0"
                     SemanticProperties.Description="Refresh connection and synchronisation status" />
+
+
+                <!-- FOOTER -->
+                <BoxView
+                    HeightRequest="1"
+                    Color="#20242A"
+                    Margin="0,28,0,0" />
+
+                <Grid
+                    ColumnDefinitions="*,Auto"
+                    Margin="0,12,0,0">
+
+                    <Label
+                        Text="VERTECO SMARTJOB"
+                        TextColor="#50555C"
+                        FontSize="8"
+                        FontAttributes="Bold"
+                        CharacterSpacing="1.5" />
+
+                    <Label
+                        Grid.Column="1"
+                        Text="OFFLINE SYNC"
+                        TextColor="#50555C"
+                        FontSize="8"
+                        CharacterSpacing="1.2" />
+
+                </Grid>
 
             </VerticalStackLayout>
 
