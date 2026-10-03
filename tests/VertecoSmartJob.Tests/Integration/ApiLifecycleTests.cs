@@ -104,6 +104,8 @@ public sealed class ApiLifecycleTests
         Assert.Equal("attachment", pdf.Content.Headers.ContentDisposition?.DispositionType);
         var document = System.Text.Encoding.ASCII.GetString(await pdf.Content.ReadAsByteArrayAsync());
         Assert.StartsWith("%PDF-1.4", document);
+        Assert.Contains("/Count 2", document);
+        Assert.Contains("/Logo Do", document);
         Assert.Contains("AI commentary", document);
         Assert.Contains("Unavailable for this report", document);
     }

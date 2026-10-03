@@ -25,4 +25,8 @@
     <ProjectReference Include="..\VertecoSmartJob.Contracts\VertecoSmartJob.Contracts.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\verteco-logo-full.png" />
+  </ItemGroup>
+
 </Project>
