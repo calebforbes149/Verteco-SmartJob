@@ -18,4 +18,12 @@ public partial class ProfilePage : ContentPage
     {
         await Shell.Current.GoToAsync("..");
     }
+
+    private async void OfflineSync_Tapped(
+        object sender,
+        TappedEventArgs e)
+    {
+        await Navigation.PushAsync(
+            new OfflineSyncPage());
+    }
 }

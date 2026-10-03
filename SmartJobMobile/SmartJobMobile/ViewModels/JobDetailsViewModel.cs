@@ -84,7 +84,7 @@ public class JobDetailsViewModel : INotifyPropertyChanged
             System.Diagnostics.Debug.WriteLine(
                 $"Failed to load job details: {ex.Message}");
 
-            await Shell.Current.DisplayAlert(
+            await Shell.Current.DisplayAlertAsync(
                 "Unable to Load Job",
                 "The full job details could not be retrieved from the server.",
                 "OK");
@@ -100,27 +100,20 @@ public class JobDetailsViewModel : INotifyPropertyChanged
         {
             // -------------------------------------------------
             // JOB IS ALREADY IN PROGRESS
-            // Continue working on the existing job.
+            // Continue the existing workflow.
             // -------------------------------------------------
             if (SelectedJob.Status == "In Progress")
             {
-                await Application.Current!
-                    .MainPage!
-                    .Navigation
-                    .PushAsync(
-                        new ChecklistPage(
-                            SelectedJob));
-
+                await NavigateToChecklistAsync();
                 return;
             }
 
             // -------------------------------------------------
             // COMPLETED JOB
-            // Completed jobs cannot be started again.
             // -------------------------------------------------
             if (SelectedJob.Status == "Completed")
             {
-                await Shell.Current.DisplayAlert(
+                await Shell.Current.DisplayAlertAsync(
                     "Job Completed",
                     "This job has already been completed and cannot be started again.",
                     "OK");
@@ -129,49 +122,119 @@ public class JobDetailsViewModel : INotifyPropertyChanged
             }
 
             // -------------------------------------------------
-            // ONLY ACCEPTED JOBS CAN BE STARTED
+            // AWAITING APPROVAL
             // -------------------------------------------------
-            if (SelectedJob.Status != "Accepted")
+            if (SelectedJob.Status == "Awaiting Approval")
             {
-                await Shell.Current.DisplayAlert(
-                    "Job Cannot Be Started",
-                    $"This job currently has the status '{SelectedJob.Status}'.",
+                await Shell.Current.DisplayAlertAsync(
+                    "Awaiting Approval",
+                    "This job has already been submitted and is awaiting manager approval.",
                     "OK");
 
                 return;
             }
 
             // -------------------------------------------------
-            // CALL REAL API START ENDPOINT
+            // ASSIGNED JOB
+            //
+            // The backend requires:
+            // Assigned -> Accepted -> In Progress
             // -------------------------------------------------
-            bool started =
-                await _apiService.StartJobAsync(
-                    SelectedJob.ApiId);
-
-            if (started)
+            if (SelectedJob.Status == "Assigned")
             {
-                SelectedJob.Status =
-                    "In Progress";
+                bool accepted =
+                    await _apiService.AcceptJobAsync(
+                        SelectedJob.ApiId);
 
-                // Pass the REAL selected job to the checklist.
-                await Application.Current!
-                    .MainPage!
-                    .Navigation
-                    .PushAsync(
-                        new ChecklistPage(
-                            SelectedJob));
+                if (!accepted)
+                {
+                    await Shell.Current.DisplayAlertAsync(
+                        "Unable to Accept Job",
+                        "SmartJob could not accept this job. Please check your connection and try again.",
+                        "OK");
+
+                    return;
+                }
+
+                SelectedJob.Status = "Accepted";
+
+                OnPropertyChanged(
+                    nameof(SelectedJob));
             }
+
+            // -------------------------------------------------
+            // ACCEPTED JOB
+            // Start it using the real backend API.
+            // -------------------------------------------------
+            if (SelectedJob.Status == "Accepted")
+            {
+                bool started =
+                    await _apiService.StartJobAsync(
+                        SelectedJob.ApiId);
+
+                if (!started)
+                {
+                    await Shell.Current.DisplayAlertAsync(
+                        "Unable to Start Job",
+                        "The job was accepted, but SmartJob could not start it. Please try again.",
+                        "OK");
+
+                    return;
+                }
+
+                SelectedJob.Status = "In Progress";
+
+                OnPropertyChanged(
+                    nameof(SelectedJob));
+
+                await NavigateToChecklistAsync();
+
+                return;
+            }
+
+            // -------------------------------------------------
+            // ANY OTHER STATUS
+            // -------------------------------------------------
+            await Shell.Current.DisplayAlertAsync(
+                "Job Cannot Be Started",
+                $"This job currently has the status '{SelectedJob.Status}'.",
+                "OK");
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine(
                 $"Failed to start job: {ex.Message}");
 
-            await Shell.Current.DisplayAlert(
+            await Shell.Current.DisplayAlertAsync(
                 "Unable to Start Job",
                 "SmartJob could not start this job. Please check your connection and try again.",
                 "OK");
         }
+    }
+
+    // =========================================================
+    // NAVIGATE TO CHECKLIST
+    // =========================================================
+    private async Task NavigateToChecklistAsync()
+    {
+        Window? window =
+            Application.Current?
+                .Windows
+                .FirstOrDefault();
+
+        if (window?.Page == null)
+        {
+            await Shell.Current.DisplayAlertAsync(
+                "Navigation Error",
+                "SmartJob could not open the checklist.",
+                "OK");
+
+            return;
+        }
+
+        await window.Page.Navigation.PushAsync(
+            new ChecklistPage(
+                SelectedJob));
     }
 
     // =========================================================

@@ -79,6 +79,42 @@ public class ApiService
     }
 
     // =========================================================
+    // ACCEPT JOB
+    // =========================================================
+
+    public async Task<bool> AcceptJobAsync(
+        Guid jobId)
+    {
+        try
+        {
+            HttpResponseMessage response =
+                await _httpClient.PostAsync(
+                    $"api/v1/mobile/jobs/{jobId}/accept",
+                    null);
+
+            string responseBody =
+                await response.Content.ReadAsStringAsync();
+
+            System.Diagnostics.Debug.WriteLine(
+                $"ACCEPT JOB STATUS: {(int)response.StatusCode} {response.StatusCode}");
+
+            System.Diagnostics.Debug.WriteLine(
+                $"ACCEPT JOB RESPONSE: {responseBody}");
+
+            response.EnsureSuccessStatusCode();
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"SmartJob API Error - Accept Job: {ex}");
+
+            throw;
+        }
+    }
+
+    // =========================================================
     // START JOB
     // =========================================================
 

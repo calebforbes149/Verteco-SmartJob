@@ -368,36 +368,43 @@
 
                         <!-- CONNECTION -->
                         <Grid
-                            ColumnDefinitions="*,Auto"
-                            ColumnSpacing="12">
+    ColumnDefinitions="*,Auto"
+    ColumnSpacing="12"
+    Padding="0,6">
+
+                            <Grid.GestureRecognizers>
+                                <TapGestureRecognizer
+            Tapped="OfflineSync_Tapped" />
+                            </Grid.GestureRecognizers>
 
                             <VerticalStackLayout
-                                Grid.Column="0"
-                                Spacing="3">
+        Grid.Column="0"
+        Spacing="3">
 
                                 <Label
-                                    Text="CONNECTION"
-                                    TextColor="#646A72"
-                                    FontSize="8"
-                                    FontAttributes="Bold"
-                                    CharacterSpacing="0.8" />
+            Text="CONNECTION"
+            TextColor="#646A72"
+            FontSize="8"
+            FontAttributes="Bold"
+            CharacterSpacing="0.8" />
 
                                 <Label
-                                    Text="Network status"
-                                    TextColor="#C4C7CB"
-                                    FontSize="11" />
+            Text="Network status"
+            TextColor="#C4C7CB"
+            FontSize="11" />
 
                             </VerticalStackLayout>
 
                             <Label
-                                Grid.Column="1"
-                                Text="SEE OFFLINE SYNC"
-                                TextColor="#8D939A"
-                                FontSize="8"
-                                FontAttributes="Bold"
-                                CharacterSpacing="0.4"
-                                VerticalOptions="Center"
-                                HorizontalTextAlignment="End" />
+        Grid.Column="1"
+        Text="SEE OFFLINE SYNC  ›"
+        TextColor="#ED3B3B"
+        FontSize="9"
+        FontAttributes="Bold"
+        CharacterSpacing="0.4"
+        VerticalOptions="Center"
+        HorizontalTextAlignment="End"
+        SemanticProperties.Description="Open offline synchronisation" />
 
                         </Grid>
 

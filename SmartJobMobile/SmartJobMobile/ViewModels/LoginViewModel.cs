@@ -79,7 +79,10 @@ public class LoginViewModel : INotifyPropertyChanged
         {
             IsBusy = true;
 
-            // Temporary login until the real authentication API is connected.
+            // Authentication hand-off:
+            // The current backend authenticates mobile API requests using
+            // X-SmartJob-Key. Final credential/token integration is completed
+            // during system integration.
             await Task.Delay(500);
 
             await Shell.Current.GoToAsync(nameof(DashboardPage));
