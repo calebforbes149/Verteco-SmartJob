@@ -28,7 +28,7 @@
     <div class="card card-pad" style="border-color:var(--danger);background:var(--danger-bg);color:var(--danger);margin-bottom:16px;">
       <b class="tiny">This job card is flagged</b>
       <p class="tiny">@Model.FlagReason</p>
-      <p class="tiny muted" style="color:inherit;opacity:.8;">Flagged @(Model.FlaggedAtUtc?.ToString("dd MMM yyyy HH:mm") ?? "—") UTC. It can't be approved while flagged — resolve the corrective action first.</p>
+      <p class="tiny muted" style="color:inherit;opacity:.8;">Flagged @(Model.FlaggedAtUtc?.ToString("dd MMM yyyy HH:mm") ?? "—") UTC. It can't be approved while flagged. Resolve the corrective action first.</p>
       <form asp-action="ResolveFlag" asp-route-id="@Model.Id" method="post" style="margin-top:8px;display:flex;gap:8px;align-items:flex-start;">
         @Html.AntiForgeryToken()
         <textarea name="resolutionNotes" placeholder="Resolution notes (required)" maxlength="2000" required style="flex:1;"></textarea>
