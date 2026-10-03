@@ -403,12 +403,8 @@ public class OfflineSyncViewModel : INotifyPropertyChanged
                 await _localDatabaseService
                     .GetPendingSyncItemsAsync();
 
-            // IMPORTANT:
-            // The database currently contains old test operations.
-            // Person 4's sync API currently supports
-            // setchecklistitem.
-            //
-            // Do NOT send the old unsupported operations.
+            // Only checklist updates are currently supported
+            // by the mobile sync API.
 
             List<SyncQueueItem> supportedItems =
                 pendingItems

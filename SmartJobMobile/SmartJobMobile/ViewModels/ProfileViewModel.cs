@@ -6,9 +6,9 @@ namespace SmartJobMobile.ViewModels;
 
 public class ProfileViewModel : INotifyPropertyChanged
 {
-    private string _technicianName = "Test Technician";
-    private string _employeeNumber = "TECH-001";
-    private string _emailAddress = "technician@smartjob.co.za";
+    private string _technicianName = "SmartJob Technician";
+    private string _employeeNumber = "Technician";
+    private string _emailAddress = "Not available";
 
     public string TechnicianName
     {
@@ -47,12 +47,13 @@ public class ProfileViewModel : INotifyPropertyChanged
         {
             if (string.IsNullOrWhiteSpace(TechnicianName))
             {
-                return "T";
+                return "ST";
             }
 
-            string[] names = TechnicianName.Split(
-                ' ',
-                StringSplitOptions.RemoveEmptyEntries);
+            string[] names =
+                TechnicianName.Split(
+                    ' ',
+                    StringSplitOptions.RemoveEmptyEntries);
 
             if (names.Length == 1)
             {
@@ -71,37 +72,38 @@ public class ProfileViewModel : INotifyPropertyChanged
     public ProfileViewModel()
     {
         LogoutCommand =
-            new Command(async () => await LogoutAsync());
+            new Command(
+                async () => await LogoutAsync());
     }
 
     private async Task LogoutAsync()
     {
-        bool logout = await Shell.Current.DisplayAlert(
-            "Log Out",
-            "Are you sure you want to log out of SmartJob?",
-            "Log Out",
-            "Cancel");
+        bool logout =
+            await Shell.Current.DisplayAlertAsync(
+                "Log Out",
+                "Are you sure you want to log out of SmartJob?",
+                "Log Out",
+                "Cancel");
 
         if (!logout)
         {
             return;
         }
 
-        // TEMPORARY LOGOUT
-        // Later we will clear the securely stored
-        // authentication token here.
-
         await Shell.Current.GoToAsync(
             "///LoginPage");
     }
 
-    public event PropertyChangedEventHandler? PropertyChanged;
+    public event PropertyChangedEventHandler?
+        PropertyChanged;
 
     protected void OnPropertyChanged(
-        [CallerMemberName] string? propertyName = null)
+        [CallerMemberName]
+        string? propertyName = null)
     {
         PropertyChanged?.Invoke(
             this,
-            new PropertyChangedEventArgs(propertyName));
+            new PropertyChangedEventArgs(
+                propertyName));
     }
 }
