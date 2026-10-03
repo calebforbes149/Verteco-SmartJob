@@ -43,7 +43,20 @@
       <div class="section-card-body pad">
         @if (string.IsNullOrWhiteSpace(Model.AiCommentary))
         {
-            <p class="tiny muted">No commentary available for this period.</p>
+            <p class="tiny muted">
+              @switch (Model.AiStatus)
+              {
+                  case "NotConfigured":
+                      <text>AI commentary is not configured. Add a Gemini API key to the API project's User Secrets.</text>
+                      break;
+                  case "RateLimited":
+                      <text>The free AI request limit has been reached. Try again later; report statistics and downloads still work.</text>
+                      break;
+                  default:
+                      <text>AI commentary is temporarily unavailable. Check the API log for the provider status.</text>
+                      break;
+              }
+            </p>
         }
         else
         {

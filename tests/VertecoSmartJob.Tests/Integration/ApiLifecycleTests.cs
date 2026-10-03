@@ -97,5 +97,14 @@ public sealed class ApiLifecycleTests
         var approved = await manager.PostAsJsonAsync($"/api/v1/jobs/{job.Id}/approve", new { reviewNotes = "Approved" });
         Assert.Equal(HttpStatusCode.OK, approved.StatusCode);
         Assert.Equal("Completed", (await approved.Content.ReadFromJsonAsync<JobCardDetailDto>())!.Status);
+
+        using var pdf = await manager.GetAsync($"/api/v1/reports/{DateTime.UtcNow:yyyy-MM}/export?format=pdf");
+        Assert.Equal(HttpStatusCode.OK, pdf.StatusCode);
+        Assert.Equal("application/pdf", pdf.Content.Headers.ContentType?.MediaType);
+        Assert.Equal("attachment", pdf.Content.Headers.ContentDisposition?.DispositionType);
+        var document = System.Text.Encoding.ASCII.GetString(await pdf.Content.ReadAsByteArrayAsync());
+        Assert.StartsWith("%PDF-1.4", document);
+        Assert.Contains("AI commentary", document);
+        Assert.Contains("Unavailable for this report", document);
     }
 }

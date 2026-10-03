@@ -59,7 +59,7 @@ public static class DependencyInjection
         services.AddScoped<TechnicianManagementService>();
         services.AddScoped<ReportService>();
         services.AddSingleton<IReportingAiService>(sp => new GeminiReportingAiService(
-            new HttpClient { Timeout = TimeSpan.FromSeconds(8) }, configuration,
+            new HttpClient { Timeout = TimeSpan.FromSeconds(25) }, configuration,
             sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<GeminiReportingAiService>>()));
         services.AddSingleton<PasswordHashingService>();
         services.AddSingleton<JwtTokenService>();

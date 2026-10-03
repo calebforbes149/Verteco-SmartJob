@@ -27,11 +27,17 @@ internal static class ReportExports
 
     private static string EscapeCsv(string value) => "\"" + value.Replace("\"", "\"\"") + "\"";
 
-    public static byte[] Pdf(ReportStatistics s)
+    public static byte[] Pdf(ReportStatistics s, string? aiCommentary)
     {
         var content = new StringBuilder("BT /F1 18 Tf 50 790 Td (Verteco SmartJob Report) Tj /F1 11 Tf 0 -30 Td ");
-        foreach (var row in Rows(s))
-            content.Append('(').Append(EscapePdf($"{row.Name}: {row.Value}")).Append(") Tj 0 -18 Td ");
+        var lines = Rows(s).SelectMany(row => Wrap($"{row.Name}: {row.Value}")).ToList();
+        lines.Add(string.Empty);
+        lines.Add("AI commentary");
+        lines.AddRange(Wrap(string.IsNullOrWhiteSpace(aiCommentary)
+            ? "Unavailable for this report. Statistics are still complete."
+            : aiCommentary));
+        foreach (var line in lines)
+            content.Append('(').Append(EscapePdf(line)).Append(") Tj 0 -18 Td ");
         content.Append("ET");
         var stream = content.ToString();
         var objects = new[]
@@ -59,4 +65,21 @@ internal static class ReportExports
     }
 
     private static string EscapePdf(string value) => value.Replace("\\", "\\\\").Replace("(", "\\(").Replace(")", "\\)");
+
+    private static IEnumerable<string> Wrap(string value)
+    {
+        const int maxLength = 80;
+        var line = new StringBuilder();
+        foreach (var word in value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (line.Length > 0 && line.Length + word.Length + 1 > maxLength)
+            {
+                yield return line.ToString();
+                line.Clear();
+            }
+            if (line.Length > 0) line.Append(' ');
+            line.Append(word);
+        }
+        if (line.Length > 0) yield return line.ToString();
+    }
 }

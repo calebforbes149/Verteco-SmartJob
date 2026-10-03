@@ -10,4 +10,5 @@ public class ReportDto
     public double? AverageCompletionHours { get; set; }
     public Dictionary<string, int> StatusCounts { get; set; } = [];
     public string? AiCommentary { get; set; }
+    public string AiStatus { get; set; } = "Unavailable";
 }
