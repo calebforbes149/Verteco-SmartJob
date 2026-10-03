@@ -23,8 +23,11 @@ public class LocalDatabaseService
 
         await _database.CreateTableAsync<CachedJob>();
 
+        await _database.CreateTableAsync<CachedChecklistItem>();
+
         await _database.CreateTableAsync<SyncQueueItem>();
-    }
+    
+        }
 
     // =========================
     // CACHED JOBS
@@ -166,6 +169,98 @@ public class LocalDatabaseService
                  in completedItems)
         {
             await _database.DeleteAsync(item);
+        }
+    }
+
+    // =========================
+    // REMOVE OLD TEST OPERATIONS
+    // =========================
+
+    public async Task<int>
+        ClearObsoleteTestOperationsAsync()
+    {
+        await InitializeAsync();
+
+        List<SyncQueueItem> pendingItems =
+            await _database!
+                .Table<SyncQueueItem>()
+                .Where(item =>
+                    item.Status == "Pending")
+                .ToListAsync();
+
+        List<SyncQueueItem> obsoleteItems =
+            pendingItems
+                .Where(item =>
+                    !item.OperationType.Equals(
+                        "setchecklistitem",
+                        StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+        foreach (SyncQueueItem item
+                 in obsoleteItems)
+        {
+            await _database!
+                .DeleteAsync(item);
+        }
+
+        return obsoleteItems.Count;
+    }
+
+    // =========================
+    // CACHED CHECKLIST ITEMS
+    // =========================
+
+    public async Task<List<CachedChecklistItem>>
+        GetChecklistItemsAsync(
+            string jobId)
+    {
+        await InitializeAsync();
+
+        return await _database!
+            .Table<CachedChecklistItem>()
+            .Where(item =>
+                item.JobId == jobId)
+            .ToListAsync();
+    }
+
+    public async Task<CachedChecklistItem?>
+        GetChecklistItemAsync(
+            string checklistItemId)
+    {
+        await InitializeAsync();
+
+        return await _database!
+            .Table<CachedChecklistItem>()
+            .Where(item =>
+                item.ChecklistItemId ==
+                checklistItemId)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task SaveChecklistItemAsync(
+        CachedChecklistItem item)
+    {
+        await InitializeAsync();
+
+        item.LastUpdated =
+            DateTime.UtcNow;
+
+        await _database!
+            .InsertOrReplaceAsync(item);
+    }
+
+    public async Task SaveChecklistItemsAsync(
+        IEnumerable<CachedChecklistItem> items)
+    {
+        await InitializeAsync();
+
+        foreach (CachedChecklistItem item in items)
+        {
+            item.LastUpdated =
+                DateTime.UtcNow;
+
+            await _database!
+                .InsertOrReplaceAsync(item);
         }
     }
 

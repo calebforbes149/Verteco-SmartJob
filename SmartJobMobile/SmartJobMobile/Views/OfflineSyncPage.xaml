@@ -409,6 +409,64 @@
                     IsVisible="{Binding HasError}"
                     HorizontalTextAlignment="Center" />
 
+                <!-- DEVELOPMENT OFFLINE TEST CONTROLS -->
+                <Border
+    BackgroundColor="#1A1A1A"
+    Stroke="#FFC107"
+    StrokeThickness="1"
+    Padding="14">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="10" />
+                    </Border.StrokeShape>
+
+                    <VerticalStackLayout Spacing="10">
+
+                        <Label
+            Text="DEVELOPMENT TESTING"
+            TextColor="#FFC107"
+            FontSize="12"
+            FontAttributes="Bold"
+            HorizontalTextAlignment="Center" />
+
+                        <Label
+            Text="Test offline synchronisation without disconnecting the VM."
+            TextColor="#9E9E9E"
+            FontSize="11"
+            HorizontalTextAlignment="Center" />
+
+                        <Button
+            Text="SIMULATE OFFLINE"
+            Clicked="SimulateOfflineButton_Clicked"
+            BackgroundColor="#424242"
+            TextColor="White"
+            FontAttributes="Bold"
+            HeightRequest="46"
+            CornerRadius="8" />
+
+                        <Button
+            Text="RESTORE ONLINE"
+            Clicked="RestoreOnlineButton_Clicked"
+            BackgroundColor="#2E7D32"
+            TextColor="White"
+            FontAttributes="Bold"
+            HeightRequest="46"
+            CornerRadius="8" />
+
+                        <Button
+    Text="CLEAR OLD TEST DATA"
+    Clicked="ClearOldTestDataButton_Clicked"
+    BackgroundColor="#8B1E1E"
+    TextColor="White"
+    FontAttributes="Bold"
+    HeightRequest="46"
+    CornerRadius="8"
+    SemanticProperties.Description="Remove obsolete development test operations" />
+
+                    </VerticalStackLayout>
+
+                </Border>
+
                 <!-- SYNC BUTTON -->
                 <Button
                     Text="{Binding SyncButtonText}"

@@ -14,6 +14,7 @@ public class ChecklistViewModel : INotifyPropertyChanged
     private readonly Job _job;
     private readonly LocalDatabaseService _localDatabaseService;
     private readonly ApiService _apiService;
+    private readonly ConnectivityService _connectivityService;
 
     private string _technicianNotes = string.Empty;
     private int _completedCount;
@@ -24,11 +25,14 @@ public class ChecklistViewModel : INotifyPropertyChanged
     // JOB INFORMATION
     // =========================================================
 
-    public string JobNumber => _job.JobNumber;
+    public string JobNumber =>
+        _job.JobNumber;
 
-    public string JobTitle => _job.Title;
+    public string JobTitle =>
+        _job.Title;
 
-    public string JobLocation => _job.Location;
+    public string JobLocation =>
+        _job.Location;
 
     // =========================================================
     // CHECKLIST ITEMS
@@ -45,6 +49,7 @@ public class ChecklistViewModel : INotifyPropertyChanged
     public string TechnicianNotes
     {
         get => _technicianNotes;
+
         set
         {
             if (_technicianNotes == value)
@@ -53,6 +58,7 @@ public class ChecklistViewModel : INotifyPropertyChanged
             }
 
             _technicianNotes = value;
+
             OnPropertyChanged();
         }
     }
@@ -64,6 +70,7 @@ public class ChecklistViewModel : INotifyPropertyChanged
     public int CompletedCount
     {
         get => _completedCount;
+
         private set
         {
             if (_completedCount == value)
@@ -106,6 +113,7 @@ public class ChecklistViewModel : INotifyPropertyChanged
     public bool IsLoading
     {
         get => _isLoading;
+
         private set
         {
             if (_isLoading == value)
@@ -123,6 +131,7 @@ public class ChecklistViewModel : INotifyPropertyChanged
     public bool IsSaving
     {
         get => _isSaving;
+
         private set
         {
             if (_isSaving == value)
@@ -155,21 +164,32 @@ public class ChecklistViewModel : INotifyPropertyChanged
     public ChecklistViewModel(
         Job job,
         LocalDatabaseService localDatabaseService,
-        ApiService apiService)
+        ApiService apiService,
+        ConnectivityService connectivityService)
     {
-        _job = job;
-        _localDatabaseService = localDatabaseService;
-        _apiService = apiService;
+        _job =
+            job;
+
+        _localDatabaseService =
+            localDatabaseService;
+
+        _apiService =
+            apiService;
+
+        _connectivityService =
+            connectivityService;
 
         ContinueCommand =
             new Command(
-                async () => await ContinueAsync());
+                async () =>
+                    await ContinueAsync());
 
-        _ = LoadChecklistAsync();
+        _ =
+            LoadChecklistAsync();
     }
 
     // =========================================================
-    // LOAD REAL CHECKLIST FROM API
+    // LOAD CHECKLIST
     // =========================================================
 
     private async Task LoadChecklistAsync()
@@ -188,66 +208,163 @@ public class ChecklistViewModel : INotifyPropertyChanged
         {
             IsLoading = true;
 
-            ApiJobDetail? detail =
-                await _apiService.GetJobDetailsAsync(
-                    _job.ApiId);
+            // =================================================
+            // ONLINE
+            // =================================================
 
-            if (detail == null)
+            if (_connectivityService.IsOnline)
             {
-                await Shell.Current.DisplayAlert(
-                    "Checklist Unavailable",
-                    "The checklist could not be retrieved from the server.",
-                    "OK");
-
-                return;
+                await LoadChecklistFromServerAsync();
             }
 
-            ChecklistItems.Clear();
+            // =================================================
+            // OFFLINE
+            // =================================================
 
-            foreach (ApiChecklistItem apiItem
-                     in detail.ChecklistItems
-                         .OrderBy(item => item.Order))
+            else
             {
-                ChecklistItemViewModel item =
-                    new ChecklistItemViewModel
-                    {
-                        Id = apiItem.Id,
-                        Order = apiItem.Order,
-                        Text = apiItem.Text
-                    };
-
-                // Set the existing server value BEFORE
-                // subscribing to changes.
-                item.SetCompletedFromServer(
-                    apiItem.IsDone);
-
-                item.PropertyChanged +=
-                    ChecklistItem_PropertyChanged;
-
-                ChecklistItems.Add(item);
+                await LoadChecklistFromCacheAsync();
             }
-
-            UpdateProgress();
-
-            OnPropertyChanged(nameof(TotalCount));
-            OnPropertyChanged(nameof(ProgressText));
-            OnPropertyChanged(nameof(Progress));
-            OnPropertyChanged(nameof(CanContinue));
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine(
-                $"Failed to load checklist: {ex.Message}");
+                $"Failed to load checklist: {ex}");
 
-            await Shell.Current.DisplayAlert(
-                "Unable to Load Checklist",
-                "SmartJob could not retrieve the checklist from the server.",
-                "OK");
+            // If the server call failed, try SQLite before
+            // giving up completely.
+
+            try
+            {
+                await LoadChecklistFromCacheAsync();
+            }
+            catch
+            {
+                await Shell.Current.DisplayAlert(
+                    "Unable to Load Checklist",
+                    "SmartJob could not retrieve the checklist from the server or this device.",
+                    "OK");
+            }
         }
         finally
         {
             IsLoading = false;
         }
+    }
+
+    // =========================================================
+    // LOAD FROM REAL API
+    // =========================================================
+
+    private async Task LoadChecklistFromServerAsync()
+    {
+        ApiJobDetail? detail =
+            await _apiService
+                .GetJobDetailsAsync(
+                    _job.ApiId);
+
+        if (detail == null)
+        {
+            throw new Exception(
+                "The server returned no job details.");
+        }
+
+        ChecklistItems.Clear();
+
+        foreach (
+            ApiChecklistItem apiItem
+            in detail.ChecklistItems
+                .OrderBy(item => item.Order))
+        {
+            ChecklistItemViewModel item =
+                new ChecklistItemViewModel
+                {
+                    Id =
+                        apiItem.Id,
+
+                    Order =
+                        apiItem.Order,
+
+                    Text =
+                        apiItem.Text
+                };
+
+            item.SetCompletedFromServer(
+                apiItem.IsDone);
+
+            item.PropertyChanged +=
+                ChecklistItem_PropertyChanged;
+
+            ChecklistItems.Add(
+                item);
+        }
+
+        UpdateProgress();
+
+        OnPropertyChanged(nameof(TotalCount));
+        OnPropertyChanged(nameof(ProgressText));
+        OnPropertyChanged(nameof(Progress));
+        OnPropertyChanged(nameof(CanContinue));
+    }
+
+    // =========================================================
+    // LOAD FROM SQLITE
+    // =========================================================
+
+    private async Task LoadChecklistFromCacheAsync()
+    {
+        List<CachedChecklistItem>
+            cachedItems =
+                await _localDatabaseService
+                    .GetChecklistItemsAsync(
+                        _job.ApiId.ToString());
+
+        if (cachedItems.Count == 0)
+        {
+            throw new Exception(
+                "No cached checklist exists for this job.");
+        }
+
+        ChecklistItems.Clear();
+
+        int order = 0;
+
+        foreach (
+            CachedChecklistItem cachedItem
+            in cachedItems)
+        {
+            ChecklistItemViewModel item =
+                new ChecklistItemViewModel
+                {
+                    Id =
+                        Guid.Parse(
+                            cachedItem.ChecklistItemId),
+
+                    Order =
+                        order,
+
+                    Text =
+                        cachedItem.Text
+                };
+
+            item.SetCompletedFromServer(
+                cachedItem.IsDone);
+
+            item.PropertyChanged +=
+                ChecklistItem_PropertyChanged;
+
+            ChecklistItems.Add(
+                item);
+
+            order++;
+        }
+
+        UpdateProgress();
+
+        OnPropertyChanged(nameof(TotalCount));
+        OnPropertyChanged(nameof(ProgressText));
+        OnPropertyChanged(nameof(Progress));
+        OnPropertyChanged(nameof(CanContinue));
     }
 
     // =========================================================
@@ -259,100 +376,399 @@ public class ChecklistViewModel : INotifyPropertyChanged
         PropertyChangedEventArgs e)
     {
         if (e.PropertyName !=
-            nameof(ChecklistItemViewModel.IsCompleted))
+            nameof(
+                ChecklistItemViewModel.IsCompleted))
         {
             return;
         }
 
-        if (sender is not ChecklistItemViewModel item)
+        if (sender is not
+            ChecklistItemViewModel item)
         {
             return;
         }
 
-        // Update the progress bar immediately.
         UpdateProgress();
 
-        // Do not send another request while this
-        // checklist item is already being updated.
         if (item.IsUpdating)
         {
             return;
         }
 
-        bool requestedValue = item.IsCompleted;
-        bool previousValue = !requestedValue;
+        bool requestedValue =
+            item.IsCompleted;
+
+        bool previousValue =
+            !requestedValue;
 
         try
         {
-            item.IsUpdating = true;
+            item.IsUpdating =
+                true;
 
-            ApiJobDetail? updatedJob =
-                await _apiService.ToggleChecklistItemAsync(
-                    _job.ApiId,
-                    item.Id);
+            // =================================================
+            // ONLINE
+            // Send directly to Person 4's API.
+            // =================================================
 
-            if (updatedJob == null)
+            if (_connectivityService.IsOnline)
             {
-                item.SetCompletedFromServer(
+                await UpdateChecklistOnlineAsync(
+                    item,
+                    requestedValue,
                     previousValue);
-
-                UpdateProgress();
-
-                await Shell.Current.DisplayAlert(
-                    "Update Failed",
-                    "The checklist item could not be updated.",
-                    "OK");
-
-                return;
             }
 
-            ApiChecklistItem? serverItem =
-                updatedJob.ChecklistItems
-                    .FirstOrDefault(
-                        checklistItem =>
-                            checklistItem.Id == item.Id);
+            // =================================================
+            // OFFLINE
+            // Save locally and queue the operation.
+            // =================================================
 
-            if (serverItem == null)
+            else
             {
-                item.SetCompletedFromServer(
-                    previousValue);
-
-                UpdateProgress();
-
-                await Shell.Current.DisplayAlert(
-                    "Update Failed",
-                    "The checklist item could not be confirmed by the server.",
-                    "OK");
-
-                return;
+                await QueueChecklistChangeAsync(
+                    item,
+                    requestedValue);
             }
-
-            // The API response is the source of truth.
-            item.SetCompletedFromServer(
-                serverItem.IsDone);
-
-            UpdateProgress();
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine(
-                $"Checklist update failed: {ex.Message}");
+                $"Checklist update failed: {ex}");
 
-            // Put the checkbox back to its previous
-            // state if the server update failed.
+            // If we thought we were online but the request
+            // failed, attempt to preserve the change locally.
+
+            try
+            {
+                await QueueChecklistChangeAsync(
+                    item,
+                    requestedValue);
+
+                await Shell.Current.DisplayAlert(
+                    "Saved Offline",
+                    "The server could not be reached. Your checklist change has been saved on this device and will be synchronised later.",
+                    "OK");
+            }
+            catch (Exception queueException)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    $"Offline queue failed: {queueException}");
+
+                item.SetCompletedFromServer(
+                    previousValue);
+
+                UpdateProgress();
+
+                await Shell.Current.DisplayAlert(
+                    "Unable to Save",
+                    "The checklist change could not be saved to the server or this device.",
+                    "OK");
+            }
+        }
+        finally
+        {
+            item.IsUpdating =
+                false;
+        }
+    }
+
+    // =========================================================
+    // ONLINE CHECKLIST UPDATE
+    // =========================================================
+
+    private async Task UpdateChecklistOnlineAsync(
+        ChecklistItemViewModel item,
+        bool requestedValue,
+        bool previousValue)
+    {
+        ApiJobDetail? updatedJob =
+            await _apiService
+                .ToggleChecklistItemAsync(
+                    _job.ApiId,
+                    item.Id);
+
+        if (updatedJob == null)
+        {
             item.SetCompletedFromServer(
                 previousValue);
 
             UpdateProgress();
 
-            await Shell.Current.DisplayAlert(
-                "Unable to Update Checklist",
-                "The checklist change could not be saved to the server. Your previous value has been restored.",
-                "OK");
+            throw new Exception(
+                "The server returned no updated job.");
         }
-        finally
+
+        ApiChecklistItem? serverItem =
+            updatedJob.ChecklistItems
+                .FirstOrDefault(
+                    checklistItem =>
+                        checklistItem.Id ==
+                        item.Id);
+
+        if (serverItem == null)
         {
-            item.IsUpdating = false;
+            item.SetCompletedFromServer(
+                previousValue);
+
+            UpdateProgress();
+
+            throw new Exception(
+                "The updated checklist item was not returned by the server.");
+        }
+
+        // Server remains source of truth.
+
+        item.SetCompletedFromServer(
+            serverItem.IsDone);
+
+        UpdateProgress();
+
+        // Refresh RowVersions after successful online change.
+        // The Sync Pull endpoint provides the RowVersions that
+        // the normal job-detail endpoint does not expose.
+
+        try
+        {
+            await RefreshSyncCacheAsync();
+        }
+        catch (Exception ex)
+        {
+            // The checklist change itself already succeeded.
+            // A cache refresh failure should therefore not
+            // undo the user's successful server change.
+
+            System.Diagnostics.Debug.WriteLine(
+                $"RowVersion cache refresh failed: {ex}");
+        }
+    }
+
+    // =========================================================
+    // QUEUE OFFLINE CHECKLIST CHANGE
+    // =========================================================
+
+    private async Task QueueChecklistChangeAsync(
+        ChecklistItemViewModel item,
+        bool requestedValue)
+    {
+        string jobId =
+            _job.ApiId.ToString();
+
+        string checklistItemId =
+            item.Id.ToString();
+
+        // Get the RowVersions saved by Sync Pull.
+
+        CachedJob? cachedJob =
+            await _localDatabaseService
+                .GetJobAsync(
+                    jobId);
+
+        if (cachedJob == null)
+        {
+            throw new Exception(
+                "This job has not been cached for offline use.");
+        }
+
+        CachedChecklistItem? cachedChecklistItem =
+            await _localDatabaseService
+                .GetChecklistItemAsync(
+                    checklistItemId);
+
+        if (cachedChecklistItem == null)
+        {
+            throw new Exception(
+                "This checklist item has not been cached for offline use.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+            cachedJob.RowVersion))
+        {
+            throw new Exception(
+                "The cached job does not contain a RowVersion.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+            cachedChecklistItem.RowVersion))
+        {
+            throw new Exception(
+                "The cached checklist item does not contain a RowVersion.");
+        }
+
+        // =====================================================
+        // CREATE PAYLOAD
+        // =====================================================
+
+        ChecklistSyncPayload payload =
+            new ChecklistSyncPayload
+            {
+                ChecklistItemId =
+                    item.Id,
+
+                ChecklistItemRowVersion =
+                    cachedChecklistItem.RowVersion,
+
+                IsDone =
+                    requestedValue
+            };
+
+        string payloadJson =
+            JsonSerializer.Serialize(
+                payload);
+
+        // =====================================================
+        // CREATE QUEUE ITEM
+        // =====================================================
+
+        SyncQueueItem queueItem =
+            new SyncQueueItem
+            {
+                IdempotencyKey =
+                    Guid.NewGuid()
+                        .ToString(),
+
+                JobId =
+                    jobId,
+
+                OperationType =
+                    "setchecklistitem",
+
+                PayloadJson =
+                    payloadJson,
+
+                BaseRowVersion =
+                    cachedJob.RowVersion,
+
+                Status =
+                    "Pending"
+            };
+
+        await _localDatabaseService
+            .AddSyncQueueItemAsync(
+                queueItem);
+
+        // =====================================================
+        // UPDATE SQLITE CHECKLIST VALUE
+        // =====================================================
+
+        cachedChecklistItem.IsDone =
+            requestedValue;
+
+        await _localDatabaseService
+            .SaveChecklistItemAsync(
+                cachedChecklistItem);
+
+        // Keep the value selected in the UI.
+
+        item.SetCompletedFromServer(
+            requestedValue);
+
+        UpdateProgress();
+
+        System.Diagnostics.Debug.WriteLine(
+            $"Queued offline checklist operation: {queueItem.IdempotencyKey}");
+    }
+
+    // =========================================================
+    // REFRESH SQLITE ROWVERSIONS
+    // =========================================================
+
+    private async Task RefreshSyncCacheAsync()
+    {
+        MobileSyncPullResponse? response =
+            await _apiService
+                .PullSyncDataAsync();
+
+        if (response == null)
+        {
+            return;
+        }
+
+        MobileSyncJob? serverJob =
+            response.Jobs
+                .FirstOrDefault(
+                    job =>
+                        job.Id ==
+                        _job.ApiId);
+
+        if (serverJob == null)
+        {
+            return;
+        }
+
+        CachedJob cachedJob =
+            new CachedJob
+            {
+                JobId =
+                    serverJob.Id
+                        .ToString(),
+
+                JobNumber =
+                    serverJob.Number,
+
+                Title =
+                    _job.Title,
+
+                ClientName =
+                    _job.CustomerName,
+
+                Location =
+                    _job.Location,
+
+                Status =
+                    serverJob.Status,
+
+                Priority =
+                    _job.Priority,
+
+                ScheduledDate =
+                    serverJob.ScheduledDate
+                        .ToDateTime(
+                            TimeOnly.MinValue),
+
+                Description =
+                    serverJob.Notes
+                    ?? string.Empty,
+
+                RowVersion =
+                    serverJob.RowVersion,
+
+                HasLocalChanges =
+                    false
+            };
+
+        await _localDatabaseService
+            .SaveJobAsync(
+                cachedJob);
+
+        foreach (
+            MobileSyncChecklistItem serverItem
+            in serverJob.ChecklistItems)
+        {
+            CachedChecklistItem cachedItem =
+                new CachedChecklistItem
+                {
+                    ChecklistItemId =
+                        serverItem.Id
+                            .ToString(),
+
+                    JobId =
+                        serverJob.Id
+                            .ToString(),
+
+                    Text =
+                        serverItem.Text,
+
+                    IsDone =
+                        serverItem.IsDone,
+
+                    RowVersion =
+                        serverItem.RowVersion
+                };
+
+            await _localDatabaseService
+                .SaveChecklistItemAsync(
+                    cachedItem);
         }
     }
 
@@ -405,77 +821,38 @@ public class ChecklistViewModel : INotifyPropertyChanged
 
         try
         {
-            IsSaving = true;
+            IsSaving =
+                true;
 
-            var checklistData = new
-            {
-                JobId = _job.ApiId,
+            // Checklist changes are now saved individually:
+            //
+            // ONLINE:
+            // sent directly to the API.
+            //
+            // OFFLINE:
+            // saved to SQLite and queued as
+            // "setchecklistitem".
+            //
+            // Therefore we DO NOT create the old
+            // "UpdateChecklist" queue operation here.
 
-                JobNumber = _job.JobNumber,
-
-                TechnicianNotes =
-                    TechnicianNotes,
-
-                Items =
-                    ChecklistItems.Select(
-                        item => new
-                        {
-                            ChecklistItemId =
-                                item.Id,
-
-                            item.Order,
-
-                            item.Text,
-
-                            IsDone =
-                                item.IsCompleted
-                        })
-                    .ToList(),
-
-                CompletedAt =
-                    DateTime.UtcNow
-            };
-
-            string payloadJson =
-                JsonSerializer.Serialize(
-                    checklistData);
-
-            SyncQueueItem queueItem =
-                new SyncQueueItem
-                {
-                    JobId =
-                        _job.ApiId.ToString(),
-
-                    OperationType =
-                        "UpdateChecklist",
-
-                    PayloadJson =
-                        payloadJson,
-
-                    BaseRowVersion =
-                        string.Empty
-                };
-
-            await _localDatabaseService
-                .AddSyncQueueItemAsync(
-                    queueItem);
-
-            await Shell.Current.GoToAsync(
-                nameof(EquipmentPage));
+            await Shell.Current.Navigation.PushAsync(
+                new EquipmentPage(_job));
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine(
-                $"Failed to save checklist: {ex.Message}");
+                $"Failed to continue from checklist: {ex}");
 
             await Shell.Current.DisplayAlert(
-                "Save Error",
-                "The checklist could not be saved locally. Please try again.",
+                "Navigation Error",
+                "SmartJob could not continue to the equipment screen.",
                 "OK");
         }
         finally
         {
-            IsSaving = false;
+            IsSaving =
+                false;
         }
     }
 
@@ -517,12 +894,14 @@ public class ChecklistItemViewModel :
 
     // API order starts at 0.
     // User-facing numbering starts at 1.
+
     public string DisplayText =>
         $"{Order + 1}. {Text}";
 
     public bool IsCompleted
     {
         get => _isCompleted;
+
         set
         {
             if (_isCompleted == value)
@@ -530,7 +909,8 @@ public class ChecklistItemViewModel :
                 return;
             }
 
-            _isCompleted = value;
+            _isCompleted =
+                value;
 
             OnPropertyChanged();
         }
@@ -539,6 +919,7 @@ public class ChecklistItemViewModel :
     public bool IsUpdating
     {
         get => _isUpdating;
+
         set
         {
             if (_isUpdating == value)
@@ -546,7 +927,8 @@ public class ChecklistItemViewModel :
                 return;
             }
 
-            _isUpdating = value;
+            _isUpdating =
+                value;
 
             OnPropertyChanged();
         }
@@ -555,7 +937,8 @@ public class ChecklistItemViewModel :
     public void SetCompletedFromServer(
         bool value)
     {
-        _isCompleted = value;
+        _isCompleted =
+            value;
 
         OnPropertyChanged(
             nameof(IsCompleted));
@@ -573,4 +956,22 @@ public class ChecklistItemViewModel :
             new PropertyChangedEventArgs(
                 propertyName));
     }
+}
+
+
+// =============================================================
+// OFFLINE CHECKLIST SYNC PAYLOAD
+// =============================================================
+
+public class ChecklistSyncPayload
+{
+    public Guid ChecklistItemId { get; set; }
+
+    public string ChecklistItemRowVersion
+    {
+        get;
+        set;
+    } = string.Empty;
+
+    public bool IsDone { get; set; }
 }

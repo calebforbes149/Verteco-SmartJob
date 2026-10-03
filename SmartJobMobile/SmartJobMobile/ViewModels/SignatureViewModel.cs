@@ -3,14 +3,14 @@ using SmartJobMobile.Services;
 using SmartJobMobile.Views;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
-using System.Windows.Input;
 
 namespace SmartJobMobile.ViewModels;
 
 public class SignatureViewModel : INotifyPropertyChanged
 {
-    private readonly LocalDatabaseService _localDatabaseService;
+    private readonly Job _job;
+    private readonly ApiService _apiService;
+    private readonly ConnectivityService _connectivityService;
 
     private string _technicianName = string.Empty;
     private string _clientName = string.Empty;
@@ -22,23 +22,26 @@ public class SignatureViewModel : INotifyPropertyChanged
     private bool _hasError;
     private bool _isSaving;
 
+    // =========================================================
+    // JOB INFORMATION
+    // =========================================================
+
+    public string JobNumber => _job.JobNumber;
+
+    public string JobTitle => _job.Title;
+
+    public string JobLocation => _job.Location;
+
+    // =========================================================
+    // TECHNICIAN
+    // =========================================================
+
     public string TechnicianName
     {
         get => _technicianName;
         set
         {
             _technicianName = value;
-            OnPropertyChanged();
-            ClearError();
-        }
-    }
-
-    public string ClientName
-    {
-        get => _clientName;
-        set
-        {
-            _clientName = value;
             OnPropertyChanged();
             ClearError();
         }
@@ -55,6 +58,21 @@ public class SignatureViewModel : INotifyPropertyChanged
         }
     }
 
+    // =========================================================
+    // CLIENT
+    // =========================================================
+
+    public string ClientName
+    {
+        get => _clientName;
+        set
+        {
+            _clientName = value;
+            OnPropertyChanged();
+            ClearError();
+        }
+    }
+
     public bool ClientConfirmed
     {
         get => _clientConfirmed;
@@ -65,6 +83,10 @@ public class SignatureViewModel : INotifyPropertyChanged
             ClearError();
         }
     }
+
+    // =========================================================
+    // PAGE STATE
+    // =========================================================
 
     public string ErrorMessage
     {
@@ -92,29 +114,45 @@ public class SignatureViewModel : INotifyPropertyChanged
         private set
         {
             _isSaving = value;
-
             OnPropertyChanged();
-            OnPropertyChanged(nameof(CanContinue));
         }
     }
 
-    public bool CanContinue => !IsSaving;
-
-    public ICommand ContinueCommand { get; }
+    // =========================================================
+    // CONSTRUCTOR
+    // =========================================================
 
     public SignatureViewModel(
-        LocalDatabaseService localDatabaseService)
+        Job job,
+        LocalDatabaseService localDatabaseService,
+        ApiService apiService,
+        ConnectivityService connectivityService)
     {
-        _localDatabaseService =
-            localDatabaseService;
-
-        ContinueCommand =
-            new Command(
-                async () => await ContinueAsync());
+        _job = job;
+        _apiService = apiService;
+        _connectivityService = connectivityService;
     }
 
-    private async Task ContinueAsync()
+    // =========================================================
+    // SUBMIT DRAWN SIGNATURES
+    // =========================================================
+
+    public async Task SubmitDrawnSignaturesAsync(
+        string technicianSignaturePath,
+        string clientSignaturePath)
     {
+        ClearError();
+
+        // Make sure this is a real backend job.
+        if (_job.ApiId == Guid.Empty)
+        {
+            ShowError(
+                "SmartJob could not identify the current job.");
+
+            return;
+        }
+
+        // Technician name.
         if (string.IsNullOrWhiteSpace(TechnicianName))
         {
             ShowError(
@@ -123,6 +161,7 @@ public class SignatureViewModel : INotifyPropertyChanged
             return;
         }
 
+        // Technician confirmation.
         if (!TechnicianConfirmed)
         {
             ShowError(
@@ -131,6 +170,19 @@ public class SignatureViewModel : INotifyPropertyChanged
             return;
         }
 
+        // Technician signature file.
+        if (string.IsNullOrWhiteSpace(
+                technicianSignaturePath) ||
+            !File.Exists(
+                technicianSignaturePath))
+        {
+            ShowError(
+                "Please provide the technician signature.");
+
+            return;
+        }
+
+        // Client name.
         if (string.IsNullOrWhiteSpace(ClientName))
         {
             ShowError(
@@ -139,10 +191,32 @@ public class SignatureViewModel : INotifyPropertyChanged
             return;
         }
 
+        // Client confirmation.
         if (!ClientConfirmed)
         {
             ShowError(
                 "The client must confirm the completed work.");
+
+            return;
+        }
+
+        // Client signature file.
+        if (string.IsNullOrWhiteSpace(
+                clientSignaturePath) ||
+            !File.Exists(
+                clientSignaturePath))
+        {
+            ShowError(
+                "Please provide the client signature.");
+
+            return;
+        }
+
+        // Signature upload currently requires the API.
+        if (!_connectivityService.IsOnline)
+        {
+            ShowError(
+                "Uploading signatures currently requires an internet connection. Please reconnect before continuing.");
 
             return;
         }
@@ -154,61 +228,39 @@ public class SignatureViewModel : INotifyPropertyChanged
 
         try
         {
-            ClearError();
             IsSaving = true;
 
-            var signatureData = new
-            {
-                JobId = "JOB-1001",
+            // Upload technician signature.
+            await UploadSignatureAsync(
+                technicianSignaturePath,
+                TechnicianName.Trim(),
+                "Technician");
 
-                TechnicianName =
-                    TechnicianName.Trim(),
+            // Upload client signature.
+            await UploadSignatureAsync(
+                clientSignaturePath,
+                ClientName.Trim(),
+                "Client");
 
-                TechnicianConfirmed =
-                    TechnicianConfirmed,
-
-                ClientName =
-                    ClientName.Trim(),
-
-                ClientConfirmed =
-                    ClientConfirmed,
-
-                ConfirmedAt =
-                    DateTime.UtcNow
-            };
-
-            string payloadJson =
-                JsonSerializer.Serialize(
-                    signatureData);
-
-            SyncQueueItem queueItem =
-                new SyncQueueItem
-                {
-                    JobId = "JOB-1001",
-
-                    OperationType =
-                        "UpdateSignatures",
-
-                    PayloadJson =
-                        payloadJson,
-
-                    // Temporary until we receive
-                    // the real RowVersion from the API.
-                    BaseRowVersion =
-                        string.Empty
-                };
-
-            await _localDatabaseService
-                .AddSyncQueueItemAsync(
-                    queueItem);
-
-            await Shell.Current.GoToAsync(
-                nameof(ReviewSubmitPage));
+            // Continue to final review.
+            await Shell.Current.Navigation.PushAsync(
+                new ReviewSubmitPage(_job));
         }
-        catch (Exception)
+        catch (HttpRequestException ex)
         {
+            System.Diagnostics.Debug.WriteLine(
+                $"Signature Network Error: {ex}");
+
             ShowError(
-                "The signature information could not be saved locally. Please try again.");
+                "SmartJob could not upload the signatures. Please check the connection and try again.");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"Signature Save Error: {ex}");
+
+            ShowError(
+                "The signatures could not be saved. Please try again.");
         }
         finally
         {
@@ -216,7 +268,66 @@ public class SignatureViewModel : INotifyPropertyChanged
         }
     }
 
-    private void ShowError(string message)
+    // =========================================================
+    // UPLOAD ONE SIGNATURE
+    // =========================================================
+
+    private async Task UploadSignatureAsync(
+        string filePath,
+        string signerName,
+        string type)
+    {
+        string extension =
+            Path.GetExtension(filePath)
+                .ToLowerInvariant();
+
+        if (extension == ".jpeg")
+        {
+            extension = ".jpg";
+        }
+
+        if (extension != ".jpg" &&
+            extension != ".png")
+        {
+            throw new InvalidOperationException(
+                "The generated signature must be a JPG or PNG file.");
+        }
+
+        // Ask the backend for an upload location.
+        MobileEvidenceUploadResponse upload =
+            await _apiService
+                .CreateEvidenceUploadAsync(
+                    _job.ApiId,
+                    extension);
+
+        // Upload the generated signature image.
+        await _apiService
+            .UploadEvidenceFileAsync(
+                upload.UploadUrl,
+                filePath);
+
+        // Calculate the SHA-256 hash required by the backend.
+        string sha256 =
+            await _apiService
+                .CalculateSha256Async(
+                    filePath);
+
+        // Confirm the uploaded file as a job signature.
+        await _apiService
+            .ConfirmSignatureAsync(
+                _job.ApiId,
+                upload.UploadToken,
+                sha256,
+                signerName,
+                type);
+    }
+
+    // =========================================================
+    // ERROR HANDLING
+    // =========================================================
+
+    private void ShowError(
+        string message)
     {
         ErrorMessage = message;
         HasError = true;
@@ -228,13 +339,20 @@ public class SignatureViewModel : INotifyPropertyChanged
         HasError = false;
     }
 
-    public event PropertyChangedEventHandler? PropertyChanged;
+    // =========================================================
+    // PROPERTY CHANGED
+    // =========================================================
+
+    public event PropertyChangedEventHandler?
+        PropertyChanged;
 
     protected void OnPropertyChanged(
-        [CallerMemberName] string? propertyName = null)
+        [CallerMemberName]
+        string? propertyName = null)
     {
         PropertyChanged?.Invoke(
             this,
-            new PropertyChangedEventArgs(propertyName));
+            new PropertyChangedEventArgs(
+                propertyName));
     }
 }

@@ -68,21 +68,21 @@
                     <VerticalStackLayout Spacing="6">
 
                         <Label
-                            Text="JOB-1001"
-                            TextColor="#E53935"
-                            FontSize="13"
-                            FontAttributes="Bold" />
+        Text="{Binding JobNumber}"
+        TextColor="#E53935"
+        FontSize="13"
+        FontAttributes="Bold" />
 
                         <Label
-                            Text="Equipment Inspection"
-                            TextColor="White"
-                            FontSize="20"
-                            FontAttributes="Bold" />
+        Text="{Binding JobTitle}"
+        TextColor="White"
+        FontSize="20"
+        FontAttributes="Bold" />
 
                         <Label
-                            Text="Verteco Client Site"
-                            TextColor="#BDBDBD"
-                            FontSize="13" />
+        Text="{Binding JobLocation}"
+        TextColor="#BDBDBD"
+        FontSize="13" />
 
                     </VerticalStackLayout>
 

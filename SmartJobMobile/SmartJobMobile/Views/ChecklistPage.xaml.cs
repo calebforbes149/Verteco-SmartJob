@@ -11,6 +11,10 @@ public partial class ChecklistPage : ContentPage
     {
         InitializeComponent();
 
+        // =====================================================
+        // GET SERVICES FROM DEPENDENCY INJECTION
+        // =====================================================
+
         LocalDatabaseService localDatabaseService =
             Application.Current!
                 .Handler!
@@ -25,12 +29,28 @@ public partial class ChecklistPage : ContentPage
                 .Services
                 .GetRequiredService<ApiService>();
 
+        ConnectivityService connectivityService =
+            Application.Current!
+                .Handler!
+                .MauiContext!
+                .Services
+                .GetRequiredService<ConnectivityService>();
+
+        // =====================================================
+        // CREATE VIEWMODEL
+        // =====================================================
+
         BindingContext =
             new ChecklistViewModel(
                 job,
                 localDatabaseService,
-                apiService);
+                apiService,
+                connectivityService);
     }
+
+    // =========================================================
+    // BACK BUTTON
+    // =========================================================
 
     private async void BackButton_Clicked(
         object sender,

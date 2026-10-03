@@ -1,14 +1,22 @@
+using SmartJobMobile.Models;
+
 namespace SmartJobMobile.Views;
 
 public partial class JobSubmittedPage : ContentPage
 {
-    public JobSubmittedPage()
+    private readonly Job _job;
+
+    public JobSubmittedPage(Job job)
     {
         InitializeComponent();
+
+        _job = job;
+
+        BindingContext = _job;
     }
 
     private async void MyJobsButton_Clicked(
-        object sender,
+        object? sender,
         EventArgs e)
     {
         await Shell.Current.GoToAsync(
@@ -16,7 +24,7 @@ public partial class JobSubmittedPage : ContentPage
     }
 
     private async void DashboardButton_Clicked(
-        object sender,
+        object? sender,
         EventArgs e)
     {
         await Shell.Current.GoToAsync(

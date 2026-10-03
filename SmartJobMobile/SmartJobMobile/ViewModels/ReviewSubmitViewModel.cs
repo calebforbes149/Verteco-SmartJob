@@ -3,19 +3,43 @@ using SmartJobMobile.Services;
 using SmartJobMobile.Views;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
 using System.Windows.Input;
 
 namespace SmartJobMobile.ViewModels;
 
 public class ReviewSubmitViewModel : INotifyPropertyChanged
 {
-    private readonly LocalDatabaseService _localDatabaseService;
+    private readonly Job _job;
+    private readonly ApiService _apiService;
+    private readonly ConnectivityService _connectivityService;
 
     private bool _isSubmissionConfirmed;
     private bool _isSubmitting;
     private string _errorMessage = string.Empty;
     private bool _hasError;
+
+    // =========================================================
+    // JOB INFORMATION
+    // =========================================================
+
+    public string JobNumber => _job.JobNumber;
+
+    public string JobTitle => _job.Title;
+
+    public string CustomerName => _job.CustomerName;
+
+    public string JobLocation => _job.Location;
+
+    public string Priority => _job.Priority;
+
+    public string Status => _job.Status;
+
+    public string ScheduledDate =>
+        _job.ScheduledDateDisplay;
+
+    // =========================================================
+    // SUBMISSION CONFIRMATION
+    // =========================================================
 
     public bool IsSubmissionConfirmed
     {
@@ -23,10 +47,15 @@ public class ReviewSubmitViewModel : INotifyPropertyChanged
         set
         {
             _isSubmissionConfirmed = value;
+
             OnPropertyChanged();
             ClearError();
         }
     }
+
+    // =========================================================
+    // PAGE STATE
+    // =========================================================
 
     public bool IsSubmitting
     {
@@ -68,25 +97,58 @@ public class ReviewSubmitViewModel : INotifyPropertyChanged
         }
     }
 
+    // =========================================================
+    // COMMANDS
+    // =========================================================
+
     public ICommand SubmitCommand { get; }
 
+    // =========================================================
+    // CONSTRUCTOR
+    // =========================================================
+
     public ReviewSubmitViewModel(
-        LocalDatabaseService localDatabaseService)
+        Job job,
+        ApiService apiService,
+        ConnectivityService connectivityService)
     {
-        _localDatabaseService =
-            localDatabaseService;
+        _job = job;
+        _apiService = apiService;
+        _connectivityService = connectivityService;
 
         SubmitCommand =
             new Command(
                 async () => await SubmitAsync());
     }
 
+    // =========================================================
+    // SUBMIT JOB
+    // =========================================================
+
     private async Task SubmitAsync()
     {
+        ClearError();
+
+        if (_job.ApiId == Guid.Empty)
+        {
+            ShowError(
+                "SmartJob could not identify the current job.");
+
+            return;
+        }
+
         if (!IsSubmissionConfirmed)
         {
             ShowError(
                 "Please confirm that you have reviewed the job before submitting.");
+
+            return;
+        }
+
+        if (!_connectivityService.IsOnline)
+        {
+            ShowError(
+                "Submitting a completed job currently requires an internet connection. Please reconnect and try again.");
 
             return;
         }
@@ -98,55 +160,40 @@ public class ReviewSubmitViewModel : INotifyPropertyChanged
 
         try
         {
-            ClearError();
             IsSubmitting = true;
 
-            var submissionData = new
+            bool submitted =
+                await _apiService.SubmitJobAsync(
+                    _job.ApiId);
+
+            if (!submitted)
             {
-                JobId = "JOB-1001",
+                ShowError(
+                    "The job could not be submitted. Please try again.");
 
-                SubmissionConfirmed =
-                    IsSubmissionConfirmed,
+                return;
+            }
 
-                SubmittedAt =
-                    DateTime.UtcNow,
+            _job.Status = "Submitted";
 
-                Status =
-                    "Submitted"
-            };
-
-            string payloadJson =
-                JsonSerializer.Serialize(
-                    submissionData);
-
-            SyncQueueItem queueItem =
-                new SyncQueueItem
-                {
-                    JobId = "JOB-1001",
-
-                    OperationType =
-                        "SubmitJob",
-
-                    PayloadJson =
-                        payloadJson,
-
-                    // Temporary until Person 4's API
-                    // supplies the real RowVersion.
-                    BaseRowVersion =
-                        string.Empty
-                };
-
-            await _localDatabaseService
-                .AddSyncQueueItemAsync(
-                    queueItem);
-
-            await Shell.Current.GoToAsync(
-                nameof(JobSubmittedPage));
+            await Shell.Current.Navigation.PushAsync(
+                new JobSubmittedPage(_job));
         }
-        catch (Exception)
+        catch (HttpRequestException ex)
         {
+            System.Diagnostics.Debug.WriteLine(
+                $"Submit Job Network Error: {ex}");
+
             ShowError(
-                "The job could not be saved for submission. Please try again.");
+                "SmartJob could not submit the job. Please check the connection and try again.");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"Submit Job Error: {ex}");
+
+            ShowError(
+                "The job could not be submitted. Please make sure all required job information has been completed.");
         }
         finally
         {
@@ -154,7 +201,12 @@ public class ReviewSubmitViewModel : INotifyPropertyChanged
         }
     }
 
-    private void ShowError(string message)
+    // =========================================================
+    // ERROR HANDLING
+    // =========================================================
+
+    private void ShowError(
+        string message)
     {
         ErrorMessage = message;
         HasError = true;
@@ -166,13 +218,20 @@ public class ReviewSubmitViewModel : INotifyPropertyChanged
         HasError = false;
     }
 
-    public event PropertyChangedEventHandler? PropertyChanged;
+    // =========================================================
+    // PROPERTY CHANGED
+    // =========================================================
+
+    public event PropertyChangedEventHandler?
+        PropertyChanged;
 
     protected void OnPropertyChanged(
-        [CallerMemberName] string? propertyName = null)
+        [CallerMemberName]
+        string? propertyName = null)
     {
         PropertyChanged?.Invoke(
             this,
-            new PropertyChangedEventArgs(propertyName));
+            new PropertyChangedEventArgs(
+                propertyName));
     }
 }

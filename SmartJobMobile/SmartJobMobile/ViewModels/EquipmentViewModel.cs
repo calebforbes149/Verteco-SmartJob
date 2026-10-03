@@ -3,14 +3,16 @@ using SmartJobMobile.Services;
 using SmartJobMobile.Views;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
 using System.Windows.Input;
 
 namespace SmartJobMobile.ViewModels;
 
 public class EquipmentViewModel : INotifyPropertyChanged
 {
+    private readonly Job _job;
     private readonly LocalDatabaseService _localDatabaseService;
+    private readonly ApiService _apiService;
+    private readonly ConnectivityService _connectivityService;
 
     private string _equipmentName = string.Empty;
     private string _serialNumber = string.Empty;
@@ -22,9 +24,14 @@ public class EquipmentViewModel : INotifyPropertyChanged
     private bool _hasError;
     private bool _isSaving;
 
+    // =========================================================
+    // EQUIPMENT FIELDS
+    // =========================================================
+
     public string EquipmentName
     {
         get => _equipmentName;
+
         set
         {
             _equipmentName = value;
@@ -36,6 +43,7 @@ public class EquipmentViewModel : INotifyPropertyChanged
     public string SerialNumber
     {
         get => _serialNumber;
+
         set
         {
             _serialNumber = value;
@@ -47,6 +55,7 @@ public class EquipmentViewModel : INotifyPropertyChanged
     public string AssetNumber
     {
         get => _assetNumber;
+
         set
         {
             _assetNumber = value;
@@ -57,6 +66,7 @@ public class EquipmentViewModel : INotifyPropertyChanged
     public string ModelNumber
     {
         get => _modelNumber;
+
         set
         {
             _modelNumber = value;
@@ -67,6 +77,7 @@ public class EquipmentViewModel : INotifyPropertyChanged
     public string EquipmentNotes
     {
         get => _equipmentNotes;
+
         set
         {
             _equipmentNotes = value;
@@ -74,9 +85,14 @@ public class EquipmentViewModel : INotifyPropertyChanged
         }
     }
 
+    // =========================================================
+    // UI STATE
+    // =========================================================
+
     public string ErrorMessage
     {
         get => _errorMessage;
+
         private set
         {
             _errorMessage = value;
@@ -87,6 +103,7 @@ public class EquipmentViewModel : INotifyPropertyChanged
     public bool HasError
     {
         get => _hasError;
+
         private set
         {
             _hasError = value;
@@ -97,33 +114,63 @@ public class EquipmentViewModel : INotifyPropertyChanged
     public bool IsSaving
     {
         get => _isSaving;
+
         private set
         {
             _isSaving = value;
+
             OnPropertyChanged();
             OnPropertyChanged(nameof(CanContinue));
         }
     }
 
-    public bool CanContinue => !IsSaving;
+    public bool CanContinue =>
+        !IsSaving;
 
     public ICommand ContinueCommand { get; }
 
+    // =========================================================
+    // CONSTRUCTOR
+    // =========================================================
+
     public EquipmentViewModel(
-        LocalDatabaseService localDatabaseService)
+        Job job,
+        LocalDatabaseService localDatabaseService,
+        ApiService apiService,
+        ConnectivityService connectivityService)
     {
+        _job =
+            job;
+
         _localDatabaseService =
             localDatabaseService;
 
+        _apiService =
+            apiService;
+
+        _connectivityService =
+            connectivityService;
+
         ContinueCommand =
             new Command(
-                async () => await ContinueAsync());
+                async () =>
+                    await ContinueAsync());
     }
+
+    // =========================================================
+    // CONTINUE
+    // =========================================================
 
     private async Task ContinueAsync()
     {
-        // Equipment name is required.
-        if (string.IsNullOrWhiteSpace(EquipmentName))
+        ClearError();
+
+        // -----------------------------------------------------
+        // VALIDATION
+        // -----------------------------------------------------
+
+        if (string.IsNullOrWhiteSpace(
+            EquipmentName))
         {
             ShowError(
                 "Please enter the equipment name or type.");
@@ -131,8 +178,8 @@ public class EquipmentViewModel : INotifyPropertyChanged
             return;
         }
 
-        // Serial number is required.
-        if (string.IsNullOrWhiteSpace(SerialNumber))
+        if (string.IsNullOrWhiteSpace(
+            SerialNumber))
         {
             ShowError(
                 "Please enter the equipment serial number.");
@@ -145,99 +192,173 @@ public class EquipmentViewModel : INotifyPropertyChanged
             return;
         }
 
-        try
-        {
-            ClearError();
-            IsSaving = true;
+        // -----------------------------------------------------
+        // REAL JOB ID
+        // -----------------------------------------------------
 
-            // Create the equipment information
-            // that must eventually be sent to the API.
-            var equipmentData = new
-            {
-                JobId = "JOB-1001",
+        Guid jobId =
+            _job.ApiId;
 
-                EquipmentName =
-                    EquipmentName.Trim(),
-
-                SerialNumber =
-                    SerialNumber.Trim(),
-
-                AssetNumber =
-                    AssetNumber?.Trim() ?? string.Empty,
-
-                ModelNumber =
-                    ModelNumber?.Trim() ?? string.Empty,
-
-                EquipmentNotes =
-                    EquipmentNotes?.Trim() ?? string.Empty,
-
-                SavedAt =
-                    DateTime.UtcNow
-            };
-
-            // Convert the equipment information
-            // into JSON for the offline queue.
-            string payloadJson =
-                JsonSerializer.Serialize(
-                    equipmentData);
-
-            // Create the real SQLite queue operation.
-            SyncQueueItem queueItem =
-                new SyncQueueItem
-                {
-                    JobId = "JOB-1001",
-
-                    OperationType =
-                        "UpdateEquipment",
-
-                    PayloadJson =
-                        payloadJson,
-
-                    // The real RowVersion will come
-                    // from Person 4's API later.
-                    BaseRowVersion =
-                        string.Empty
-                };
-
-            // Save locally before navigating.
-            await _localDatabaseService
-                .AddSyncQueueItemAsync(
-                    queueItem);
-
-            // Continue to Photo Evidence.
-            await Shell.Current.GoToAsync(
-                nameof(PhotoCapturePage));
-        }
-        catch (Exception)
+        if (jobId == Guid.Empty)
         {
             ShowError(
-                "The equipment details could not be saved locally. Please try again.");
+                "SmartJob could not identify the current job.");
+
+            return;
+        }
+
+        // -----------------------------------------------------
+        // EQUIPMENT CURRENTLY REQUIRES CONNECTION
+        // -----------------------------------------------------
+
+        if (!_connectivityService.IsOnline)
+        {
+            ShowError(
+                "Equipment details currently require an internet connection. Please reconnect before continuing.");
+
+            return;
+        }
+
+        try
+        {
+            IsSaving =
+                true;
+
+            // -------------------------------------------------
+            // BUILD DESCRIPTION
+            // -------------------------------------------------
+
+            List<string> descriptionParts =
+                new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(
+                AssetNumber))
+            {
+                descriptionParts.Add(
+                    $"Asset Number: {AssetNumber.Trim()}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(
+                ModelNumber))
+            {
+                descriptionParts.Add(
+                    $"Model Number: {ModelNumber.Trim()}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(
+                EquipmentNotes))
+            {
+                descriptionParts.Add(
+                    $"Notes: {EquipmentNotes.Trim()}");
+            }
+
+            string description =
+                string.Join(
+                    Environment.NewLine,
+                    descriptionParts);
+
+            // -------------------------------------------------
+            // CREATE PERSON 4 API REQUEST
+            // -------------------------------------------------
+
+            MobileEquipmentRequest request =
+                new MobileEquipmentRequest
+                {
+                    Name =
+                        EquipmentName.Trim(),
+
+                    SerialNumber =
+                        SerialNumber.Trim(),
+
+                    Description =
+                        description
+                };
+
+            // -------------------------------------------------
+            // SEND TO REAL API
+            // -------------------------------------------------
+
+            bool success =
+                await _apiService
+                    .AddEquipmentAsync(
+                        jobId,
+                        request);
+
+            if (!success)
+            {
+                ShowError(
+                    "SmartJob could not save the equipment details.");
+
+                return;
+            }
+
+            // -------------------------------------------------
+            // CONTINUE TO PHOTO EVIDENCE
+            // -------------------------------------------------
+
+            await Shell.Current.Navigation.PushAsync(
+                new PhotoCapturePage(_job));
+        }
+        catch (HttpRequestException ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"Equipment API request failed: {ex}");
+
+            ShowError(
+                "SmartJob could not connect to the server. Please check the connection and try again.");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"Equipment save failed: {ex}");
+
+            ShowError(
+                "The equipment details could not be saved. Please try again.");
         }
         finally
         {
-            IsSaving = false;
+            IsSaving =
+                false;
         }
     }
 
-    private void ShowError(string message)
+    // =========================================================
+    // ERROR HELPERS
+    // =========================================================
+
+    private void ShowError(
+        string message)
     {
-        ErrorMessage = message;
-        HasError = true;
+        ErrorMessage =
+            message;
+
+        HasError =
+            true;
     }
 
     private void ClearError()
     {
-        ErrorMessage = string.Empty;
-        HasError = false;
+        ErrorMessage =
+            string.Empty;
+
+        HasError =
+            false;
     }
 
-    public event PropertyChangedEventHandler? PropertyChanged;
+    // =========================================================
+    // PROPERTY CHANGED
+    // =========================================================
+
+    public event PropertyChangedEventHandler?
+        PropertyChanged;
 
     protected void OnPropertyChanged(
-        [CallerMemberName] string? propertyName = null)
+        [CallerMemberName]
+        string? propertyName = null)
     {
         PropertyChanged?.Invoke(
             this,
-            new PropertyChangedEventArgs(propertyName));
+            new PropertyChangedEventArgs(
+                propertyName));
     }
 }

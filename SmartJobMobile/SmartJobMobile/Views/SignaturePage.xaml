@@ -3,6 +3,7 @@
 <ContentPage
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
     x:Class="SmartJobMobile.Views.SignaturePage"
     BackgroundColor="#121212"
     Shell.NavBarIsVisible="False">
@@ -67,19 +68,19 @@
                     <VerticalStackLayout Spacing="6">
 
                         <Label
-                            Text="JOB-1001"
+                            Text="{Binding JobNumber}"
                             TextColor="#E53935"
                             FontSize="13"
                             FontAttributes="Bold" />
 
                         <Label
-                            Text="Equipment Inspection"
+                            Text="{Binding JobTitle}"
                             TextColor="White"
                             FontSize="20"
                             FontAttributes="Bold" />
 
                         <Label
-                            Text="Verteco Client Site"
+                            Text="{Binding JobLocation}"
                             TextColor="#BDBDBD"
                             FontSize="13" />
 
@@ -87,7 +88,7 @@
 
                 </Border>
 
-                <!-- TECHNICIAN SIGNATURE -->
+                <!-- TECHNICIAN -->
                 <Label
                     Text="Technician Confirmation"
                     TextColor="White"
@@ -132,8 +133,57 @@
 
                         </Border>
 
-                        <Grid ColumnDefinitions="Auto,*"
-                              ColumnSpacing="10">
+                        <!-- TECHNICIAN SIGNATURE PAD -->
+                        <Label
+                            Text="Technician Signature *"
+                            TextColor="#BDBDBD"
+                            FontSize="13" />
+
+                        <Border
+                            BackgroundColor="White"
+                            Stroke="#E53935"
+                            StrokeThickness="1"
+                            HeightRequest="180"
+                            Padding="0">
+
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="10" />
+                            </Border.StrokeShape>
+
+                            <Grid>
+
+                                <Label
+                                    Text="Sign here"
+                                    TextColor="#BDBDBD"
+                                    FontSize="14"
+                                    HorizontalOptions="Center"
+                                    VerticalOptions="Center"
+                                    InputTransparent="True" />
+
+                                <toolkit:DrawingView
+                                    x:Name="TechnicianSignaturePad"
+                                    BackgroundColor="Transparent"
+                                    LineColor="Black"
+                                    LineWidth="4" />
+
+                            </Grid>
+
+                        </Border>
+
+                        <Button
+                            Text="CLEAR TECHNICIAN SIGNATURE"
+                            Clicked="ClearTechnicianSignature_Clicked"
+                            BackgroundColor="#252525"
+                            TextColor="White"
+                            BorderColor="#616161"
+                            BorderWidth="1"
+                            HeightRequest="44"
+                            CornerRadius="10"
+                            SemanticProperties.Description="Clear technician signature" />
+
+                        <Grid
+                            ColumnDefinitions="Auto,*"
+                            ColumnSpacing="10">
 
                             <CheckBox
                                 IsChecked="{Binding TechnicianConfirmed}"
@@ -173,7 +223,7 @@
 
                 </Border>
 
-                <!-- CLIENT SIGNATURE -->
+                <!-- CLIENT -->
                 <Label
                     Text="Client Confirmation"
                     TextColor="White"
@@ -218,8 +268,57 @@
 
                         </Border>
 
-                        <Grid ColumnDefinitions="Auto,*"
-                              ColumnSpacing="10">
+                        <!-- CLIENT SIGNATURE PAD -->
+                        <Label
+                            Text="Client Signature *"
+                            TextColor="#BDBDBD"
+                            FontSize="13" />
+
+                        <Border
+                            BackgroundColor="White"
+                            Stroke="#E53935"
+                            StrokeThickness="1"
+                            HeightRequest="180"
+                            Padding="0">
+
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="10" />
+                            </Border.StrokeShape>
+
+                            <Grid>
+
+                                <Label
+                                    Text="Sign here"
+                                    TextColor="#BDBDBD"
+                                    FontSize="14"
+                                    HorizontalOptions="Center"
+                                    VerticalOptions="Center"
+                                    InputTransparent="True" />
+
+                                <toolkit:DrawingView
+                                    x:Name="ClientSignaturePad"
+                                    BackgroundColor="Transparent"
+                                    LineColor="Black"
+                                    LineWidth="4" />
+
+                            </Grid>
+
+                        </Border>
+
+                        <Button
+                            Text="CLEAR CLIENT SIGNATURE"
+                            Clicked="ClearClientSignature_Clicked"
+                            BackgroundColor="#252525"
+                            TextColor="White"
+                            BorderColor="#616161"
+                            BorderWidth="1"
+                            HeightRequest="44"
+                            CornerRadius="10"
+                            SemanticProperties.Description="Clear client signature" />
+
+                        <Grid
+                            ColumnDefinitions="Auto,*"
+                            ColumnSpacing="10">
 
                             <CheckBox
                                 IsChecked="{Binding ClientConfirmed}"
@@ -271,7 +370,7 @@
                     </Border.StrokeShape>
 
                     <Label
-                        Text="Both confirmations are required before the job can proceed to final review."
+                        Text="Both signatures and confirmations are required before the job can proceed to final review."
                         TextColor="#BDBDBD"
                         FontSize="12"
                         HorizontalTextAlignment="Center" />
@@ -289,7 +388,7 @@
                 <!-- CONTINUE -->
                 <Button
                     Text="CONTINUE TO REVIEW"
-                    Command="{Binding ContinueCommand}"
+                    Clicked="ContinueToReview_Clicked"
                     BackgroundColor="#E53935"
                     TextColor="White"
                     FontSize="15"

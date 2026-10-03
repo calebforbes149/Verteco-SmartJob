@@ -84,6 +84,7 @@
                         RowDefinitions="Auto,Auto,Auto,Auto"
                         RowSpacing="12">
 
+                        <!-- JOB NUMBER -->
                         <Label
                             Grid.Row="0"
                             Grid.Column="0"
@@ -94,11 +95,12 @@
                         <Label
                             Grid.Row="0"
                             Grid.Column="1"
-                            Text="JOB-1001"
+                            Text="{Binding JobNumber}"
                             TextColor="White"
                             FontSize="13"
                             FontAttributes="Bold" />
 
+                        <!-- JOB TYPE -->
                         <Label
                             Grid.Row="1"
                             Grid.Column="0"
@@ -109,10 +111,11 @@
                         <Label
                             Grid.Row="1"
                             Grid.Column="1"
-                            Text="Equipment Inspection"
+                            Text="{Binding Title}"
                             TextColor="White"
                             FontSize="13" />
 
+                        <!-- STATUS -->
                         <Label
                             Grid.Row="2"
                             Grid.Column="0"
@@ -123,11 +126,12 @@
                         <Label
                             Grid.Row="2"
                             Grid.Column="1"
-                            Text="Submitted"
+                            Text="{Binding Status}"
                             TextColor="#66BB6A"
                             FontSize="13"
                             FontAttributes="Bold" />
 
+                        <!-- SITE -->
                         <Label
                             Grid.Row="3"
                             Grid.Column="0"
@@ -138,9 +142,12 @@
                         <Label
                             Grid.Row="3"
                             Grid.Column="1"
-                            Text="Verteco Client Site"
+                            Text="{Binding Location}"
                             TextColor="White"
-                            FontSize="13" />
+                            FontSize="13"
+                            HorizontalTextAlignment="End"
+                            LineBreakMode="TailTruncation"
+                            MaximumWidthRequest="220" />
 
                     </Grid>
 

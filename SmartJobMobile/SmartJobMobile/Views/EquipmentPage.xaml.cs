@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using SmartJobMobile.Models;
 using SmartJobMobile.Services;
 using SmartJobMobile.ViewModels;
 
@@ -6,24 +7,35 @@ namespace SmartJobMobile.Views;
 
 public partial class EquipmentPage : ContentPage
 {
-    public EquipmentPage()
+    public EquipmentPage(Job job)
     {
         InitializeComponent();
 
-        LocalDatabaseService localDatabaseService =
+        IServiceProvider services =
             Application.Current!
                 .Handler!
                 .MauiContext!
-                .Services
-                .GetRequiredService<LocalDatabaseService>();
+                .Services;
+
+        LocalDatabaseService localDatabaseService =
+            services.GetRequiredService<LocalDatabaseService>();
+
+        ApiService apiService =
+            services.GetRequiredService<ApiService>();
+
+        ConnectivityService connectivityService =
+            services.GetRequiredService<ConnectivityService>();
 
         BindingContext =
             new EquipmentViewModel(
-                localDatabaseService);
+                job,
+                localDatabaseService,
+                apiService,
+                connectivityService);
     }
 
     private async void BackButton_Clicked(
-        object sender,
+        object? sender,
         EventArgs e)
     {
         await Shell.Current.GoToAsync("..");

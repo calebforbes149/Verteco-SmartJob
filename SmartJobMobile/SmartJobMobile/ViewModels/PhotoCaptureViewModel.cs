@@ -3,14 +3,16 @@ using SmartJobMobile.Services;
 using SmartJobMobile.Views;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
 using System.Windows.Input;
 
 namespace SmartJobMobile.ViewModels;
 
 public class PhotoCaptureViewModel : INotifyPropertyChanged
 {
+    private readonly Job _job;
     private readonly LocalDatabaseService _localDatabaseService;
+    private readonly ApiService _apiService;
+    private readonly ConnectivityService _connectivityService;
 
     private ImageSource? _photoSource;
     private string? _photoPath;
@@ -22,9 +24,27 @@ public class PhotoCaptureViewModel : INotifyPropertyChanged
     private bool _hasError;
     private bool _isSaving;
 
+    // =========================================================
+    // REAL JOB INFORMATION
+    // =========================================================
+
+    public string JobNumber =>
+        _job.JobNumber;
+
+    public string JobTitle =>
+        _job.Title;
+
+    public string JobLocation =>
+        _job.Location;
+
+    // =========================================================
+    // PHOTO
+    // =========================================================
+
     public ImageSource? PhotoSource
     {
         get => _photoSource;
+
         set
         {
             _photoSource = value;
@@ -35,6 +55,7 @@ public class PhotoCaptureViewModel : INotifyPropertyChanged
     public string PhotoNotes
     {
         get => _photoNotes;
+
         set
         {
             _photoNotes = value;
@@ -45,6 +66,7 @@ public class PhotoCaptureViewModel : INotifyPropertyChanged
     public bool HasPhoto
     {
         get => _hasPhoto;
+
         private set
         {
             _hasPhoto = value;
@@ -55,16 +77,22 @@ public class PhotoCaptureViewModel : INotifyPropertyChanged
         }
     }
 
-    public bool HasNoPhoto => !HasPhoto;
+    public bool HasNoPhoto =>
+        !HasPhoto;
 
     public string PhotoStatus =>
         HasPhoto
             ? "✓ Photo evidence added"
             : "No photo added";
 
+    // =========================================================
+    // UI STATE
+    // =========================================================
+
     public string ErrorMessage
     {
         get => _errorMessage;
+
         private set
         {
             _errorMessage = value;
@@ -75,6 +103,7 @@ public class PhotoCaptureViewModel : INotifyPropertyChanged
     public bool HasError
     {
         get => _hasError;
+
         private set
         {
             _hasError = value;
@@ -85,6 +114,7 @@ public class PhotoCaptureViewModel : INotifyPropertyChanged
     public bool IsSaving
     {
         get => _isSaving;
+
         private set
         {
             _isSaving = value;
@@ -97,6 +127,10 @@ public class PhotoCaptureViewModel : INotifyPropertyChanged
     public bool CanContinue =>
         !IsSaving;
 
+    // =========================================================
+    // COMMANDS
+    // =========================================================
+
     public ICommand TakePhotoCommand { get; }
 
     public ICommand ChoosePhotoCommand { get; }
@@ -105,19 +139,37 @@ public class PhotoCaptureViewModel : INotifyPropertyChanged
 
     public ICommand ContinueCommand { get; }
 
+    // =========================================================
+    // CONSTRUCTOR
+    // =========================================================
+
     public PhotoCaptureViewModel(
-        LocalDatabaseService localDatabaseService)
+        Job job,
+        LocalDatabaseService localDatabaseService,
+        ApiService apiService,
+        ConnectivityService connectivityService)
     {
+        _job =
+            job;
+
         _localDatabaseService =
             localDatabaseService;
 
+        _apiService =
+            apiService;
+
+        _connectivityService =
+            connectivityService;
+
         TakePhotoCommand =
             new Command(
-                async () => await TakePhotoAsync());
+                async () =>
+                    await TakePhotoAsync());
 
         ChoosePhotoCommand =
             new Command(
-                async () => await ChoosePhotoAsync());
+                async () =>
+                    await ChoosePhotoAsync());
 
         RemovePhotoCommand =
             new Command(
@@ -125,8 +177,13 @@ public class PhotoCaptureViewModel : INotifyPropertyChanged
 
         ContinueCommand =
             new Command(
-                async () => await ContinueAsync());
+                async () =>
+                    await ContinueAsync());
     }
+
+    // =========================================================
+    // TAKE PHOTO
+    // =========================================================
 
     private async Task TakePhotoAsync()
     {
@@ -150,19 +207,27 @@ public class PhotoCaptureViewModel : INotifyPropertyChanged
                 return;
             }
 
-            await LoadPhotoAsync(photo);
+            await LoadPhotoAsync(
+                photo);
         }
         catch (PermissionException)
         {
             ShowError(
                 "Camera permission was not granted.");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine(
+                $"Photo capture failed: {ex}");
+
             ShowError(
                 "The photo could not be captured. Please try again.");
         }
     }
+
+    // =========================================================
+    // CHOOSE PHOTO
+    // =========================================================
 
     private async Task ChoosePhotoAsync()
     {
@@ -178,24 +243,35 @@ public class PhotoCaptureViewModel : INotifyPropertyChanged
                 return;
             }
 
-            await LoadPhotoAsync(photo);
+            await LoadPhotoAsync(
+                photo);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine(
+                $"Photo selection failed: {ex}");
+
             ShowError(
                 "The photo could not be selected. Please try again.");
         }
     }
 
+    // =========================================================
+    // COPY PHOTO INTO APP STORAGE
+    // =========================================================
+
     private async Task LoadPhotoAsync(
         FileResult photo)
     {
         string extension =
-            Path.GetExtension(photo.FileName);
+            Path.GetExtension(
+                photo.FileName);
 
-        if (string.IsNullOrWhiteSpace(extension))
+        if (string.IsNullOrWhiteSpace(
+            extension))
         {
-            extension = ".jpg";
+            extension =
+                ".jpg";
         }
 
         string evidenceDirectory =
@@ -206,8 +282,16 @@ public class PhotoCaptureViewModel : INotifyPropertyChanged
         Directory.CreateDirectory(
             evidenceDirectory);
 
+        string safeJobNumber =
+            string.IsNullOrWhiteSpace(
+                _job.JobNumber)
+                ? "JOB"
+                : _job.JobNumber
+                    .Replace("-", string.Empty)
+                    .Replace(" ", string.Empty);
+
         string fileName =
-            $"SmartJob_JOB1001_{Guid.NewGuid():N}{extension}";
+            $"SmartJob_{safeJobNumber}_{Guid.NewGuid():N}{extension}";
 
         string localFilePath =
             Path.Combine(
@@ -218,7 +302,8 @@ public class PhotoCaptureViewModel : INotifyPropertyChanged
             await photo.OpenReadAsync();
 
         await using FileStream localFileStream =
-            File.Create(localFilePath);
+            File.Create(
+                localFilePath);
 
         await sourceStream.CopyToAsync(
             localFileStream);
@@ -230,36 +315,59 @@ public class PhotoCaptureViewModel : INotifyPropertyChanged
             ImageSource.FromFile(
                 localFilePath);
 
-        HasPhoto = true;
+        HasPhoto =
+            true;
 
         ClearError();
     }
+
+    // =========================================================
+    // REMOVE PHOTO
+    // =========================================================
 
     private void RemovePhoto()
     {
         try
         {
-            if (!string.IsNullOrWhiteSpace(_photoPath)
-                && File.Exists(_photoPath))
+            if (!string.IsNullOrWhiteSpace(
+                    _photoPath)
+                && File.Exists(
+                    _photoPath))
             {
-                File.Delete(_photoPath);
+                File.Delete(
+                    _photoPath);
             }
         }
         catch
         {
-            // Clear the preview even if the local
-            // evidence file cannot be deleted.
+            // Still remove the preview if the
+            // temporary file cannot be deleted.
         }
 
-        _photoPath = null;
-        PhotoSource = null;
-        HasPhoto = false;
+        _photoPath =
+            null;
+
+        PhotoSource =
+            null;
+
+        HasPhoto =
+            false;
 
         ClearError();
     }
 
+    // =========================================================
+    // CONTINUE
+    // =========================================================
+
     private async Task ContinueAsync()
     {
+        ClearError();
+
+        // ---------------------------------------------------------
+        // VALIDATE PHOTO
+        // ---------------------------------------------------------
+
         if (!HasPhoto ||
             string.IsNullOrWhiteSpace(_photoPath))
         {
@@ -277,102 +385,173 @@ public class PhotoCaptureViewModel : INotifyPropertyChanged
             return;
         }
 
+        // ---------------------------------------------------------
+        // VALIDATE REAL JOB
+        // ---------------------------------------------------------
+
+        Guid jobId =
+            _job.ApiId;
+
+        if (jobId == Guid.Empty)
+        {
+            ShowError(
+                "SmartJob could not identify the current job.");
+
+            return;
+        }
+
         if (IsSaving)
         {
             return;
         }
 
-        try
-        {
-            ClearError();
-            IsSaving = true;
+        // ---------------------------------------------------------
+        // EVIDENCE UPLOAD CURRENTLY REQUIRES CONNECTION
+        // ---------------------------------------------------------
 
-            FileInfo photoFile =
-                new FileInfo(_photoPath);
-
-            var evidenceData = new
-            {
-                JobId = "JOB-1001",
-
-                LocalFilePath =
-                    _photoPath,
-
-                FileName =
-                    photoFile.Name,
-
-                FileExtension =
-                    photoFile.Extension,
-
-                FileSize =
-                    photoFile.Length,
-
-                Notes =
-                    PhotoNotes?.Trim()
-                    ?? string.Empty,
-
-                CapturedAt =
-                    DateTime.UtcNow
-            };
-
-            string payloadJson =
-                JsonSerializer.Serialize(
-                    evidenceData);
-
-            SyncQueueItem queueItem =
-                new SyncQueueItem
-                {
-                    JobId = "JOB-1001",
-
-                    OperationType =
-                        "UploadEvidence",
-
-                    PayloadJson =
-                        payloadJson,
-
-                    // This will be replaced by the
-                    // real API RowVersion later.
-                    BaseRowVersion =
-                        string.Empty
-                };
-
-            await _localDatabaseService
-                .AddSyncQueueItemAsync(
-                    queueItem);
-
-            await Shell.Current.GoToAsync(
-                nameof(CommentsFlagPage));
-        }
-        catch (Exception)
+        if (!_connectivityService.IsOnline)
         {
             ShowError(
-                "The photo evidence could not be saved locally. Please try again.");
+                "Photo evidence currently requires an internet connection. Please reconnect before continuing.");
+
+            return;
+        }
+
+        try
+        {
+            IsSaving =
+                true;
+
+            // -----------------------------------------------------
+            // 1. GET FILE EXTENSION
+            // -----------------------------------------------------
+
+            string extension =
+                Path.GetExtension(_photoPath)
+                    .ToLowerInvariant();
+
+            if (string.IsNullOrWhiteSpace(extension))
+            {
+                extension =
+                    ".jpg";
+            }
+
+            // -----------------------------------------------------
+            // 2. REQUEST TEMPORARY UPLOAD URL
+            // -----------------------------------------------------
+
+            MobileEvidenceUploadResponse uploadInstruction =
+                await _apiService.CreateEvidenceUploadAsync(
+                    jobId,
+                    extension);
+
+            // -----------------------------------------------------
+            // 3. UPLOAD ACTUAL PHOTO
+            // -----------------------------------------------------
+
+            await _apiService.UploadEvidenceFileAsync(
+                uploadInstruction.UploadUrl,
+                _photoPath);
+
+            // -----------------------------------------------------
+            // 4. CALCULATE SHA-256
+            // -----------------------------------------------------
+
+            string sha256 =
+                await _apiService.CalculateSha256Async(
+                    _photoPath);
+
+            // -----------------------------------------------------
+            // 5. CONFIRM EVIDENCE WITH SMARTJOB
+            // -----------------------------------------------------
+
+            string caption =
+                string.IsNullOrWhiteSpace(PhotoNotes)
+                    ? "Job evidence photo"
+                    : PhotoNotes.Trim();
+
+            bool confirmed =
+                await _apiService.ConfirmEvidenceAsync(
+                    jobId,
+                    uploadInstruction.UploadToken,
+                    sha256,
+                    caption);
+
+            if (!confirmed)
+            {
+                ShowError(
+                    "The photo was uploaded but SmartJob could not confirm the evidence.");
+
+                return;
+            }
+
+            // -----------------------------------------------------
+            // 6. CONTINUE WORKFLOW
+            // -----------------------------------------------------
+
+            await Shell.Current.Navigation.PushAsync(
+                new CommentsFlagPage(_job));
+        }
+        catch (HttpRequestException ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"Evidence HTTP error: {ex}");
+
+            ShowError(
+                "SmartJob could not upload the photo evidence. Please check the connection and try again.");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"Evidence upload failed: {ex}");
+
+            ShowError(
+                "The photo evidence could not be uploaded. Please try again.");
         }
         finally
         {
-            IsSaving = false;
+            IsSaving =
+                false;
         }
     }
+
+    // =========================================================
+    // ERROR HELPERS
+    // =========================================================
 
     private void ShowError(
         string message)
     {
-        ErrorMessage = message;
-        HasError = true;
+        ErrorMessage =
+            message;
+
+        HasError =
+            true;
     }
 
     private void ClearError()
     {
-        ErrorMessage = string.Empty;
-        HasError = false;
+        ErrorMessage =
+            string.Empty;
+
+        HasError =
+            false;
     }
 
-    public event PropertyChangedEventHandler? PropertyChanged;
+    // =========================================================
+    // PROPERTY CHANGED
+    // =========================================================
+
+    public event PropertyChangedEventHandler?
+        PropertyChanged;
 
     protected void OnPropertyChanged(
-        [CallerMemberName] string? propertyName = null)
+        [CallerMemberName]
+        string? propertyName = null)
     {
         PropertyChanged?.Invoke(
             this,
-            new PropertyChangedEventArgs(propertyName));
+            new PropertyChangedEventArgs(
+                propertyName));
     }
 }

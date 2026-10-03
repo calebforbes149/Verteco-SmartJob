@@ -4,14 +4,15 @@ using SmartJobMobile.Views;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
 using System.Windows.Input;
 
 namespace SmartJobMobile.ViewModels;
 
 public class CommentsFlagViewModel : INotifyPropertyChanged
 {
-    private readonly LocalDatabaseService _localDatabaseService;
+    private readonly Job _job;
+    private readonly ApiService _apiService;
+    private readonly ConnectivityService _connectivityService;
 
     private string _comments = string.Empty;
     private bool _isFlagged;
@@ -20,6 +21,20 @@ public class CommentsFlagViewModel : INotifyPropertyChanged
     private string _errorMessage = string.Empty;
     private bool _hasError;
     private bool _isSaving;
+
+    // =========================================================
+    // REAL JOB INFORMATION
+    // =========================================================
+
+    public string JobNumber => _job.JobNumber;
+
+    public string JobTitle => _job.Title;
+
+    public string JobLocation => _job.Location;
+
+    // =========================================================
+    // COMMENTS
+    // =========================================================
 
     public string Comments
     {
@@ -30,6 +45,10 @@ public class CommentsFlagViewModel : INotifyPropertyChanged
             OnPropertyChanged();
         }
     }
+
+    // =========================================================
+    // FLAG JOB
+    // =========================================================
 
     public bool IsFlagged
     {
@@ -83,6 +102,10 @@ public class CommentsFlagViewModel : INotifyPropertyChanged
         }
     }
 
+    // =========================================================
+    // ERROR STATE
+    // =========================================================
+
     public string ErrorMessage
     {
         get => _errorMessage;
@@ -103,6 +126,10 @@ public class CommentsFlagViewModel : INotifyPropertyChanged
         }
     }
 
+    // =========================================================
+    // SAVING STATE
+    // =========================================================
+
     public bool IsSaving
     {
         get => _isSaving;
@@ -119,21 +146,42 @@ public class CommentsFlagViewModel : INotifyPropertyChanged
 
     public ICommand ContinueCommand { get; }
 
+    // =========================================================
+    // CONSTRUCTOR
+    // =========================================================
+
     public CommentsFlagViewModel(
-        LocalDatabaseService localDatabaseService)
+        Job job,
+        ApiService apiService,
+        ConnectivityService connectivityService)
     {
-        _localDatabaseService =
-            localDatabaseService;
+        _job = job;
+        _apiService = apiService;
+        _connectivityService = connectivityService;
 
         ContinueCommand =
             new Command(
                 async () => await ContinueAsync());
     }
 
+    // =========================================================
+    // CONTINUE
+    // =========================================================
+
     private async Task ContinueAsync()
     {
-        // If the job is flagged, a reason and
-        // description of the problem are required.
+        ClearError();
+
+        if (_job.ApiId == Guid.Empty)
+        {
+            ShowError(
+                "SmartJob could not identify the current job.");
+
+            return;
+        }
+
+        // A reason and description are required
+        // when the technician flags the job.
         if (IsFlagged)
         {
             if (string.IsNullOrWhiteSpace(
@@ -153,6 +201,14 @@ public class CommentsFlagViewModel : INotifyPropertyChanged
 
                 return;
             }
+
+            if (!_connectivityService.IsOnline)
+            {
+                ShowError(
+                    "Flagging a job currently requires an internet connection. Please reconnect before continuing.");
+
+                return;
+            }
         }
 
         if (IsSaving)
@@ -162,74 +218,52 @@ public class CommentsFlagViewModel : INotifyPropertyChanged
 
         try
         {
-            ClearError();
             IsSaving = true;
 
-            var commentsFlagData = new
+            // Only call the backend when the technician
+            // actually selected Flag this job.
+            if (IsFlagged)
             {
-                JobId = "JOB-1001",
+                string reason =
+                    $"{SelectedFlagReason}: {FlagDetails.Trim()}";
 
-                Comments =
-                    Comments?.Trim()
-                    ?? string.Empty,
+                await _apiService.FlagJobAsync(
+                    _job.ApiId,
+                    reason);
+            }
 
-                IsFlagged =
-                    IsFlagged,
+            // Comments are currently workflow notes only because
+            // Person 4's API does not expose a technician-comments
+            // endpoint. Do not create an unsupported sync operation.
 
-                FlagReason =
-                    IsFlagged
-                        ? SelectedFlagReason
-                            ?? string.Empty
-                        : string.Empty,
-
-                FlagDetails =
-                    IsFlagged
-                        ? FlagDetails?.Trim()
-                            ?? string.Empty
-                        : string.Empty,
-
-                SavedAt =
-                    DateTime.UtcNow
-            };
-
-            string payloadJson =
-                JsonSerializer.Serialize(
-                    commentsFlagData);
-
-            SyncQueueItem queueItem =
-                new SyncQueueItem
-                {
-                    JobId = "JOB-1001",
-
-                    OperationType =
-                        "UpdateCommentsFlag",
-
-                    PayloadJson =
-                        payloadJson,
-
-                    // The real RowVersion will be
-                    // supplied by the API later.
-                    BaseRowVersion =
-                        string.Empty
-                };
-
-            await _localDatabaseService
-                .AddSyncQueueItemAsync(
-                    queueItem);
-
-            await Shell.Current.GoToAsync(
-                nameof(SignaturePage));
+            await Shell.Current.Navigation.PushAsync(
+                new SignaturePage(_job));
         }
-        catch (Exception)
+        catch (HttpRequestException ex)
         {
+            System.Diagnostics.Debug.WriteLine(
+                $"Flag job HTTP error: {ex}");
+
             ShowError(
-                "The comments and flag information could not be saved locally. Please try again.");
+                "SmartJob could not save the job flag. Please check the connection and try again.");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"Comments and flag error: {ex}");
+
+            ShowError(
+                "The comments and flag information could not be processed. Please try again.");
         }
         finally
         {
             IsSaving = false;
         }
     }
+
+    // =========================================================
+    // ERROR HELPERS
+    // =========================================================
 
     private void ShowError(
         string message)
@@ -243,6 +277,10 @@ public class CommentsFlagViewModel : INotifyPropertyChanged
         ErrorMessage = string.Empty;
         HasError = false;
     }
+
+    // =========================================================
+    // PROPERTY CHANGED
+    // =========================================================
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
