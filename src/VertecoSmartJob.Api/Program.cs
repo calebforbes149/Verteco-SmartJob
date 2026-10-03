@@ -6,16 +6,16 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using VertecoSmartJob.Infrastructure;
 using VertecoSmartJob.Infrastructure.Persistence;
-using VertecoSmartJob.Infrastructure.Persistence.Seed;
 using VertecoSmartJob.Api.Middleware;
 using VertecoSmartJob.Api.Auth;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.OpenApi;
 using VertecoSmartJob.Application.Abstractions;
 
 var builder = WebApplication.CreateBuilder(args);
 if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing"))
-    throw new InvalidOperationException("Production authentication must be added by the identity workstream before hosting.");
+    throw new InvalidOperationException("Production startup is disabled until hosting configuration and database migration rollout are reviewed.");
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 if (builder.Environment.IsDevelopment())
@@ -78,11 +78,34 @@ builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new Microsoft.OpenApi.OpenApiInfo
+    c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Verteco SmartJob API",
         Version = "v1",
         Description = "Job card lifecycle, scheduling and reporting API for Verteco field teams."
+    });
+    c.AddSecurityDefinition("SmartJobKey", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.ApiKey,
+        In = ParameterLocation.Header,
+        Name = "X-SmartJob-Key",
+        Description = "Development API key. Enter the key value without a header name."
+    });
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Description = "JWT from POST /api/v1/auth/login. Enter the token without the Bearer prefix."
+    });
+    // Separate requirements mean either credential can authorize a protected request.
+    c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("SmartJobKey", document)] = []
+    });
+    c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
     });
 });
 
@@ -145,9 +168,11 @@ if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    if (app.Environment.IsEnvironment("Testing")) await db.Database.EnsureCreatedAsync();
+    if (app.Environment.IsEnvironment("Testing"))
+    {
+        await db.Database.EnsureCreatedAsync();
+    }
     else await db.Database.MigrateAsync();
-    await DbSeeder.SeedAsync(db);
 }
 
 app.Run();

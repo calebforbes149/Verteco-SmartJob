@@ -134,5 +134,6 @@ public class DashboardStatsDto
 {
     public int ActiveJobCards { get; set; }
     public int DueTodayCount { get; set; }
+    public int FlaggedJobCards { get; set; }
     public int TechniciansAvailable { get; set; }
 }

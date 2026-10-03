@@ -19,4 +19,11 @@ public class DashboardApiClient(HttpClient http)
         await response.EnsureApiSuccessAsync(ct);
         return (await response.Content.ReadFromJsonAsync<List<JobCardSummaryDto>>(cancellationToken: ct))!;
     }
+
+    public async Task<List<JobCardSummaryDto>> GetStatusBoardAsync(CancellationToken ct = default)
+    {
+        var response = await http.GetAsync("api/v1/dashboard/status-board", ct);
+        await response.EnsureApiSuccessAsync(ct);
+        return (await response.Content.ReadFromJsonAsync<List<JobCardSummaryDto>>(cancellationToken: ct))!;
+    }
 }

@@ -4,7 +4,8 @@ using VertecoSmartJob.Web.Auth;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+    options.Filters.Add<ApiUnauthorizedExceptionFilter>());
 
 builder.Services.AddHttpContextAccessor();
 builder.Services

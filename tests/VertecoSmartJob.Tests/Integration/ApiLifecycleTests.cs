@@ -15,6 +15,7 @@ using VertecoSmartJob.Contracts.Reference;
 using VertecoSmartJob.Application.Jobs;
 using VertecoSmartJob.Domain.Entities;
 using VertecoSmartJob.Infrastructure.Persistence;
+using VertecoSmartJob.Infrastructure.Persistence.Seed;
 
 namespace VertecoSmartJob.Tests.Integration;
 
@@ -46,6 +47,8 @@ public sealed class ApiLifecycleTests
         });
 
         using var anonymous = factory.CreateClient();
+        using (var seedScope = factory.Services.CreateScope())
+            await DbSeeder.SeedAsync(seedScope.ServiceProvider.GetRequiredService<AppDbContext>());
         Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync("/api/v1/jobs")).StatusCode);
 
         using var manager = factory.CreateClient();

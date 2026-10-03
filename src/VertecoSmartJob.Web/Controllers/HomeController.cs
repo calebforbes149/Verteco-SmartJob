@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VertecoSmartJob.Web.Api;
@@ -24,6 +26,11 @@ public class HomeController(DashboardApiClient dashboard) : Controller
         {
             ViewBag.ForbiddenMessage = "Your signed-in account doesn't have Manager access, so there's no dashboard to show here yet.";
             return View(new DashboardViewModel());
+        }
+        catch (ApiException ex) when (ex.StatusCode == 401)
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return RedirectToAction("Login", "Account", new { returnUrl = Url.Action(nameof(Index), "Home") });
         }
     }
 
