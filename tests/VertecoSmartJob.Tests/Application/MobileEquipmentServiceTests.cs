@@ -7,6 +7,7 @@ using VertecoSmartJob.Domain.Enums;
 using VertecoSmartJob.Infrastructure.Persistence;
 using VertecoSmartJob.Infrastructure.Persistence.Repositories;
 using VertecoSmartJob.Infrastructure.Persistence.Seed;
+using VertecoSmartJob.Tests.Integration;
 
 namespace VertecoSmartJob.Tests.Application;
 
@@ -225,6 +226,7 @@ public class MobileEquipmentServiceTests
             new CustomerRepository(db),
             new SiteRepository(db),
             new AuditLogRepository(db),
+            new NoOpNotificationService(),
             Array.Empty<ISubmissionValidationStrategy>(),
             db);
     }

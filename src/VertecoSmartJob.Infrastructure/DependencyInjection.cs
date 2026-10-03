@@ -32,15 +32,16 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddSingleton(sp =>
         {
-            var container = configuration["Blob:Container"] ?? "job-evidence";
             var storageConnection = configuration["Blob:ConnectionString"];
             if (!string.IsNullOrWhiteSpace(storageConnection))
-                return new BlobContainerClient(storageConnection, container);
+                return new BlobServiceClient(storageConnection);
             var serviceUri = configuration["Blob:ServiceUri"];
             if (string.IsNullOrWhiteSpace(serviceUri))
                 throw new InvalidOperationException("Blob:ServiceUri or Blob:ConnectionString is required.");
-            return new BlobContainerClient(new Uri($"{serviceUri.TrimEnd('/')}/{container}"), new DefaultAzureCredential());
+            return new BlobServiceClient(new Uri(serviceUri.TrimEnd('/')), new DefaultAzureCredential());
         });
+        services.AddSingleton(sp => sp.GetRequiredService<BlobServiceClient>()
+            .GetBlobContainerClient(configuration["Blob:Container"] ?? "job-evidence"));
         services.AddScoped<IFieldFileStore, AzureBlobFileStore>();
 
         services.AddScoped<IJobCardRepository, JobCardRepository>();

@@ -7,7 +7,9 @@ using VertecoSmartJob.Application.Files;
 namespace VertecoSmartJob.Infrastructure.Files;
 
 // Handles private Azure Blob Storage for evidence files
-public sealed class AzureBlobFileStore(BlobContainerClient container) : IFieldFileStore
+public sealed class AzureBlobFileStore(
+    BlobContainerClient container,
+    BlobServiceClient serviceClient) : IFieldFileStore
 {
     private const long MaxFileSize = 10 * 1024 * 1024;
 
@@ -107,11 +109,6 @@ public sealed class AzureBlobFileStore(BlobContainerClient container) : IFieldFi
         var blobName = $"{Guid.NewGuid():N}{extension}";
         var blob = container.GetBlobClient(blobName);
 
-        // The mobile app only gets permission to upload this one file
-        if (!blob.CanGenerateSasUri)
-            throw new InvalidOperationException(
-                "Blob storage cannot generate an upload link with the current credentials.");
-
         var expiresAt = DateTimeOffset.UtcNow.AddMinutes(10);
 
         var sas = new BlobSasBuilder
@@ -126,7 +123,23 @@ public sealed class AzureBlobFileStore(BlobContainerClient container) : IFieldFi
             BlobSasPermissions.Create |
             BlobSasPermissions.Write);
 
-        var uploadUrl = blob.GenerateSasUri(sas).ToString();
+        // Shared-key connections can sign a service SAS. Azure identity connections
+        // need a user delegation key from the storage account instead.
+        string uploadUrl;
+        if (blob.CanGenerateSasUri)
+        {
+            uploadUrl = blob.GenerateSasUri(sas).ToString();
+        }
+        else
+        {
+            var delegationKey = await serviceClient.GetUserDelegationKeyAsync(
+                DateTimeOffset.UtcNow.AddMinutes(-5),
+                expiresAt,
+                ct);
+            uploadUrl = blob.GenerateUserDelegationSasUri(
+                sas,
+                delegationKey.Value).ToString();
+        }
 
         return new FieldUploadInstruction
         {
