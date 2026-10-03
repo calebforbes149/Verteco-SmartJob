@@ -7,6 +7,8 @@ public interface IMobileSyncRepository
 {
     Task<List<JobCard>> GetJobsForTechnicianAsync(
         Guid technicianId,
+        DateTime? sinceUtc,
+        DateTime serverTimeUtc,
         CancellationToken ct = default);
 
     Task<MobileSyncOperation?> GetOperationAsync(

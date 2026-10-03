@@ -11,18 +11,24 @@ public class MobileSyncService(
     IAuditLogRepository audit,
     IUnitOfWork unitOfWork)
 {
-    // Returns the technician's current jobs to the mobile app
+    // Returns jobs changed since the mobile app's last successful pull
     public async Task<MobileSyncPullResult> PullAsync(
         Guid technicianId,
+        DateTime? sinceUtc,
         CancellationToken ct = default)
     {
+        // Capture the sync boundary before reading changes
+        var serverTimeUtc = DateTime.UtcNow;
+
         var jobs = await syncRepository.GetJobsForTechnicianAsync(
             technicianId,
+            sinceUtc,
+            serverTimeUtc,
             ct);
 
         return new MobileSyncPullResult
         {
-            ServerTimeUtc = DateTime.UtcNow,
+            ServerTimeUtc = serverTimeUtc,
 
             Jobs = jobs.Select(job => new MobileSyncJob
             {

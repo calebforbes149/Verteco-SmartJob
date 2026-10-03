@@ -466,6 +466,33 @@ namespace VertecoSmartJob.Infrastructure.Persistence.Migrations
                     b.ToTable("JobTemplates");
                 });
 
+            modelBuilder.Entity("VertecoSmartJob.Domain.Entities.MobileSyncChange", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ChangedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("JobCardId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChangedAtUtc");
+
+                    b.HasIndex("JobCardId");
+
+                    b.HasIndex("JobCardId", "ChangedAtUtc");
+
+                    b.ToTable("MobileSyncChanges");
+                });
+
             modelBuilder.Entity("VertecoSmartJob.Domain.Entities.MobileSyncOperation", b =>
                 {
                     b.Property<Guid>("Id")

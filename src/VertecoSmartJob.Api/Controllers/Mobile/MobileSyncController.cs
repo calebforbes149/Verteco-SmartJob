@@ -18,9 +18,10 @@ public class MobileSyncController(
             ? id
             : Guid.Empty;
 
-    // Pulls the technician's latest jobs from the server
+    // Pulls jobs changed since the mobile app's last successful sync
     [HttpGet("pull")]
     public async Task<ActionResult<MobileSyncPullResponse>> Pull(
+        [FromQuery] DateTime? since,
         CancellationToken ct)
     {
         if (ActorTechnicianId == Guid.Empty)
@@ -28,6 +29,7 @@ public class MobileSyncController(
 
         var result = await syncService.PullAsync(
             ActorTechnicianId,
+            since,
             ct);
 
         return Ok(new MobileSyncPullResponse

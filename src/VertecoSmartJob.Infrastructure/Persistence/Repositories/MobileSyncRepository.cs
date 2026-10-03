@@ -10,13 +10,34 @@ public class MobileSyncRepository(AppDbContext db)
 {
     public async Task<List<JobCard>> GetJobsForTechnicianAsync(
         Guid technicianId,
+        DateTime? sinceUtc,
+        DateTime serverTimeUtc,
         CancellationToken ct = default)
     {
-        return await db.JobCards
+        var jobs = db.JobCards
             .AsSplitQuery()
             .Include(j => j.ChecklistItems)
-            .Where(j => j.TechnicianId == technicianId)
-            .OrderByDescending(j => j.ScheduledDate)
+            .Where(j => j.TechnicianId == technicianId);
+
+        // Initial sync returns all jobs currently assigned to the technician
+        if (sinceUtc is null)
+        {
+            return await jobs
+                .OrderByDescending(j => j.ScheduledDate)
+                .ToListAsync(ct);
+        }
+
+        // Reconnect sync only returns jobs changed since the last pull
+        var changedJobIds = db.MobileSyncChanges
+            .Where(change =>
+                change.ChangedAtUtc > sinceUtc.Value &&
+                change.ChangedAtUtc <= serverTimeUtc)
+            .Select(change => change.JobCardId)
+            .Distinct();
+
+        return await jobs
+            .Where(job => changedJobIds.Contains(job.Id))
+            .OrderByDescending(job => job.ScheduledDate)
             .ToListAsync(ct);
     }
 
