@@ -1,0 +1,26 @@
+﻿@{
+    ViewData["Title"] = "Profile & Settings";
+}
+
+<div class="page-head">
+  <div>
+    <div class="page-title">Profile &amp; Settings</div>
+    <div class="page-desc">Read-only for now.</div>
+  </div>
+</div>
+
+<div class="card section-card" style="max-width:600px;">
+  <div class="section-card-head"><h3>Signed in as</h3></div>
+  <div class="section-card-body pad">
+    <div class="info-row"><span>Name</span><span>@User.Identity?.Name</span></div>
+    <div class="info-row"><span>Email</span><span>@User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value</span></div>
+    <div class="info-row"><span>Role</span><span class="pill">@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</span></div>
+  </div>
+</div>
+
+<div class="card card-pad" style="max-width:600px;margin-top:16px;">
+  <form asp-controller="Account" asp-action="Logout" method="post">
+    @Html.AntiForgeryToken()
+    <button type="submit" class="btn btn-danger btn-sm">Log out</button>
+  </form>
+</div>

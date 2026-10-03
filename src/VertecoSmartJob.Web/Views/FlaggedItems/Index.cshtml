@@ -1,0 +1,91 @@
+﻿@model FlaggedItemsListViewModel
+@{
+    ViewData["Title"] = "Flagged Items";
+}
+
+<div class="page-head">
+  <div>
+    <div class="page-title">Flagged Items</div>
+    <div class="page-desc">Every corrective action raised against a job card, across the whole business — resolve one here or from the job card itself.</div>
+  </div>
+</div>
+
+<form method="get" class="filter-bar">
+  <select name="status" onchange="this.form.submit()">
+    <option value="open" selected="@(Model.Status == "open")">Open only</option>
+    <option value="resolved" selected="@(Model.Status == "resolved")">Resolved only</option>
+    <option value="" selected="@(string.IsNullOrEmpty(Model.Status))">All</option>
+  </select>
+</form>
+
+<div class="card">
+  @if (Model.Results.Items.Count == 0)
+  {
+      <div class="empty-state"><b>No corrective actions match that filter</b></div>
+  }
+  else
+  {
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Job #</th><th>Reason</th><th>Opened</th><th>Status</th><th>Resolution</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var action in Model.Results.Items)
+        {
+          <tr>
+            <td class="mono"><a asp-controller="JobCards" asp-action="Details" asp-route-id="@action.JobCardId">@action.JobNumber</a></td>
+            <td>@action.Reason</td>
+            <td class="mono">@action.OpenedAtUtc.ToString("dd MMM yyyy HH:mm") UTC</td>
+            <td>
+              @if (action.IsOpen)
+              {
+                  <span class="pill pill-open">Open</span>
+              }
+              else
+              {
+                  <span class="pill pill-resolved">Resolved</span>
+              }
+            </td>
+            <td>
+              @if (!action.IsOpen)
+              {
+                  <span class="tiny muted">@action.ResolutionNotes</span>
+              }
+            </td>
+            <td>
+              @if (action.IsOpen)
+              {
+                  <button type="button" class="btn btn-sm" onclick="document.getElementById('resolve-@action.Id').hidden = false;">Resolve</button>
+              }
+            </td>
+          </tr>
+          @if (action.IsOpen)
+          {
+              <tr id="resolve-@action.Id" hidden>
+                <td colspan="6">
+                  <form asp-action="Resolve" method="post" style="display:flex;gap:8px;align-items:flex-start;">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@action.Id" />
+                    <input type="hidden" name="status" value="@Model.Status" />
+                    <textarea name="resolutionNotes" placeholder="Resolution notes (required)" maxlength="2000" required style="flex:1;"></textarea>
+                    <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                  </form>
+                </td>
+              </tr>
+          }
+        }
+        </tbody>
+      </table>
+      </div>
+  }
+</div>
+
+@if (Model.Results.TotalPages > 1)
+{
+    <div class="pagination">
+      @for (var p = 1; p <= Model.Results.TotalPages; p++)
+      {
+          <a class="@(p == Model.Results.Page ? "page-link active" : "page-link")"
+             asp-action="Index" asp-route-page="@p" asp-route-status="@Model.Status">@p</a>
+      }
+    </div>
+}

@@ -1,15 +1,18 @@
+using Azure.Identity;
+using Azure.Storage.Blobs;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using VertecoSmartJob.Application.Abstractions;
-using VertecoSmartJob.Application.Jobs;
-using VertecoSmartJob.Application.Reports;
-using VertecoSmartJob.Application.Management;
 using VertecoSmartJob.Application.Files;
-using VertecoSmartJob.Infrastructure.Files;
-using Azure.Identity;
-using Azure.Storage.Blobs;
+using VertecoSmartJob.Application.Jobs;
+using VertecoSmartJob.Application.Management;
+using VertecoSmartJob.Application.Reports;
 using VertecoSmartJob.Infrastructure.Ai;
+using VertecoSmartJob.Infrastructure.Email;
+using VertecoSmartJob.Infrastructure.Files;
+using VertecoSmartJob.Infrastructure.Identity;
+using VertecoSmartJob.Infrastructure.Notifications;
 using VertecoSmartJob.Infrastructure.Persistence;
 using VertecoSmartJob.Infrastructure.Persistence.Repositories;
 
@@ -48,6 +51,7 @@ public static class DependencyInjection
         services.AddScoped<ISiteRepository, SiteRepository>();
         services.AddScoped<ITechnicianRepository, TechnicianRepository>();
         services.AddScoped<IJobTemplateRepository, JobTemplateRepository>();
+        services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
 
         services.AddScoped<JobCardService>();
 
@@ -59,8 +63,12 @@ public static class DependencyInjection
         services.AddScoped<TechnicianManagementService>();
         services.AddScoped<ReportService>();
         services.AddSingleton<IReportingAiService>(sp => new GeminiReportingAiService(
-            new HttpClient { Timeout = TimeSpan.FromSeconds(8) }, configuration,
+            new HttpClient { Timeout = TimeSpan.FromSeconds(25) }, configuration,
             sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<GeminiReportingAiService>>()));
+        services.AddSingleton<PasswordHashingService>();
+        services.AddSingleton<JwtTokenService>();
+        services.AddScoped<IEmailSender, SmtpEmailSender>();
+        services.AddScoped<INotificationService, EmailNotificationService>();
         services.AddScoped<ISubmissionValidationStrategy, RequiredFieldsStrategy>();
         services.AddScoped<ISubmissionValidationStrategy, EvidencePresenceStrategy>();
         services.AddScoped<ISubmissionValidationStrategy, SignaturePresenceStrategy>();

@@ -50,3 +50,10 @@ public interface IJobTemplateRepository
     Task<List<JobTemplate>> ListAsync(CancellationToken ct = default);
     Task<JobTemplate?> GetByIdAsync(Guid id, CancellationToken ct = default);
 }
+
+public interface IPasswordResetTokenRepository
+{
+    Task<PasswordResetToken?> GetByTokenHashAsync(string tokenHash, CancellationToken ct = default);
+    Task AddAsync(PasswordResetToken token, CancellationToken ct = default);
+}
+

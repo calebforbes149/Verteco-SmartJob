@@ -9,21 +9,112 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Swashbuckle.AspNetCore.Swagger;
 using VertecoSmartJob.Contracts.Common;
 using VertecoSmartJob.Contracts.Jobs;
 using VertecoSmartJob.Contracts.Reference;
 using VertecoSmartJob.Infrastructure.Persistence;
+using VertecoSmartJob.Infrastructure.Persistence.Seed;
 
 namespace VertecoSmartJob.Tests.Integration;
 
 public sealed class ManagementGapTests
 {
     [Fact]
+    public async Task TestingStartup_DoesNotSeedAccountsOrTemplates()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        using var factory = CreateFactory(connection);
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        Assert.Empty(await db.Users.ToListAsync());
+        Assert.Empty(await db.JobTemplates.ToListAsync());
+    }
+
+    [Fact]
+    public async Task DashboardStatusBoard_ShowsAllJobsAndFlaggedCountMatchesData()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        using var factory = CreateFactory(connection);
+        await SeedTestDataAsync(factory);
+        using var manager = Client(factory, "integration-manager-key");
+        using var technician = Client(factory, "integration-thabo-key");
+
+        var board = await manager.GetFromJsonAsync<List<JobCardSummaryDto>>("/api/v1/dashboard/status-board");
+        var stats = await manager.GetFromJsonAsync<DashboardStatsDto>("/api/v1/dashboard/stats");
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        Assert.NotNull(board);
+        Assert.Equal(await db.JobCards.CountAsync(), board.Count);
+        Assert.Equal(await db.JobCards.CountAsync(job => job.IsFlagged), stats!.FlaggedJobCards);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await technician.GetAsync("/api/v1/dashboard/status-board")).StatusCode);
+    }
+
+    [Fact]
+    public async Task EditUser_UpdatesLinkedTechnicianAndRejectsInvalidEmail()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        using var factory = CreateFactory(connection);
+        await SeedTestDataAsync(factory);
+        using var manager = Client(factory, "integration-manager-key");
+        using var technicianClient = Client(factory, "integration-thabo-key");
+
+        var created = await manager.PostAsJsonAsync("/api/v1/technicians", new CreateTechnicianRequest
+        {
+            FullName = "Edit User Test", Email = "edit-user@example.test", Phone = "011 123 4567"
+        });
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var technician = (await created.Content.ReadFromJsonAsync<TechnicianDto>())!;
+        Assert.NotNull(technician.UserId);
+
+        var url = $"/api/v1/users/{technician.UserId}";
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await technicianClient.PatchAsJsonAsync(url, new { email = "unauthorized@example.test" })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await manager.PatchAsJsonAsync(url, new { email = "not-an-email" })).StatusCode);
+
+        var response = await manager.PatchAsJsonAsync(url, new
+        {
+            fullName = "Edited User", email = "edited-user@example.test", phone = "011 765 4321"
+        });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var account = (await response.Content.ReadFromJsonAsync<UserDto>())!;
+        Assert.Equal("edited-user@example.test", account.Email);
+        var updatedTechnician = await manager.GetFromJsonAsync<TechnicianDto>($"/api/v1/technicians/{technician.Id}");
+        Assert.Equal(account.FullName, updatedTechnician!.FullName);
+        Assert.Equal(account.Email, updatedTechnician.Email);
+        Assert.Equal(account.Phone, updatedTechnician.Phone);
+    }
+
+    [Fact]
+    public async Task SwaggerDocument_OffersApiKeyAndBearerAsAlternativeSchemes()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        using var factory = CreateFactory(connection);
+
+        var document = factory.Services.GetRequiredService<ISwaggerProvider>().GetSwagger("v1");
+        var schemes = document.Components?.SecuritySchemes ?? throw new Xunit.Sdk.XunitException("No security schemes.");
+        var requirements = document.Security ?? throw new Xunit.Sdk.XunitException("No security requirements.");
+        Assert.Contains("SmartJobKey", schemes.Keys);
+        Assert.Contains("Bearer", schemes.Keys);
+        Assert.Equal(2, requirements.Count);
+        Assert.All(requirements, requirement => Assert.Single(requirement));
+    }
+
+    [Fact]
     public async Task CreateTechnician_CreatesAccountAndKeepsEditsInSync()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
         using var factory = CreateFactory(connection);
+        await SeedTestDataAsync(factory);
         using var manager = Client(factory, "integration-manager-key");
         using var technician = Client(factory, "integration-thabo-key");
 
@@ -64,6 +155,7 @@ public sealed class ManagementGapTests
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
         using var factory = CreateFactory(connection);
+        await SeedTestDataAsync(factory);
         using var manager = Client(factory, "integration-manager-key");
         using var assigned = Client(factory, "integration-thabo-key");
         using var otherTechnician = Client(factory, "integration-sipho-key");
@@ -130,6 +222,12 @@ public sealed class ManagementGapTests
                 services.AddDbContext<AppDbContext>(options => options.UseSqlite(connection));
             });
         });
+
+    private static async Task SeedTestDataAsync(WebApplicationFactory<Program> factory)
+    {
+        using var scope = factory.Services.CreateScope();
+        await DbSeeder.SeedAsync(scope.ServiceProvider.GetRequiredService<AppDbContext>());
+    }
 
     private static HttpClient Client(WebApplicationFactory<Program> factory, string key)
     {

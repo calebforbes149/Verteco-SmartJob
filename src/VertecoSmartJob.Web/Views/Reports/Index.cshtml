@@ -1,0 +1,39 @@
+﻿@model ReportsListViewModel
+@{
+    ViewData["Title"] = "Reports";
+}
+
+<div class="page-head">
+  <div>
+    <div class="page-title">Reports</div>
+    <div class="page-desc">One report per calendar month. Jobs created/completed, average completion time and status breakdown are all shown. Open a month for the AI commentary and export options.</div>
+  </div>
+</div>
+
+<form method="get" class="filter-bar">
+  <select name="year" onchange="this.form.submit()">
+    @for (var y = DateTime.UtcNow.Year; y >= DateTime.UtcNow.Year - 4; y--)
+    {
+        <option value="@y" selected="@(Model.Year == y)">@y</option>
+    }
+  </select>
+</form>
+
+<div class="card">
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Period</th><th>Jobs created</th><th>Jobs completed</th><th>Avg. completion (hrs)</th></tr></thead>
+    <tbody>
+    @foreach (var r in Model.Results.Items)
+    {
+      <tr class="clickable" onclick="location.href='@Url.Action("Details", new { id = r.Id })'">
+        <td class="mono">@r.Id</td>
+        <td class="mono">@r.JobsCreated</td>
+        <td class="mono">@r.JobsCompleted</td>
+        <td class="mono">@(r.AverageCompletionHours?.ToString("0.0") ?? "N/A")</td>
+      </tr>
+    }
+    </tbody>
+  </table>
+  </div>
+</div>

@@ -13,6 +13,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         b.HasIndex(x => x.Email).IsUnique();
         b.Property(x => x.Phone).HasMaxLength(50);
         b.Property(x => x.Role).IsRequired().HasMaxLength(30);
+        b.Property(x => x.PasswordHash).HasMaxLength(500);
         b.HasOne(x => x.Technician).WithMany().HasForeignKey(x => x.TechnicianId).OnDelete(DeleteBehavior.Restrict);
     }
 }

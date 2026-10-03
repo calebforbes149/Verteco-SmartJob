@@ -6,9 +6,13 @@ public sealed record ReportStatistics(
     string Id, DateTime FromUtc, DateTime ToUtc, int JobsCreated, int JobsCompleted,
     double? AverageCompletionHours, Dictionary<string, int> StatusCounts);
 
+public enum ReportingAiStatus { Available, NotConfigured, RateLimited, Unavailable }
+
+public sealed record ReportingAiResult(string? Commentary, ReportingAiStatus Status);
+
 public interface IReportingAiService
 {
-    Task<string?> SummariseAsync(ReportStatistics statistics, CancellationToken ct = default);
+    Task<ReportingAiResult> SummariseAsync(ReportStatistics statistics, CancellationToken ct = default);
 }
 
 public sealed class ReportService(IJobCardRepository jobs, IReportingAiService ai)
@@ -29,10 +33,9 @@ public sealed class ReportService(IJobCardRepository jobs, IReportingAiService a
             records.GroupBy(j => j.Status.ToString()).ToDictionary(g => g.Key, g => g.Count()));
     }
 
-    public async Task<(ReportStatistics Statistics, string? Commentary)> GetReportAsync(int year, int month, CancellationToken ct = default)
+    public async Task<(ReportStatistics Statistics, ReportingAiResult Ai)> GetReportAsync(int year, int month, CancellationToken ct = default)
     {
         var statistics = await GetStatisticsAsync(year, month, ct);
-        var commentary = await ai.SummariseAsync(statistics, ct);
-        return (statistics, commentary);
+        return (statistics, await ai.SummariseAsync(statistics, ct));
     }
 }

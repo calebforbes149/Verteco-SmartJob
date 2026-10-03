@@ -1,0 +1,51 @@
+﻿@model SiteDto
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<div class="page-head">
+  <div>
+    <div class="breadcrumb"><a asp-controller="Customers" asp-action="Details" asp-route-id="@Model.CustomerId">@Model.CustomerName</a> / @Model.Name</div>
+    <div class="page-title">@Model.Name</div>
+    <div class="page-desc">@Model.Address</div>
+  </div>
+  @if (User.IsInRole("Manager"))
+  {
+      <div class="page-actions">
+        <a class="btn btn-sm" asp-action="Edit" asp-route-id="@Model.Id">Edit</a>
+      </div>
+  }
+</div>
+
+<div class="two-col">
+  <div>
+    <div class="card section-card">
+      <div class="section-card-head"><h3>Equipment</h3></div>
+      <div class="section-card-body pad">
+        @if (Model.Equipment.Count == 0)
+        {
+            <p class="tiny muted">No equipment recorded at this site.</p>
+        }
+        else
+        {
+            @foreach (var e in Model.Equipment)
+            {
+                <div class="info-row"><span>@e.Name <span class="mono tiny muted">(@e.SerialNumber)</span></span><span class="tiny muted">@e.Description</span></div>
+            }
+        }
+        <p class="tiny muted" style="margin-top:8px;">Looking up a specific serial number across all history? Use <a asp-controller="History" asp-action="Index">Historical Records</a>.</p>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card section-card">
+      <div class="section-card-head"><h3>Site info</h3></div>
+      <div class="section-card-body pad">
+        <div class="info-row"><span>Customer</span><span>@Model.CustomerName</span></div>
+        <div class="info-row"><span>Type</span><span>@Model.SiteType</span></div>
+        <div class="info-row"><span>Address</span><span style="text-align:left;max-width:60%;">@Model.Address</span></div>
+      </div>
+    </div>
+  </div>
+</div>

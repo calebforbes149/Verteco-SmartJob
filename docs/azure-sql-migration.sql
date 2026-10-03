@@ -512,3 +512,141 @@ END;
 COMMIT;
 GO
 
+BEGIN TRANSACTION;
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261001194051_AddUserIdentityFields'
+)
+BEGIN
+    ALTER TABLE [Users] ADD [FailedLoginAttempts] int NOT NULL DEFAULT 0;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261001194051_AddUserIdentityFields'
+)
+BEGIN
+    ALTER TABLE [Users] ADD [IsEmailConfirmed] bit NOT NULL DEFAULT CAST(0 AS bit);
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261001194051_AddUserIdentityFields'
+)
+BEGIN
+    ALTER TABLE [Users] ADD [LockedOutUntilUtc] datetime2 NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261001194051_AddUserIdentityFields'
+)
+BEGIN
+    ALTER TABLE [Users] ADD [PasswordHash] nvarchar(500) NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261001194051_AddUserIdentityFields'
+)
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20261001194051_AddUserIdentityFields', N'10.0.12');
+END;
+
+COMMIT;
+GO
+
+BEGIN TRANSACTION;
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261001225759_AddPasswordResetTokens'
+)
+BEGIN
+    CREATE TABLE [PasswordResetTokens] (
+        [Id] uniqueidentifier NOT NULL,
+        [UserId] uniqueidentifier NOT NULL,
+        [TokenHash] nvarchar(100) NOT NULL,
+        [ExpiresAtUtc] datetime2 NOT NULL,
+        [UsedAtUtc] datetime2 NULL,
+        [CreatedAtUtc] datetime2 NOT NULL,
+        [RowVersion] varbinary(max) NOT NULL,
+        CONSTRAINT [PK_PasswordResetTokens] PRIMARY KEY ([Id]),
+        CONSTRAINT [FK_PasswordResetTokens_Users_UserId] FOREIGN KEY ([UserId]) REFERENCES [Users] ([Id]) ON DELETE CASCADE
+    );
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261001225759_AddPasswordResetTokens'
+)
+BEGIN
+    CREATE UNIQUE INDEX [IX_PasswordResetTokens_TokenHash] ON [PasswordResetTokens] ([TokenHash]);
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261001225759_AddPasswordResetTokens'
+)
+BEGIN
+    CREATE INDEX [IX_PasswordResetTokens_UserId] ON [PasswordResetTokens] ([UserId]);
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261001225759_AddPasswordResetTokens'
+)
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20261001225759_AddPasswordResetTokens', N'10.0.12');
+END;
+
+COMMIT;
+GO
+
+-- Required baseline data only: one Standard Job Card and its six checklist items.
+-- This migration does not insert demo customers, technicians, users or jobs.
+BEGIN TRY
+    BEGIN TRANSACTION;
+    IF NOT EXISTS (
+        SELECT 1 FROM [__EFMigrationsHistory]
+        WHERE [MigrationId] = N'20261003120000_AddStandardJobCardTemplate'
+    )
+    BEGIN
+        IF NOT EXISTS (
+            SELECT 1 FROM [dbo].[JobTemplates] WITH (UPDLOCK, HOLDLOCK)
+            WHERE [Name] = N'Standard Job Card' AND [IsDeleted] = 0
+        )
+        BEGIN
+            IF EXISTS (SELECT 1 FROM [dbo].[JobTemplates] WHERE [Id] = '7c59055c-7d5a-4a02-9191-e95729b23bab')
+                THROW 51210, 'Reserved Standard Job Card template ID is already in use.', 1;
+
+            INSERT INTO [dbo].[JobTemplates]
+                ([Id], [Name], [Category], [Description], [TimesUsed], [RowVersion], [IsDeleted], [DeletedAtUtc])
+            VALUES
+                ('7c59055c-7d5a-4a02-9191-e95729b23bab', N'Standard Job Card', N'All field work',
+                 N'The single standard checklist used for every Verteco job card.',
+                 0, CONVERT(varbinary(16), NEWID()), 0, NULL);
+
+            INSERT INTO [dbo].[TemplateChecklistItems]
+                ([Id], [JobTemplateId], [Order], [Text], [RowVersion])
+            VALUES
+                (NEWID(), '7c59055c-7d5a-4a02-9191-e95729b23bab', 0, N'Confirm site access and safety controls', CONVERT(varbinary(16), NEWID())),
+                (NEWID(), '7c59055c-7d5a-4a02-9191-e95729b23bab', 1, N'Record equipment and serial numbers', CONVERT(varbinary(16), NEWID())),
+                (NEWID(), '7c59055c-7d5a-4a02-9191-e95729b23bab', 2, N'Complete installation, inspection or maintenance work', CONVERT(varbinary(16), NEWID())),
+                (NEWID(), '7c59055c-7d5a-4a02-9191-e95729b23bab', 3, N'Record test results and outstanding issues', CONVERT(varbinary(16), NEWID())),
+                (NEWID(), '7c59055c-7d5a-4a02-9191-e95729b23bab', 4, N'Capture photographic evidence', CONVERT(varbinary(16), NEWID())),
+                (NEWID(), '7c59055c-7d5a-4a02-9191-e95729b23bab', 5, N'Obtain technician and client sign-off', CONVERT(varbinary(16), NEWID()));
+        END;
+
+        INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+        VALUES (N'20261003120000_AddStandardJobCardTemplate', N'10.0.12');
+    END;
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+    THROW;
+END CATCH;
+GO
+

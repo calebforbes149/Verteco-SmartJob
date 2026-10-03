@@ -93,3 +93,12 @@ public class JobTemplateRepository(AppDbContext db) : IJobTemplateRepository
     public Task<JobTemplate?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         db.JobTemplates.Where(t => t.Name == "Standard Job Card").Include(t => t.ChecklistItems).FirstOrDefaultAsync(t => t.Id == id, ct);
 }
+
+public class PasswordResetTokenRepository(AppDbContext db) : IPasswordResetTokenRepository
+{
+    public async Task AddAsync(PasswordResetToken token, CancellationToken ct = default) =>
+        await db.PasswordResetTokens.AddAsync(token, ct);
+
+    public Task<PasswordResetToken?> GetByTokenHashAsync(string tokenHash, CancellationToken ct = default) =>
+        db.PasswordResetTokens.FirstOrDefaultAsync(t => t.TokenHash == tokenHash, ct);
+}

@@ -36,9 +36,10 @@ public sealed class ReportsController(ReportService reports) : ControllerBase
     public async Task<ActionResult<ReportDto>> Get(string id, CancellationToken ct)
     {
         if (!TryPeriod(id, out var year, out var month)) return BadRequest(new ProblemDetails { Title = "Report ID must be yyyy-MM", Status = 400 });
-        var (stats, commentary) = await reports.GetReportAsync(year, month, ct);
+        var (stats, ai) = await reports.GetReportAsync(year, month, ct);
         var dto = Map(stats);
-        dto.AiCommentary = commentary;
+        dto.AiCommentary = ai.Commentary;
+        dto.AiStatus = ai.Status.ToString();
         return Ok(dto);
     }
 
@@ -46,11 +47,13 @@ public sealed class ReportsController(ReportService reports) : ControllerBase
     public async Task<IActionResult> Export(string id, [FromQuery] string format = "csv", CancellationToken ct = default)
     {
         if (!TryPeriod(id, out var year, out var month)) return BadRequest(new ProblemDetails { Title = "Report ID must be yyyy-MM", Status = 400 });
-        var stats = await reports.GetStatisticsAsync(year, month, ct);
         if (format.Equals("csv", StringComparison.OrdinalIgnoreCase))
-            return File(ReportExports.Csv(stats), "text/csv", $"smartjob-report-{id}.csv");
+            return File(ReportExports.Csv(await reports.GetStatisticsAsync(year, month, ct)), "text/csv", $"smartjob-report-{id}.csv");
         if (format.Equals("pdf", StringComparison.OrdinalIgnoreCase))
-            return File(ReportExports.Pdf(stats), "application/pdf", $"smartjob-report-{id}.pdf");
+        {
+            var (stats, ai) = await reports.GetReportAsync(year, month, ct);
+            return File(ReportExports.Pdf(stats, ai.Commentary), "application/pdf", $"smartjob-report-{id}.pdf");
+        }
         return BadRequest(new ProblemDetails { Title = "Format must be csv or pdf", Status = 400 });
     }
 

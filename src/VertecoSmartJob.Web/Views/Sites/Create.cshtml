@@ -1,0 +1,33 @@
+﻿@model SiteFormViewModel
+@{
+    ViewData["Title"] = "New Site";
+}
+
+<div class="page-head"><div><div class="page-title">New Site</div></div></div>
+
+<div class="card card-pad" style="max-width:600px;">
+<form asp-action="Create" method="post" novalidate>
+  @Html.AntiForgeryToken()
+  <div asp-validation-summary="All" class="form-error"></div>
+  <div class="form-grid">
+    <div class="field full">
+      <label>Customer</label>
+      <select asp-for="CustomerId">
+        <option value="">Select a customer…</option>
+        @foreach (var c in Model.Customers)
+        {
+            <option value="@c.Id" selected="@(Model.CustomerId == c.Id)">@c.Name</option>
+        }
+      </select>
+      <span asp-validation-for="CustomerId" class="field-error"></span>
+    </div>
+    <div class="field full"><label>Name</label><input asp-for="Name" type="text" /><span asp-validation-for="Name" class="field-error"></span></div>
+    <div class="field full"><label>Address</label><input asp-for="Address" type="text" /><span asp-validation-for="Address" class="field-error"></span></div>
+    <div class="field"><label>Site type</label><input asp-for="SiteType" type="text" placeholder="e.g. Warehouse, Office" /></div>
+  </div>
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Create site</button>
+    <a class="btn btn-ghost" asp-action="Index">Cancel</a>
+  </div>
+</form>
+</div>
