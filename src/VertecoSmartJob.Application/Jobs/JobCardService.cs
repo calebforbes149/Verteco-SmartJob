@@ -7,7 +7,7 @@ namespace VertecoSmartJob.Application.Jobs;
 
 /// <summary>
 /// Orchestrates job card use cases. Every write goes through a <see cref="JobCard"/> domain
-/// method first, so invalid transitions throw before anything is persisted — this class just
+/// method first, so invalid transitions throw before anything is persisted â€” this class just
 /// wires repositories to the aggregate and saves the result.
 /// </summary>
 public class JobCardService(
@@ -198,6 +198,89 @@ public class JobCardService(
             throw new Domain.Exceptions.InvalidJobStatusTransitionException(job.Status.ToString(), "Assigned technician field edit");
     }
 
+    // Records equipment found while the technician is working on the job
+    public async Task<Equipment> CaptureEquipmentAsync(
+        Guid jobId,
+        Guid technicianId,
+        string name,
+        string serialNumber,
+        string? description,
+        CancellationToken ct = default)
+    {
+        var job = await RequireJobAsync(jobId, ct);
+
+        if (job.Status != JobStatus.InProgress ||
+            job.TechnicianId != technicianId)
+        {
+            throw new Domain.Exceptions.InvalidJobStatusTransitionException(
+                job.Status.ToString(),
+                "CaptureEquipment");
+        }
+
+        name = name.Trim();
+        serialNumber = serialNumber.Trim();
+
+        description = string.IsNullOrWhiteSpace(description)
+            ? null
+            : description.Trim();
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentException("Equipment name is required.");
+        }
+
+        if (name.Length > 200)
+        {
+            throw new ArgumentException("Equipment name cannot exceed 200 characters.");
+        }
+
+        if (string.IsNullOrWhiteSpace(serialNumber))
+        {
+            throw new ArgumentException("Serial number is required.");
+        }
+
+        if (serialNumber.Length > 100)
+        {
+            throw new ArgumentException("Serial number cannot exceed 100 characters.");
+        }
+
+        var existing = await sites.FindBySerialNumberAsync(serialNumber, ct);
+
+        if (existing is not null)
+        {
+            if (existing.SiteId != job.SiteId)
+            {
+                throw new ArgumentException(
+                    "This serial number is already registered to another site.");
+            }
+
+            return existing;
+        }
+
+        var equipment = new Equipment
+        {
+            SiteId = job.SiteId,
+            Name = name,
+            SerialNumber = serialNumber,
+            Description = description
+        };
+
+        await sites.AddEquipmentAsync(equipment, ct);
+
+        await audit.AddAsync(
+            new AuditLog
+            {
+                ActorUserId = currentUser?.UserId,
+                JobCardId = job.Id,
+                Action = "EquipmentCaptured",
+                Details = serialNumber
+            },
+            ct);
+
+        await unitOfWork.SaveChangesAsync(ct);
+
+        return equipment;
+    }
     public async Task<JobCard> AddSignatureAsync(Guid jobId, Guid technicianId, string signerName, string type, string reference, CancellationToken ct = default)
     {
         var job = await RequireJobAsync(jobId, ct);

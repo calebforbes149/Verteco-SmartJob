@@ -21,6 +21,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<JobEvidence> JobEvidence => Set<JobEvidence>();
     public DbSet<JobSignature> JobSignatures => Set<JobSignature>();
     public DbSet<CorrectiveAction> CorrectiveActions => Set<CorrectiveAction>();
+    public DbSet<MobileSyncOperation> MobileSyncOperations => Set<MobileSyncOperation>();
+    public DbSet<MobileSyncChange> MobileSyncChanges => Set<MobileSyncChange>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -41,10 +43,35 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         await SaveChangesAsync(ct);
     }
 
-    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken ct = default)
+    public override Task<int> SaveChangesAsync(
+        bool acceptAllChangesOnSuccess,
+        CancellationToken ct = default)
     {
-        // Provider-independent concurrency token for the shared job schema. Person 4 can
-        // use it when implementing offline conflict detection.
+        // Find jobs that changed before adding sync records to the tracker
+        var changedJobIds = ChangeTracker.Entries()
+            .Where(entry =>
+                entry.State is EntityState.Added or EntityState.Modified &&
+                (entry.Entity is JobCard || entry.Entity is JobChecklistItem))
+            .Select(entry => entry.Entity switch
+            {
+                JobCard job => job.Id,
+                JobChecklistItem item => item.JobCardId,
+                _ => Guid.Empty
+            })
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToList();
+
+        foreach (var jobId in changedJobIds)
+        {
+            MobileSyncChanges.Add(new MobileSyncChange
+            {
+                JobCardId = jobId,
+                ChangedAtUtc = DateTime.UtcNow
+            });
+        }
+
+        // Refresh concurrency tokens for added or modified entities
         foreach (var entry in ChangeTracker.Entries<Entity>())
         {
             if (entry.State is EntityState.Added or EntityState.Modified)

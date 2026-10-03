@@ -131,6 +131,17 @@ public class JobCard : SoftDeletableEntity
         item.IsDone = !item.IsDone;
     }
 
+    // Sets a checklist item to the value sent by the mobile app
+    public void SetChecklistItem(Guid checklistItemId, bool isDone, Guid technicianId)
+    {
+        if (Status != JobStatus.InProgress)
+            throw new InvalidJobStatusTransitionException(Status.ToString(), nameof(SetChecklistItem));
+        RequireAssignedTechnician(technicianId);
+
+        var item = ChecklistItems.FirstOrDefault(i => i.Id == checklistItemId)
+            ?? throw new InvalidJobStatusTransitionException(Status.ToString(), "SetChecklistItem (item not found)");
+        item.IsDone = isDone;
+    }
     public void SubmitForReview(Guid technicianId)
     {
         if (Status != JobStatus.InProgress)

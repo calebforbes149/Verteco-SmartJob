@@ -32,6 +32,7 @@ public class SiteRepository(AppDbContext db) : ISiteRepository
         if (!string.IsNullOrWhiteSpace(q)) query = query.Where(s => s.Name.ToLower().Contains(q.Trim().ToLower()));
         return query.OrderBy(s => s.Name).ToListAsync(ct);
     }
+
     public Task<List<Site>> ListByCustomerAsync(Guid customerId, CancellationToken ct = default) =>
         db.Sites.Where(s => s.CustomerId == customerId).Include(s => s.Equipment).OrderBy(s => s.Name).ToListAsync(ct);
 
@@ -42,6 +43,10 @@ public class SiteRepository(AppDbContext db) : ISiteRepository
     public Task<Equipment?> FindBySerialNumberAsync(string serialNumber, CancellationToken ct = default) =>
         db.Equipment.Include(e => e.Site).ThenInclude(s => s!.Customer)
             .FirstOrDefaultAsync(e => e.SerialNumber == serialNumber, ct);
+
+    // Adds equipment captured by a technician
+    public async Task AddEquipmentAsync(Equipment equipment, CancellationToken ct = default) =>
+        await db.Equipment.AddAsync(equipment, ct);
 }
 
 public class UserRepository(AppDbContext db) : IUserRepository
@@ -51,6 +56,7 @@ public class UserRepository(AppDbContext db) : IUserRepository
     public Task<User?> GetByEmailAsync(string email, CancellationToken ct = default) => db.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
     public Task<User?> GetByTechnicianIdAsync(Guid technicianId, CancellationToken ct = default) =>
         db.Users.FirstOrDefaultAsync(u => u.TechnicianId == technicianId, ct);
+
     public Task<List<User>> ListAsync(string? q = null, CancellationToken ct = default)
     {
         var query = db.Users.AsQueryable();
