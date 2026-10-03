@@ -4,7 +4,7 @@ Person 1 (Alex)
 
 This folder is the backend, API, and reporting starting point for the group project. It contains Domain, Application, Infrastructure, API, and Contracts projects so the web and mobile teams can share DTOs.
 
-All jobs use the **single seeded Standard Job Card** and its six checklist items. Clients do not choose or edit a template.
+All jobs use one **Standard Job Card** and its six checklist items. Clients do not choose or edit a template.
 
 ## What's included
 
@@ -74,11 +74,15 @@ The automated tests use an isolated in-memory SQLite database. The running API u
 3. Save `secrets.json`, set **VertecoSmartJob.Api** as the startup project, select its **http** launch profile, and press **F5**. The API uses `http://localhost:5196`; Swagger is at `http://localhost:5196/swagger`. The **https** profile also exposes `https://localhost:7086`. The launch profiles set `ASPNETCORE_ENVIRONMENT=Development`, which makes User Secrets available.
 
 User Secrets live outside the repository and everyone configures their own local file. They are intended for development and are not encrypted. Never put real passwords, storage keys, or API keys in `appsettings.json`, the README, the Postman collection, or a commit.
-Development startup applies pending Azure SQL EF migrations and seeds a manager, technicians, customers, sites, equipment, jobs, and the single standard template. The database must be reachable before the API can start. If the SQL firewall or credentials are wrong, startup stops during migration. The Api now authenticates requests through **either** the development API-key header **or** a real JWT Bearer token — see Person 3's section below for how real login, password reset, and role enforcement work. Production startup is still intentionally blocked (see `Program.cs`) until the team confirms the hosting environment is ready; this guard predates Person 3's identity work and should be revisited once hosting is actually set up. For deployment, use the reviewed `docs/azure-sql-migration.sql` or EF migrations instead of having every production API instance migrate at startup.
+Development startup applies pending Azure SQL EF migrations. The `AddStandardJobCardTemplate` migration adds only the single required template and its six checklist items when no active standard template exists. Startup does **not** insert accounts or demo records. The existing Manager account and password set through Person 3's login flow remain in the database; the API never recreates them. Automated tests use a separate in-memory SQLite database and test-only fixtures. The database must be reachable before the API can start. If the SQL firewall or credentials are wrong, startup stops during migration. The Api now authenticates requests through **either** the development API-key header **or** a real JWT Bearer token — see Person 3's section below for how real login, password reset, and role enforcement work. Production startup is still intentionally blocked (see `Program.cs`) until the team confirms the hosting environment is ready; this guard predates Person 3's identity work and should be revisited once hosting is actually set up. For deployment, use the reviewed `docs/azure-sql-migration.sql` or EF migrations instead of having every production API instance migrate at startup.
+
+The idempotent deployment script now includes Person 3's `AddUserIdentityFields` and `AddPasswordResetTokens` migrations. It prepares the schema only; it does not enable Production hosting or replace the required deployment configuration review.
+
+After updating the code, restart the **API** in Visual Studio to apply the new migration. `GET /api/v1/jobtemplates/standard` should then return **200** with exactly six checklist items. It adds no demo customers, technicians, users, or jobs; those lists stay empty until records are created. If the template route still returns **404**, confirm the API restarted with the updated build and that `20261003120000_AddStandardJobCardTemplate` appears in `__EFMigrationsHistory`.
 
 ## Use the Postman collection
 
-The collection is `postman/VertecoSmartJob.Person1.postman_collection.json`. It contains **37 request examples**. It has no Postman assertion scripts, so a Runner result of **“0 tests”** means no automated assertions were defined; it does not indicate whether the HTTP responses were correct. Run the requests individually in the order below. Running the entire collection at once will encounter empty IDs, invalid job states, and requests that deliberately change data.
+The collection is `postman/VertecoSmartJob.Person1.postman_collection.json`. It contains **38 request examples**. It has no Postman assertion scripts, so a Runner result of **“0 tests”** means no automated assertions were defined; it does not indicate whether the HTTP responses were correct. Run the requests individually in the order below. Running the entire collection at once will encounter empty IDs, invalid job states, and requests that deliberately change data.
 
 ### 1. Import and configure
 
@@ -97,8 +101,12 @@ The collection is `postman/VertecoSmartJob.Person1.postman_collection.json`. It 
    | `reportPeriod` | A month in `yyyy-MM` form, for example `2026-09`; use a month containing your test data for nonzero figures. |
    | `correctiveActionId` | Copy an `id` from **List corrective actions** or a flagged job's `correctiveActions` array. |
 
-3. Start the API in Visual Studio and send **Dashboard stats**. Expect **200 OK**. Every collection request already sends `X-SmartJob-Key: {{managerKey}}`; you do not need to log in or add Bearer authentication to use this collection as-is. A missing/wrong key normally gives **401**, while a valid key without the required Manager role gives **403**. (If you want to test the real login/JWT path instead of the API key, see Person 3's section — `POST /api/v1/auth/login` isn't in this collection yet and currently needs to be called manually, since Swagger also has no Authorize button configured for either credential type.)
+3. Start the API in Visual Studio and send **Dashboard stats**. Expect **200 OK**. Every collection request already sends `X-SmartJob-Key: {{managerKey}}`; you do not need to log in or add Bearer authentication to use this collection as-is. A missing/wrong key normally gives **401**, while a valid key without the required Manager role gives **403**. To test real login/JWT, call `POST /api/v1/auth/login` manually or use Swagger's Authorize button as described below.
 4. In a JSON response, copy an `id` GUID into the relevant collection variable. For list responses, look in `items`. Do not include quotes around a GUID in the variable value. Empty `{{jobId}}`, `{{siteId}}`, or `{{userId}}` values make detail and write requests hit the wrong URL.
+
+### Authenticate in Swagger (Development)
+
+Open `http://localhost:5196/swagger` and click **Authorize**. For **SmartJobKey**, enter the development key value only; Swagger sends it as `X-SmartJob-Key`. For **Bearer**, first call `POST /api/v1/auth/login`, copy `accessToken` from the response, and enter only that token; Swagger adds the `Bearer` prefix. Authorize with one scheme at a time. If both are filled in, the API selects Bearer whenever an `Authorization` header is present. Click **Logout** in the Authorize dialog before switching schemes. Swagger is available only in Development.
 
 ### 2. Run the read-only requests
 
@@ -113,11 +121,12 @@ These requests can be sent without changing data. For detail requests, first fil
 | **Get customer** | **200** for a valid `customerId`; inspect its sites. |
 | **List sites** | **200**; set `customerId` first to filter by that customer, then copy a site `id` into `siteId`. |
 | **Get site** | **200** for a valid `siteId`; verify its `customerId` matches the selected customer. |
-| **Look up equipment serial** | **200** for seeded serial `UPS-60-MID-001`; an unknown serial gives **404**. |
+| **Look up equipment serial** | **404** until matching equipment is added. |
 | **List users** | **200**; copy a safe test user's `id` into `userId`. |
 | **Get user** | **200** for a valid `userId`. |
-| **List technicians** | **200**; copy an `items[].id` into `technicianId`. |
-| **Standard job card fields** | **200**; one standard template with six checklist items. |
+| **Edit user** | **200** for a valid `userId`; update a disposable user's name, email, and phone. For a linked Technician, the profile is updated too. |
+| **List technicians** | **200** with an empty `items` array until a technician is added; use **Create technician and account**. |
+| **Standard job card fields** | **200** with the single standard template and six checklist items after the API applies the migration. |
 | **List reports** | **200**; edit the request's `year=2026` query parameter if testing another year. A month with no data still returns a report with zero counts. |
 | **Monthly report and AI commentary** | **200** for valid `reportPeriod`; check counts and averages. `aiCommentary` may be null when no Gemini key is configured. |
 | **Export report CSV** | **200**, `text/csv`; use **Send and Download** in Postman to save the file. |
@@ -131,23 +140,25 @@ These requests can be sent without changing data. For detail requests, first fil
 
 Each `POST` or `PATCH` request has a sample JSON body under Postman's **Body → raw → JSON**. Replace the `{{...}}` values via collection variables and edit sample names if you run the request more than once.
 
+The job steps require the Standard Job Card template. Confirm **Standard job card fields** returns **200** before step 5.
+
 | Order | Collection request | Expected result and next step |
 | --- | --- | --- |
 | 1 | **Create customer** | **201 Created**. Copy response `id` to `customerId`. Use a distinct customer name for repeat runs. |
 | 2 | **Edit customer** | **200**. Confirm `contactPhone` changed; **Get customer** should show the same value. |
 | 3 | **Create site** | **201 Created**. Its body uses `{{customerId}}`. Copy response `id` to `siteId`. |
 | 4 | **Edit site** | **200**. Confirm `address` changed; **Get site** should show it. |
-| 5 | **Create job with standard checklist** | **201 Created**. `customerId` and `siteId` must match. **Remove the `technicianId` line from this request body** so the new job stays in `Draft`. Copy response `id` to `jobId`. The API automatically uses the one standard job card template. |
+| 5 | **Create job with standard checklist** | **201 Created** after the template migration is applied. `customerId` and `siteId` must match. **Remove the `technicianId` line from this request body** so the new job stays in `Draft`. Copy response `id` to `jobId`. |
 | 6 | **Edit draft job** | **200**; verify the `priority` and `notes` in **Get job**. This only works while status is `Draft`. |
-| 7 | **Assign technician** | **200**; set `technicianId` from **List technicians**, then verify status `Assigned`. Once assigned, the draft edit request correctly returns **409 Conflict**. Assigning now also sends the technician an email notification (Person 3) if SMTP is configured — see below. |
+| 7 | **Assign technician** | **200** after a job and technician exist. Use **Create technician and account** and copy its `id` to `technicianId`. Once assigned, the draft edit request correctly returns **409 Conflict**. Assigning now also sends the technician an email notification (Person 3) if SMTP is configured — see below. |
 
-The collection's **Approve submitted job** request cannot approve a newly assigned job. A technician must accept it, start it, complete its checklist, add evidence and both signatures, then submit it for review. Those technician HTTP routes are not yet in the Person 1 collection. For a manager-side test, use a **seeded `AwaitingApproval` job** from **List jobs**, set its `id` as `jobId`, then send **Approve submitted job**. Expect **200** and status `Completed`.
+The collection's **Approve submitted job** request cannot approve a newly assigned job. A technician must accept it, start it, complete its checklist, add evidence and both signatures, then submit it for review. Those technician HTTP routes are not yet in the Person 1 collection. Wait for Person 4's technician routes to create an approval-ready job through the real workflow.
 
 Next, use that completed job to send **Reopen job**. Expect **200** and status `Reopened`. To test **Cancel active job**, first set `jobId` to a *different* job in `Draft`, `Assigned`, `Accepted`, `InProgress`, `AwaitingApproval`, or `Reopened`; expect **200** and `Cancelled`. Cancelling a `Completed` or already `Cancelled` job correctly returns **409**. These requests change shared Azure data, so choose disposable records when possible.
 
 ### 4. Test user management safely
 
-The collection includes **List users**, **Get user**, **Suspend user**, and **Deactivate user**. Do not suspend or deactivate the seeded `manager@verteco.example` account: the development key maps to that user.
+The collection includes **List users**, **Get user**, **Suspend user**, and **Deactivate user**. Do not suspend or deactivate the preserved `manager@verteco.example` account: the development key maps to that user.
 
 To create a disposable account before using the destructive user requests, make a separate Postman request:
 
@@ -165,7 +176,7 @@ To create a disposable account before using the destructive user requests, make 
   }
   ```
 
-Use a new email on repeat runs. Expect **201** and copy the returned `id` into `userId`. Then send **Get user** (**200**), **Suspend user** (**200**, `isSuspended: true`), and **Deactivate user** (**204 No Content**). An empty response body after **204** is correct.
+Use a new email on repeat runs. Expect **201** and copy the returned `id` into `userId`. Then send **Get user** (**200**), **Edit user** (**200**), **Suspend user** (**200**, `isSuspended: true`), and **Deactivate user** (**204 No Content**). Change the Edit user's sample email to another unused address on repeat runs. An empty response body after **204** is correct. The Manager-only `PATCH /api/v1/users/{id}` route already existed when Person 3's branch was merged; it also synchronizes a linked Technician's name, email, and phone.
 
 **Note (Person 3):** a newly created user — whether via this request or **Create technician and account** below — has **no password** until a Manager explicitly sets one via `POST /api/v1/auth/users/{id}/set-password`. They cannot log in until that happens. See Person 3's section for details.
 
@@ -187,6 +198,7 @@ Each flag creates one corrective-action record with a reason, open/resolved stat
 | SQL login or firewall error | Check SQL login/password, database name, your current public IP firewall rule, and whether the free database has paused after its allowance. |
 | API says `ConnectionStrings:AzureSql` or `Blob:ServiceUri or Blob:ConnectionString` is required | Open **Manage User Secrets** on the **API project**, verify the JSON keys and run with the **Development** launch profile. |
 | Postman `401` | Confirm the API is running and `managerKey` exactly matches User Secrets; the email must identify an existing, active user. If testing with a Bearer token instead, confirm the token hasn't expired (30-minute lifetime) and that `Authorization: Bearer <token>` is actually present on the request — Postman's Authorization tab can silently fail to apply if a conflicting header is also set manually; check the Headers tab directly if in doubt. |
+| Web dashboard redirects to login after its API token expires | Sign in again with the Manager account. The Web cookie can outlive its API token; the Web app now clears an invalid cookie when the API returns `401`. If a fresh login still fails, check the API's `JwtBearer` authentication warning and verify `Api:BaseUrl` points to the API's HTTPS address. |
 | Postman `403` | The key or token identified a user without permission for that manager endpoint — this is expected and correct for a Technician token hitting a Manager-only route. |
 | Postman `400` | Check required body fields, valid GUID variables, JSON syntax, and the `yyyy-MM-dd` job date or `yyyy-MM` report period. |
 | Postman `404` or `405` on an ID request | Fill `jobId`, `customerId`, `siteId`, or `userId`; an empty variable can turn a detail URL into a collection URL. |
@@ -332,7 +344,7 @@ This section documents the real authentication system, password reset flow, audi
 
 ### How to actually log in for the first time
 
-Since real auth replaced the old "any password works" dev bridge, **no seeded account has a password until a Manager sets one**:
+The existing Manager login has a working password. Any new account has no password until a Manager sets one:
 
 1. Run the Api and Postman's **List users** to find the target user's `id` (a `User` id, not a `Technician` id — they're different GUIDs for the same person).
 2. As a Manager (via `managerKey` or a Manager's own JWT), call:
@@ -367,6 +379,4 @@ These were verified directly, not just implemented:
 - **Role enforcement:** a Technician's valid, correctly-signed JWT was used against a Manager-only endpoint (`GET /api/v1/users`) and correctly received `403 Forbidden`.
 - **XSS:** `<script>alert('xss')</script>` entered into a job's notes field rendered as literal encoded text in the page's actual HTML source, not as an executable script — confirmed via View Page Source, not just the browser's rendered view.
 
-### Known limitations / handed to Alex
 
-A separate document (`PERSON3_HANDOFF_TO_ALEX.md`) lists everything Person 3 changed in Alex's files, plus open items for him to pick up — including the still-pending hosting work, the Production startup guard in `Program.cs` that now needs revisiting, and a couple of small gaps (no general "edit user email" endpoint yet, Swagger has no Authorize button configured for either credential type).

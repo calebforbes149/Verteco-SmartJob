@@ -396,6 +396,32 @@
       }
     },
     {
+      "name": "Edit user",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "X-SmartJob-Key",
+            "value": "{{managerKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/users/{{userId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"Postman Test Manager Updated\",\n  \"email\": \"postman-test-updated-unique@example.test\",\n  \"phone\": \"011 000 0001\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
       "name": "Suspend user",
       "request": {
         "method": "POST",
