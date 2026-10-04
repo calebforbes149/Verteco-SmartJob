@@ -19,7 +19,7 @@ public class AuthenticationService
         _httpClient = new HttpClient
         {
             BaseAddress = new Uri(
-                "http://localhost:5196/")
+                ApiConfiguration.BaseUrl)
         };
     }
 
@@ -53,7 +53,8 @@ public class AuthenticationService
             MobileLoginResponse? loginResponse =
                 await response.Content
                     .ReadFromJsonAsync<MobileLoginResponse>(
-                        cancellationToken: cancellationToken);
+                        cancellationToken:
+                            cancellationToken);
 
             if (loginResponse is null ||
                 string.IsNullOrWhiteSpace(
@@ -74,8 +75,9 @@ public class AuthenticationService
                     "This mobile application is only available to technician accounts.");
             }
 
-            await _tokenStorageService.SaveAccessTokenAsync(
-                loginResponse.AccessToken);
+            await _tokenStorageService
+                .SaveAccessTokenAsync(
+                    loginResponse.AccessToken);
 
             DateTimeOffset? expiry =
                 TryReadTokenExpiry(
@@ -125,7 +127,8 @@ public class AuthenticationService
                 response,
                 cancellationToken);
 
-        if (!string.IsNullOrWhiteSpace(serverMessage))
+        if (!string.IsNullOrWhiteSpace(
+                serverMessage))
         {
             return serverMessage;
         }
@@ -161,7 +164,8 @@ public class AuthenticationService
                     .ReadAsStringAsync(
                         cancellationToken);
 
-            if (string.IsNullOrWhiteSpace(content))
+            if (string.IsNullOrWhiteSpace(
+                    content))
             {
                 return null;
             }
@@ -169,7 +173,8 @@ public class AuthenticationService
             using JsonDocument document =
                 JsonDocument.Parse(content);
 
-            if (document.RootElement.TryGetProperty(
+            if (document.RootElement
+                .TryGetProperty(
                     "title",
                     out JsonElement titleElement))
             {
@@ -226,7 +231,8 @@ public class AuthenticationService
             using JsonDocument document =
                 JsonDocument.Parse(json);
 
-            if (!document.RootElement.TryGetProperty(
+            if (!document.RootElement
+                .TryGetProperty(
                     "exp",
                     out JsonElement expiryElement))
             {
