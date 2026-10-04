@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   android-build:
-    name: Build Android APK
+    name: Build Android
     runs-on: ubuntu-latest
 
     timeout-minutes: 30
@@ -32,14 +32,8 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Display .NET information
-        run: dotnet --info
-
       - name: Install MAUI Android workload
         run: dotnet workload install maui-android
-
-      - name: Display installed workloads
-        run: dotnet workload list
 
       - name: Restore Android project
         run: >
@@ -47,7 +41,8 @@ jobs:
           ./SmartJobMobile/SmartJobMobile/SmartJobMobile.csproj
           -p:TargetFramework=net10.0-android
 
-      - name: Build Android Release
+      - name: Build unsigned Android APK for pull request
+        if: github.event_name == 'pull_request'
         run: >
           dotnet publish
           ./SmartJobMobile/SmartJobMobile/SmartJobMobile.csproj
@@ -57,9 +52,38 @@ jobs:
           -p:AndroidPackageFormats=apk
           -p:AndroidKeyStore=false
 
-      - name: Verify APK was generated
+      - name: Create Android signing keystore
+        if: github.event_name != 'pull_request'
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          echo "Generated Android packages:"
+          mkdir -p "$RUNNER_TEMP/android-signing"
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/android-signing/smartjob-release.jks"
+
+      - name: Build signed Android APK
+        if: github.event_name != 'pull_request'
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: >
+          dotnet publish
+          ./SmartJobMobile/SmartJobMobile/SmartJobMobile.csproj
+          -f net10.0-android
+          -c Release
+          --no-restore
+          -p:AndroidPackageFormats=apk
+          -p:AndroidKeyStore=true
+          -p:AndroidSigningKeyStore=${{ runner.temp }}/android-signing/smartjob-release.jks
+          -p:AndroidSigningKeyAlias="$ANDROID_KEY_ALIAS"
+          -p:AndroidSigningKeyPass="$ANDROID_KEY_PASSWORD"
+          -p:AndroidSigningStorePass="$ANDROID_KEYSTORE_PASSWORD"
+
+      - name: Verify APK
+        shell: bash
+        run: |
+          echo "Generated Android APKs:"
           find ./SmartJobMobile/SmartJobMobile/bin/Release/net10.0-android/publish -type f -name "*.apk" -print
 
           APK_COUNT=$(find ./SmartJobMobile/SmartJobMobile/bin/Release/net10.0-android/publish -type f -name "*.apk" | wc -l)

@@ -43,3 +43,11 @@ secrets.json
 # OS files
 .DS_Store
 Thumbs.db
+
+
+# Android signing
+signing/
+*.jks
+*.keystore
+keystore.properties
+signing.properties
