@@ -1,0 +1,53 @@
+﻿@model CustomerDto
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<div class="page-head">
+    <div>
+        <div class="breadcrumb"><a asp-action="Index">Customers</a> / @Model.Name</div>
+        <div class="page-title">@Model.Name</div>
+        <div class="page-desc">@Model.Industry</div>
+    </div>
+    @if (User.IsInRole("Manager"))
+    {
+        <div class="page-actions">
+            <a class="btn btn-sm" asp-action="Edit" asp-route-id="@Model.Id">Edit</a>
+            <a class="btn btn-primary btn-sm" asp-controller="Sites" asp-action="Create" asp-route-customerId="@Model.Id">+ New site</a>
+        </div>
+    }
+</div>
+
+<div class="two-col">
+    <div>
+        <div class="card section-card">
+            <div class="section-card-head"><h3>Sites</h3></div>
+            <div class="section-card-body pad">
+                @if (Model.Sites.Count == 0)
+                {
+                    <p class="tiny muted">No sites for this customer yet.</p>
+                }
+                else
+                {
+                    @foreach (var site in Model.Sites)
+                    {
+                        <div class="info-row" style="cursor:pointer;" onclick="location.href='@Url.Action("Details", "Sites", new { id = site.Id })'">
+                            <span>@site.Name</span><span class="tiny muted">@site.SiteType · @site.Equipment.Count equipment</span>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <div class="card section-card">
+            <div class="section-card-head"><h3>Contact info</h3></div>
+            <div class="section-card-body pad">
+                <div class="info-row"><span>Contact</span><span>@Model.ContactName</span></div>
+                <div class="info-row"><span>Email</span><span>@Model.ContactEmail</span></div>
+                <div class="info-row"><span>Phone</span><span>@Model.ContactPhone</span></div>
+            </div>
+        </div>
+    </div>
+</div>

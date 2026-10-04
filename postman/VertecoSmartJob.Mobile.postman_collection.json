@@ -1,0 +1,97 @@
+{
+  "info": {
+    "name": "Verteco SmartJob Mobile API",
+    "description": "Technician workflow examples. Follow docs/mobile-api-testing.md and send in order; uploads need a separate binary PUT request.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{technicianToken}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5196" },
+    { "key": "email", "value": "" },
+    { "key": "technicianToken", "value": "" },
+    { "key": "jobId", "value": "" },
+    { "key": "checklistItemId", "value": "" },
+    { "key": "uploadToken", "value": "" },
+    { "key": "sha256", "value": "" },
+    { "key": "since", "value": "" },
+    { "key": "rowVersion", "value": "" },
+    { "key": "checklistItemRowVersion", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Login as technician",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/v1/auth/login",
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"<enter locally>\"\n}" }
+      }
+    },
+    { "name": "My jobs", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/mobile/jobs?page=1&pageSize=20" } },
+    { "name": "Get my job", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/mobile/jobs/{{jobId}}" } },
+    { "name": "Accept job", "request": { "method": "POST", "url": "{{baseUrl}}/api/v1/mobile/jobs/{{jobId}}/accept" } },
+    { "name": "Start job", "request": { "method": "POST", "url": "{{baseUrl}}/api/v1/mobile/jobs/{{jobId}}/start" } },
+    { "name": "Toggle checklist item", "request": { "method": "PATCH", "url": "{{baseUrl}}/api/v1/mobile/jobs/{{jobId}}/checklist/{{checklistItemId}}/toggle" } },
+    {
+      "name": "Capture equipment",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/v1/mobile/jobs/{{jobId}}/equipment",
+        "body": { "mode": "raw", "raw": "{\n  \"name\": \"Test pump\",\n  \"serialNumber\": \"REPLACE-WITH-UNIQUE-SERIAL\",\n  \"description\": \"Captured during Postman test\"\n}" }
+      }
+    },
+    {
+      "name": "Evidence upload instructions",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/v1/mobile/jobs/{{jobId}}/evidence/upload-instructions",
+        "body": { "mode": "raw", "raw": "{\"extension\":\".png\"}" }
+      }
+    },
+    {
+      "name": "Confirm evidence",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/v1/mobile/jobs/{{jobId}}/evidence/confirm",
+        "body": { "mode": "raw", "raw": "{\n  \"uploadToken\": \"{{uploadToken}}\",\n  \"sha256\": \"{{sha256}}\",\n  \"caption\": \"Postman test evidence\"\n}" }
+      }
+    },
+    {
+      "name": "Signature upload instructions",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/v1/mobile/jobs/{{jobId}}/signatures/upload-instructions",
+        "body": { "mode": "raw", "raw": "{\"extension\":\".png\"}" }
+      }
+    },
+    {
+      "name": "Confirm signature",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/v1/mobile/jobs/{{jobId}}/signatures/confirm",
+        "body": { "mode": "raw", "raw": "{\n  \"uploadToken\": \"{{uploadToken}}\",\n  \"sha256\": \"{{sha256}}\",\n  \"signerName\": \"Test signer\",\n  \"type\": \"Technician\"\n}" }
+      }
+    },
+    { "name": "Submit job", "request": { "method": "POST", "url": "{{baseUrl}}/api/v1/mobile/jobs/{{jobId}}/submit" } },
+    { "name": "Initial pull", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/mobile/sync/pull" } },
+    { "name": "Incremental pull", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/mobile/sync/pull?since={{since}}&knownJobIds={{jobId}}" } },
+    {
+      "name": "Push one checklist operation",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/v1/mobile/sync/push",
+        "body": { "mode": "raw", "raw": "{\n  \"operations\": [\n    {\n      \"operationId\": \"<new GUID; reuse on retries>\",\n      \"jobCardId\": \"{{jobId}}\",\n      \"operationType\": \"setChecklistItem\",\n      \"rowVersion\": \"{{rowVersion}}\",\n      \"checklistItemId\": \"{{checklistItemId}}\",\n      \"checklistItemRowVersion\": \"{{checklistItemRowVersion}}\",\n      \"isDone\": true\n    }\n  ]\n}" }
+      }
+    }
+  ]
+}
