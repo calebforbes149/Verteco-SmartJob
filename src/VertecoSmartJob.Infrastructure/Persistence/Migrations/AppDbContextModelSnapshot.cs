@@ -465,6 +465,7 @@ namespace VertecoSmartJob.Infrastructure.Persistence.Migrations
 
                     b.ToTable("JobTemplates");
                 });
+
             modelBuilder.Entity("VertecoSmartJob.Domain.Entities.MobileSyncChange", b =>
                 {
                     b.Property<Guid>("Id")
@@ -571,6 +572,49 @@ namespace VertecoSmartJob.Infrastructure.Persistence.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("PasswordResetTokens");
+                });
+
+            modelBuilder.Entity("VertecoSmartJob.Domain.Entities.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReplacedByTokenHash")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime?>("RevokedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAtUtc");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("VertecoSmartJob.Domain.Entities.Site", b =>
@@ -859,6 +903,15 @@ namespace VertecoSmartJob.Infrastructure.Persistence.Migrations
                 });
 
             modelBuilder.Entity("VertecoSmartJob.Domain.Entities.PasswordResetToken", b =>
+                {
+                    b.HasOne("VertecoSmartJob.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("VertecoSmartJob.Domain.Entities.RefreshToken", b =>
                 {
                     b.HasOne("VertecoSmartJob.Domain.Entities.User", null)
                         .WithMany()
