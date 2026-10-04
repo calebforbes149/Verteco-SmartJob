@@ -15,8 +15,13 @@ namespace SmartJobMobile
                 .UseMauiCommunityToolkit()
                 .ConfigureFonts(fonts =>
                 {
-                    fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
-                    fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+                    fonts.AddFont(
+                        "OpenSans-Regular.ttf",
+                        "OpenSansRegular");
+
+                    fonts.AddFont(
+                        "OpenSans-Semibold.ttf",
+                        "OpenSansSemibold");
                 });
 
 #if DEBUG
@@ -25,6 +30,11 @@ namespace SmartJobMobile
 
             builder.Services.AddSingleton<ConnectivityService>();
             builder.Services.AddSingleton<LocalDatabaseService>();
+
+            builder.Services.AddSingleton<
+                ITokenStorageService,
+                TokenStorageService>();
+
             builder.Services.AddSingleton<ApiService>();
 
             return builder.Build();
