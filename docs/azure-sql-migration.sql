@@ -650,3 +650,76 @@ BEGIN CATCH
 END CATCH;
 GO
 
+-- Mobile delta pull: changed-job markers for technician sync.
+BEGIN TRY
+    BEGIN TRANSACTION;
+    IF NOT EXISTS (
+        SELECT 1 FROM [__EFMigrationsHistory]
+        WHERE [MigrationId] = N'20261003143502_MobileSyncDeltaPull'
+    )
+    BEGIN
+        CREATE TABLE [MobileSyncChanges] (
+            [Id] uniqueidentifier NOT NULL,
+            [JobCardId] uniqueidentifier NOT NULL,
+            [ChangedAtUtc] datetime2 NOT NULL,
+            [RowVersion] varbinary(max) NOT NULL,
+            CONSTRAINT [PK_MobileSyncChanges] PRIMARY KEY ([Id])
+        );
+
+        CREATE INDEX [IX_MobileSyncChanges_ChangedAtUtc]
+            ON [MobileSyncChanges] ([ChangedAtUtc]);
+        CREATE INDEX [IX_MobileSyncChanges_JobCardId]
+            ON [MobileSyncChanges] ([JobCardId]);
+        CREATE INDEX [IX_MobileSyncChanges_JobCardId_ChangedAtUtc]
+            ON [MobileSyncChanges] ([JobCardId], [ChangedAtUtc]);
+
+        INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+        VALUES (N'20261003143502_MobileSyncDeltaPull', N'10.0.12');
+    END;
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+    THROW;
+END CATCH;
+GO
+
+-- Persist refresh tokens for mobile sessions.
+BEGIN TRY
+    BEGIN TRANSACTION;
+    IF NOT EXISTS (
+        SELECT 1 FROM [__EFMigrationsHistory]
+        WHERE [MigrationId] = N'20261004132918_AddRefreshTokens'
+    )
+    BEGIN
+        CREATE TABLE [RefreshTokens] (
+            [Id] uniqueidentifier NOT NULL,
+            [UserId] uniqueidentifier NOT NULL,
+            [TokenHash] nvarchar(128) NOT NULL,
+            [CreatedAtUtc] datetime2 NOT NULL,
+            [ExpiresAtUtc] datetime2 NOT NULL,
+            [RevokedAtUtc] datetime2 NULL,
+            [ReplacedByTokenHash] nvarchar(128) NULL,
+            [RowVersion] varbinary(max) NOT NULL,
+            CONSTRAINT [PK_RefreshTokens] PRIMARY KEY ([Id]),
+            CONSTRAINT [FK_RefreshTokens_Users_UserId]
+                FOREIGN KEY ([UserId]) REFERENCES [Users] ([Id]) ON DELETE CASCADE
+        );
+
+        CREATE INDEX [IX_RefreshTokens_ExpiresAtUtc]
+            ON [RefreshTokens] ([ExpiresAtUtc]);
+        CREATE UNIQUE INDEX [IX_RefreshTokens_TokenHash]
+            ON [RefreshTokens] ([TokenHash]);
+        CREATE INDEX [IX_RefreshTokens_UserId]
+            ON [RefreshTokens] ([UserId]);
+
+        INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+        VALUES (N'20261004132918_AddRefreshTokens', N'10.0.12');
+    END;
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+    THROW;
+END CATCH;
+GO
