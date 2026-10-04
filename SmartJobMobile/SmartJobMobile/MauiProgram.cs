@@ -8,7 +8,8 @@ namespace SmartJobMobile
     {
         public static MauiApp CreateMauiApp()
         {
-            var builder = MauiApp.CreateBuilder();
+            var builder =
+                MauiApp.CreateBuilder();
 
             builder
                 .UseMauiApp<App>()
@@ -28,14 +29,26 @@ namespace SmartJobMobile
             builder.Logging.AddDebug();
 #endif
 
-            builder.Services.AddSingleton<ConnectivityService>();
-            builder.Services.AddSingleton<LocalDatabaseService>();
+            builder.Services
+                .AddSingleton<
+                    ConnectivityService>();
 
-            builder.Services.AddSingleton<
-                ITokenStorageService,
-                TokenStorageService>();
+            builder.Services
+                .AddSingleton<
+                    LocalDatabaseService>();
 
-            builder.Services.AddSingleton<ApiService>();
+            builder.Services
+                .AddSingleton<
+                    ITokenStorageService,
+                    TokenStorageService>();
+
+            builder.Services
+                .AddSingleton<
+                    AuthenticationService>();
+
+            builder.Services
+                .AddSingleton<
+                    ApiService>();
 
             return builder.Build();
         }

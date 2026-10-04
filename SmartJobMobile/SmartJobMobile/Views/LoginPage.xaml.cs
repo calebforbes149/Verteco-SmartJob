@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection;
+using SmartJobMobile.Services;
 using SmartJobMobile.ViewModels;
 
 namespace SmartJobMobile.Views;
@@ -8,6 +10,19 @@ public partial class LoginPage : ContentPage
     {
         InitializeComponent();
 
-        BindingContext = new LoginViewModel();
+        IServiceProvider services =
+            Application.Current!
+                .Handler!
+                .MauiContext!
+                .Services;
+
+        AuthenticationService
+            authenticationService =
+                services.GetRequiredService<
+                    AuthenticationService>();
+
+        BindingContext =
+            new LoginViewModel(
+                authenticationService);
     }
 }

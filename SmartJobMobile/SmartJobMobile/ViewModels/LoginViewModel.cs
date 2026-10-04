@@ -1,22 +1,44 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using SmartJobMobile.Models;
+using SmartJobMobile.Services;
 using SmartJobMobile.Views;
 
 namespace SmartJobMobile.ViewModels;
 
 public class LoginViewModel : INotifyPropertyChanged
 {
+    private readonly AuthenticationService
+        _authenticationService;
+
     private string _email = string.Empty;
     private string _password = string.Empty;
     private string _errorMessage = string.Empty;
     private bool _isBusy;
+
+    public LoginViewModel(
+        AuthenticationService authenticationService)
+    {
+        _authenticationService =
+            authenticationService;
+
+        LoginCommand =
+            new Command(
+                async () =>
+                    await LoginAsync());
+    }
 
     public string Email
     {
         get => _email;
         set
         {
+            if (_email == value)
+            {
+                return;
+            }
+
             _email = value;
             OnPropertyChanged();
         }
@@ -27,6 +49,11 @@ public class LoginViewModel : INotifyPropertyChanged
         get => _password;
         set
         {
+            if (_password == value)
+            {
+                return;
+            }
+
             _password = value;
             OnPropertyChanged();
         }
@@ -37,6 +64,11 @@ public class LoginViewModel : INotifyPropertyChanged
         get => _errorMessage;
         set
         {
+            if (_errorMessage == value)
+            {
+                return;
+            }
+
             _errorMessage = value;
             OnPropertyChanged();
         }
@@ -47,6 +79,11 @@ public class LoginViewModel : INotifyPropertyChanged
         get => _isBusy;
         set
         {
+            if (_isBusy == value)
+            {
+                return;
+            }
+
             _isBusy = value;
             OnPropertyChanged();
         }
@@ -54,24 +91,28 @@ public class LoginViewModel : INotifyPropertyChanged
 
     public ICommand LoginCommand { get; }
 
-    public LoginViewModel()
-    {
-        LoginCommand = new Command(async () => await LoginAsync());
-    }
-
     private async Task LoginAsync()
     {
+        if (IsBusy)
+        {
+            return;
+        }
+
         ErrorMessage = string.Empty;
 
         if (string.IsNullOrWhiteSpace(Email))
         {
-            ErrorMessage = "Please enter your email address.";
+            ErrorMessage =
+                "Please enter your email address.";
+
             return;
         }
 
         if (string.IsNullOrWhiteSpace(Password))
         {
-            ErrorMessage = "Please enter your password.";
+            ErrorMessage =
+                "Please enter your password.";
+
             return;
         }
 
@@ -79,13 +120,32 @@ public class LoginViewModel : INotifyPropertyChanged
         {
             IsBusy = true;
 
-            // Authentication hand-off:
-            // The current backend authenticates mobile API requests using
-            // X-SmartJob-Key. Final credential/token integration is completed
-            // during system integration.
-            await Task.Delay(500);
+            AuthenticationResult result =
+                await _authenticationService
+                    .LoginAsync(
+                        Email,
+                        Password);
 
-            await Shell.Current.GoToAsync(nameof(DashboardPage));
+            if (!result.IsSuccess)
+            {
+                ErrorMessage =
+                    result.ErrorMessage;
+
+                return;
+            }
+
+            Password = string.Empty;
+
+            await Shell.Current.GoToAsync(
+                nameof(DashboardPage));
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"Login ViewModel error: {ex}");
+
+            ErrorMessage =
+                "SmartJob could not complete the sign-in process.";
         }
         finally
         {
@@ -93,13 +153,16 @@ public class LoginViewModel : INotifyPropertyChanged
         }
     }
 
-    public event PropertyChangedEventHandler? PropertyChanged;
+    public event PropertyChangedEventHandler?
+        PropertyChanged;
 
     protected void OnPropertyChanged(
-        [CallerMemberName] string? propertyName = null)
+        [CallerMemberName]
+        string? propertyName = null)
     {
         PropertyChanged?.Invoke(
             this,
-            new PropertyChangedEventArgs(propertyName));
+            new PropertyChangedEventArgs(
+                propertyName));
     }
 }
