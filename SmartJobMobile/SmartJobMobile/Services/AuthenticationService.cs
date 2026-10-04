@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Text;
 using System.Text.Json;
 using SmartJobMobile.Models;
 
@@ -18,8 +17,8 @@ public class AuthenticationService
 
         _httpClient = new HttpClient
         {
-            BaseAddress = new Uri(
-                ApiConfiguration.BaseUrl)
+            BaseAddress =
+                new Uri(ApiConfiguration.BaseUrl)
         };
     }
 
@@ -58,10 +57,14 @@ public class AuthenticationService
 
             if (loginResponse is null ||
                 string.IsNullOrWhiteSpace(
-                    loginResponse.AccessToken))
+                    loginResponse.AccessToken) ||
+                string.IsNullOrWhiteSpace(
+                    loginResponse.RefreshToken))
             {
+                _tokenStorageService.ClearTokens();
+
                 return AuthenticationResult.Failure(
-                    "SmartJob did not return a valid authentication token.");
+                    "SmartJob did not return a valid authentication session.");
             }
 
             if (!string.Equals(
@@ -75,20 +78,7 @@ public class AuthenticationService
                     "This mobile application is only available to technician accounts.");
             }
 
-            await _tokenStorageService
-                .SaveAccessTokenAsync(
-                    loginResponse.AccessToken);
-
-            DateTimeOffset? expiry =
-                TryReadTokenExpiry(
-                    loginResponse.AccessToken);
-
-            if (expiry.HasValue)
-            {
-                await _tokenStorageService
-                    .SaveAccessTokenExpiryAsync(
-                        expiry.Value);
-            }
+            await SaveSessionAsync(loginResponse);
 
             return AuthenticationResult.Success(
                 loginResponse.FullName,
@@ -115,6 +105,24 @@ public class AuthenticationService
             return AuthenticationResult.Failure(
                 "An unexpected error occurred while signing in.");
         }
+    }
+
+    private async Task SaveSessionAsync(
+        MobileLoginResponse loginResponse)
+    {
+        await _tokenStorageService
+            .SaveAccessTokenAsync(
+                loginResponse.AccessToken);
+
+        await _tokenStorageService
+            .SaveRefreshTokenAsync(
+                loginResponse.RefreshToken);
+
+        await _tokenStorageService
+            .SaveAccessTokenExpiryAsync(
+                loginResponse
+                    .AccessTokenExpiresAtUtc
+                    .ToUniversalTime());
     }
 
     private static async Task<string>
@@ -185,75 +193,6 @@ public class AuthenticationService
         }
         catch
         {
-            return null;
-        }
-    }
-
-    private static DateTimeOffset?
-        TryReadTokenExpiry(
-            string accessToken)
-    {
-        try
-        {
-            string[] tokenParts =
-                accessToken.Split('.');
-
-            if (tokenParts.Length < 2)
-            {
-                return null;
-            }
-
-            string payload =
-                tokenParts[1]
-                    .Replace('-', '+')
-                    .Replace('_', '/');
-
-            int remainder =
-                payload.Length % 4;
-
-            if (remainder == 2)
-            {
-                payload += "==";
-            }
-            else if (remainder == 3)
-            {
-                payload += "=";
-            }
-
-            byte[] payloadBytes =
-                Convert.FromBase64String(
-                    payload);
-
-            string json =
-                Encoding.UTF8.GetString(
-                    payloadBytes);
-
-            using JsonDocument document =
-                JsonDocument.Parse(json);
-
-            if (!document.RootElement
-                .TryGetProperty(
-                    "exp",
-                    out JsonElement expiryElement))
-            {
-                return null;
-            }
-
-            if (!expiryElement.TryGetInt64(
-                    out long expirySeconds))
-            {
-                return null;
-            }
-
-            return DateTimeOffset
-                .FromUnixTimeSeconds(
-                    expirySeconds);
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine(
-                $"Unable to read JWT expiry: {ex.Message}");
-
             return null;
         }
     }

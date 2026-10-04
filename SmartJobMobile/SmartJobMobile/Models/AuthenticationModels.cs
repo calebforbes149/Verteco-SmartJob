@@ -11,9 +11,18 @@ public class MobileLoginResponse
 {
     public string AccessToken { get; set; } = string.Empty;
 
+    public string RefreshToken { get; set; } = string.Empty;
+
+    public DateTimeOffset AccessTokenExpiresAtUtc { get; set; }
+
     public string FullName { get; set; } = string.Empty;
 
     public string Role { get; set; } = string.Empty;
+}
+
+public class MobileRefreshTokenRequest
+{
+    public string RefreshToken { get; set; } = string.Empty;
 }
 
 public class AuthenticationResult
