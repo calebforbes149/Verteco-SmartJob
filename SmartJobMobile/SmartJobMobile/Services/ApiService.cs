@@ -7,25 +7,30 @@ public class ApiService
 {
     private readonly HttpClient _httpClient;
 
-    private const string ApiKey =
-        "SmartJob-Local-Thabo-2026";
-
-    public ApiService()
+    public ApiService(
+        ITokenStorageService tokenStorageService)
     {
-        _httpClient = new HttpClient
-        {
-            BaseAddress = new Uri(
-                "http://localhost:5196/")
-        };
+        var authenticationHandler =
+            new AuthenticatedHttpMessageHandler(
+                tokenStorageService)
+            {
+                InnerHandler =
+                    new HttpClientHandler()
+            };
 
-        _httpClient.DefaultRequestHeaders.Add(
-            "X-SmartJob-Key",
-            ApiKey);
+        _httpClient =
+            new HttpClient(
+                authenticationHandler)
+            {
+                BaseAddress =
+                    new Uri(
+                        ApiConfiguration.BaseUrl)
+            };
     }
 
     // =========================================================
     // GET MY JOBS
-    // =========================================================
+    // ========================================================
 
     public async Task<MyJobsResponse?> GetMyJobsAsync()
     {
