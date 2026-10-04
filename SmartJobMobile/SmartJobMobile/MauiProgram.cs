@@ -44,6 +44,10 @@ namespace SmartJobMobile
 
             builder.Services
                 .AddSingleton<
+                    SessionService>();
+
+            builder.Services
+                .AddSingleton<
                     AuthenticationService>();
 
             builder.Services

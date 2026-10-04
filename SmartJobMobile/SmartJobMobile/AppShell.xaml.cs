@@ -1,12 +1,23 @@
-﻿using SmartJobMobile.Views;
+﻿using SmartJobMobile.Services;
+using SmartJobMobile.Views;
 
 namespace SmartJobMobile;
 
 public partial class AppShell : Shell
 {
-    public AppShell()
+    private readonly SessionService
+        _sessionService;
+
+    public AppShell(
+        SessionService sessionService)
     {
         InitializeComponent();
+
+        _sessionService =
+            sessionService;
+
+        _sessionService.SessionExpired +=
+            OnSessionExpired;
 
         Routing.RegisterRoute(
             nameof(DashboardPage),
@@ -49,16 +60,32 @@ public partial class AppShell : Shell
             typeof(JobSubmittedPage));
 
         Routing.RegisterRoute(
-                nameof(NotificationsPage),
-                typeof(NotificationsPage));
+            nameof(NotificationsPage),
+            typeof(NotificationsPage));
 
         Routing.RegisterRoute(
-                nameof(ProfilePage),
-                typeof(ProfilePage));
+            nameof(ProfilePage),
+            typeof(ProfilePage));
 
         Routing.RegisterRoute(
             nameof(OfflineSyncPage),
             typeof(OfflineSyncPage));
+    }
 
+    private void OnSessionExpired(
+        object? sender,
+        EventArgs e)
+    {
+        MainThread.BeginInvokeOnMainThread(
+            async () =>
+            {
+                await DisplayAlertAsync(
+                    "Session Expired",
+                    "Your SmartJob session has expired. Please sign in again.",
+                    "OK");
+
+                await GoToAsync(
+                    "///LoginPage");
+            });
     }
 }

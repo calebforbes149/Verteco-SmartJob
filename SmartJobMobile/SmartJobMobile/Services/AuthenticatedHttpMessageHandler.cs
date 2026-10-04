@@ -17,23 +17,34 @@ public sealed class AuthenticatedHttpMessageHandler
     private readonly ITokenStorageService
         _tokenStorageService;
 
+    private readonly SessionService
+        _sessionService;
+
     public AuthenticatedHttpMessageHandler(
-        ITokenStorageService tokenStorageService)
+        ITokenStorageService tokenStorageService,
+        SessionService sessionService)
     {
-        _tokenStorageService = tokenStorageService;
+        _tokenStorageService =
+            tokenStorageService;
+
+        _sessionService =
+            sessionService;
     }
 
-    protected override async Task<HttpResponseMessage> SendAsync(
-        HttpRequestMessage request,
-        CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage>
+        SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
     {
         string? accessToken =
             await GetValidAccessTokenAsync(
                 cancellationToken);
 
-        HttpRequestMessage? retryRequest = null;
+        HttpRequestMessage? retryRequest =
+            null;
 
-        if (!string.IsNullOrWhiteSpace(accessToken))
+        if (!string.IsNullOrWhiteSpace(
+                accessToken))
         {
             request.Headers.Authorization =
                 new AuthenticationHeaderValue(
@@ -60,7 +71,10 @@ public sealed class AuthenticatedHttpMessageHandler
 
         string? refreshedAccessToken =
             await RefreshAccessTokenAsync(
-                forceRefresh: true,
+                failedAccessToken:
+                    accessToken,
+                forceRefresh:
+                    true,
                 cancellationToken);
 
         if (string.IsNullOrWhiteSpace(
@@ -92,7 +106,10 @@ public sealed class AuthenticatedHttpMessageHandler
         if (string.IsNullOrWhiteSpace(
                 accessToken))
         {
-            return null;
+            return await RefreshAccessTokenAsync(
+                failedAccessToken: null,
+                forceRefresh: false,
+                cancellationToken);
         }
 
         DateTimeOffset? expiresAtUtc =
@@ -114,13 +131,23 @@ public sealed class AuthenticatedHttpMessageHandler
             return accessToken;
         }
 
-        return await RefreshAccessTokenAsync(
-            forceRefresh: false,
-            cancellationToken);
+        string? refreshedToken =
+            await RefreshAccessTokenAsync(
+                failedAccessToken:
+                    accessToken,
+                forceRefresh:
+                    false,
+                cancellationToken);
+
+        // If refresh temporarily failed because of
+        // connectivity, retain the current token.
+        return refreshedToken ??
+               accessToken;
     }
 
     private async Task<string?>
         RefreshAccessTokenAsync(
+            string? failedAccessToken,
             bool forceRefresh,
             CancellationToken cancellationToken)
     {
@@ -137,16 +164,31 @@ public sealed class AuthenticatedHttpMessageHandler
                 await _tokenStorageService
                     .GetAccessTokenExpiryAsync();
 
-            // Another request may already have refreshed
-            // the token while this request waited for
-            // the semaphore.
-            if (!forceRefresh &&
+            bool currentTokenIsValid =
                 !string.IsNullOrWhiteSpace(
                     currentAccessToken) &&
                 currentExpiry.HasValue &&
                 currentExpiry.Value >
                     DateTimeOffset.UtcNow
-                        .Add(RefreshBeforeExpiry))
+                        .Add(RefreshBeforeExpiry);
+
+            if (!forceRefresh &&
+                currentTokenIsValid)
+            {
+                return currentAccessToken;
+            }
+
+            // Another request may have refreshed the
+            // session while this request waited for
+            // the lock.
+            if (forceRefresh &&
+                currentTokenIsValid &&
+                !string.IsNullOrWhiteSpace(
+                    failedAccessToken) &&
+                !string.Equals(
+                    currentAccessToken,
+                    failedAccessToken,
+                    StringComparison.Ordinal))
             {
                 return currentAccessToken;
             }
@@ -158,7 +200,7 @@ public sealed class AuthenticatedHttpMessageHandler
             if (string.IsNullOrWhiteSpace(
                     refreshToken))
             {
-                _tokenStorageService.ClearTokens();
+                ExpireSession();
                 return null;
             }
 
@@ -189,10 +231,7 @@ public sealed class AuthenticatedHttpMessageHandler
                     HttpStatusCode.Unauthorized or
                     HttpStatusCode.Forbidden)
                 {
-                    // Refresh token has expired, was
-                    // revoked or the account is no
-                    // longer allowed to authenticate.
-                    _tokenStorageService.ClearTokens();
+                    ExpireSession();
                 }
 
                 return null;
@@ -200,7 +239,8 @@ public sealed class AuthenticatedHttpMessageHandler
 
             MobileLoginResponse? refreshResponse =
                 await response.Content
-                    .ReadFromJsonAsync<MobileLoginResponse>(
+                    .ReadFromJsonAsync<
+                        MobileLoginResponse>(
                         cancellationToken:
                             cancellationToken);
 
@@ -210,7 +250,7 @@ public sealed class AuthenticatedHttpMessageHandler
                 string.IsNullOrWhiteSpace(
                     refreshResponse.RefreshToken))
             {
-                _tokenStorageService.ClearTokens();
+                ExpireSession();
                 return null;
             }
 
@@ -219,7 +259,7 @@ public sealed class AuthenticatedHttpMessageHandler
                     "Technician",
                     StringComparison.OrdinalIgnoreCase))
             {
-                _tokenStorageService.ClearTokens();
+                ExpireSession();
                 return null;
             }
 
@@ -237,12 +277,15 @@ public sealed class AuthenticatedHttpMessageHandler
                         .AccessTokenExpiresAtUtc
                         .ToUniversalTime());
 
+            _sessionService.MarkSessionActive();
+
             return refreshResponse.AccessToken;
         }
         catch (HttpRequestException ex)
         {
-            // A network outage does not mean the user's
-            // session should immediately be deleted.
+            // Do not destroy a valid local session
+            // simply because the device temporarily
+            // has no network connection.
             System.Diagnostics.Debug.WriteLine(
                 $"Token refresh connection error: {ex}");
 
@@ -265,6 +308,13 @@ public sealed class AuthenticatedHttpMessageHandler
         }
     }
 
+    private void ExpireSession()
+    {
+        _tokenStorageService.ClearTokens();
+
+        _sessionService.NotifySessionExpired();
+    }
+
     private static async Task<HttpRequestMessage>
         CloneRequestAsync(
             HttpRequestMessage request,
@@ -282,11 +332,13 @@ public sealed class AuthenticatedHttpMessageHandler
                     request.VersionPolicy
             };
 
-        foreach (var header in request.Headers)
+        foreach (
+            var header in request.Headers)
         {
-            clone.Headers.TryAddWithoutValidation(
-                header.Key,
-                header.Value);
+            clone.Headers
+                .TryAddWithoutValidation(
+                    header.Key,
+                    header.Value);
         }
 
         if (request.Content is not null)

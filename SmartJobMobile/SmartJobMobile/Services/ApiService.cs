@@ -8,11 +8,13 @@ public class ApiService
     private readonly HttpClient _httpClient;
 
     public ApiService(
-        ITokenStorageService tokenStorageService)
+        ITokenStorageService tokenStorageService,
+        SessionService sessionService)
     {
         var authenticationHandler =
             new AuthenticatedHttpMessageHandler(
-                tokenStorageService)
+                tokenStorageService,
+                sessionService)
             {
                 InnerHandler =
                     new HttpClientHandler()
@@ -30,7 +32,7 @@ public class ApiService
 
     // =========================================================
     // GET MY JOBS
-    // ========================================================
+    // =========================================================
 
     public async Task<MyJobsResponse?> GetMyJobsAsync()
     {

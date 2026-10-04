@@ -9,17 +9,25 @@ public class AuthenticationService
 {
     private readonly HttpClient _httpClient;
     private readonly ITokenStorageService _tokenStorageService;
+    private readonly SessionService _sessionService;
 
     public AuthenticationService(
-        ITokenStorageService tokenStorageService)
+        ITokenStorageService tokenStorageService,
+        SessionService sessionService)
     {
-        _tokenStorageService = tokenStorageService;
+        _tokenStorageService =
+            tokenStorageService;
 
-        _httpClient = new HttpClient
-        {
-            BaseAddress =
-                new Uri(ApiConfiguration.BaseUrl)
-        };
+        _sessionService =
+            sessionService;
+
+        _httpClient =
+            new HttpClient
+            {
+                BaseAddress =
+                    new Uri(
+                        ApiConfiguration.BaseUrl)
+            };
     }
 
     public async Task<AuthenticationResult> LoginAsync(
@@ -29,11 +37,15 @@ public class AuthenticationService
     {
         try
         {
-            var request = new MobileLoginRequest
-            {
-                Email = email.Trim(),
-                Password = password
-            };
+            var request =
+                new MobileLoginRequest
+                {
+                    Email =
+                        email.Trim(),
+
+                    Password =
+                        password
+                };
 
             using HttpResponseMessage response =
                 await _httpClient.PostAsJsonAsync(
@@ -51,7 +63,8 @@ public class AuthenticationService
 
             MobileLoginResponse? loginResponse =
                 await response.Content
-                    .ReadFromJsonAsync<MobileLoginResponse>(
+                    .ReadFromJsonAsync<
+                        MobileLoginResponse>(
                         cancellationToken:
                             cancellationToken);
 
@@ -78,7 +91,10 @@ public class AuthenticationService
                     "This mobile application is only available to technician accounts.");
             }
 
-            await SaveSessionAsync(loginResponse);
+            await SaveSessionAsync(
+                loginResponse);
+
+            _sessionService.MarkSessionActive();
 
             return AuthenticationResult.Success(
                 loginResponse.FullName,
@@ -104,6 +120,63 @@ public class AuthenticationService
 
             return AuthenticationResult.Failure(
                 "An unexpected error occurred while signing in.");
+        }
+    }
+
+    public async Task LogoutAsync(
+        CancellationToken cancellationToken = default)
+    {
+        string? refreshToken =
+            await _tokenStorageService
+                .GetRefreshTokenAsync();
+
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(
+                    refreshToken))
+            {
+                var request =
+                    new MobileRefreshTokenRequest
+                    {
+                        RefreshToken =
+                            refreshToken
+                    };
+
+                using HttpResponseMessage response =
+                    await _httpClient.PostAsJsonAsync(
+                        "api/v1/auth/logout",
+                        request,
+                        cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        $"SmartJob logout returned status {(int)response.StatusCode}.");
+                }
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            // Local logout must still succeed if the
+            // technician is offline.
+            System.Diagnostics.Debug.WriteLine(
+                $"SmartJob logout connection error: {ex}");
+        }
+        catch (TaskCanceledException)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                "SmartJob logout request timed out.");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"SmartJob logout error: {ex}");
+        }
+        finally
+        {
+            // Logging out locally is always completed,
+            // even if the API cannot currently be reached.
+            _tokenStorageService.ClearTokens();
         }
     }
 
@@ -179,7 +252,8 @@ public class AuthenticationService
             }
 
             using JsonDocument document =
-                JsonDocument.Parse(content);
+                JsonDocument.Parse(
+                    content);
 
             if (document.RootElement
                 .TryGetProperty(
