@@ -278,12 +278,12 @@ namespace VertecoSmartJob.Infrastructure.Persistence.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
-                    b.Property<Guid?>("TechnicianId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("TechnicianComments")
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid?>("TechnicianId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
@@ -551,6 +551,50 @@ namespace VertecoSmartJob.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("MobileSyncOperations");
+                });
+
+            modelBuilder.Entity("VertecoSmartJob.Domain.Entities.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("JobCardId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "CreatedAtUtc");
+
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("VertecoSmartJob.Domain.Entities.PasswordResetToken", b =>
@@ -916,6 +960,15 @@ namespace VertecoSmartJob.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("JobCard");
+                });
+
+            modelBuilder.Entity("VertecoSmartJob.Domain.Entities.Notification", b =>
+                {
+                    b.HasOne("VertecoSmartJob.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("VertecoSmartJob.Domain.Entities.PasswordResetToken", b =>

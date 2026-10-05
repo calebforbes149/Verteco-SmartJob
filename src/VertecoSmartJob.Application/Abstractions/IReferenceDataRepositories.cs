@@ -1,3 +1,4 @@
+using VertecoSmartJob.Application.Common;
 using VertecoSmartJob.Domain.Entities;
 
 namespace VertecoSmartJob.Application.Abstractions;
@@ -128,4 +129,11 @@ public interface IRefreshTokenRepository
     Task AddAsync(
         RefreshToken token,
         CancellationToken ct = default);
+}
+
+public interface INotificationRepository
+{
+    Task AddAsync(Notification notification, CancellationToken ct = default);
+    Task<PagedResult<Notification>> ListForUserAsync(Guid userId, int page, int pageSize, CancellationToken ct = default);
+    Task<Notification?> GetByIdAsync(Guid id, CancellationToken ct = default);
 }

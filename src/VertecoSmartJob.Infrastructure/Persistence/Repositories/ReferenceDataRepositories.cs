@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using VertecoSmartJob.Application.Abstractions;
+using VertecoSmartJob.Application.Common;
 using VertecoSmartJob.Domain.Entities;
 
 namespace VertecoSmartJob.Infrastructure.Persistence.Repositories;
@@ -101,4 +102,21 @@ public class PasswordResetTokenRepository(AppDbContext db) : IPasswordResetToken
 
     public Task<PasswordResetToken?> GetByTokenHashAsync(string tokenHash, CancellationToken ct = default) =>
         db.PasswordResetTokens.FirstOrDefaultAsync(t => t.TokenHash == tokenHash, ct);
+}
+
+public class NotificationRepository(AppDbContext db) : INotificationRepository
+{
+    public async Task AddAsync(Notification notification, CancellationToken ct = default) =>
+        await db.Notifications.AddAsync(notification, ct);
+
+    public async Task<PagedResult<Notification>> ListForUserAsync(Guid userId, int page, int pageSize, CancellationToken ct = default)
+    {
+        var query = db.Notifications.Where(n => n.UserId == userId).OrderByDescending(n => n.CreatedAtUtc);
+        var total = await query.CountAsync(ct);
+        var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
+        return new PagedResult<Notification> { Items = items, TotalCount = total, Page = page, PageSize = pageSize };
+    }
+
+    public Task<Notification?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
+        db.Notifications.FirstOrDefaultAsync(n => n.Id == id, ct);
 }

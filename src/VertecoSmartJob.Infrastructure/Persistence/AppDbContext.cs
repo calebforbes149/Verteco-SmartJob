@@ -64,6 +64,8 @@ public class AppDbContext(
         RefreshTokens =>
             Set<RefreshToken>();
 
+    public DbSet<Notification> Notifications => Set<Notification>();
+
     protected override void OnModelCreating(
         ModelBuilder modelBuilder)
     {

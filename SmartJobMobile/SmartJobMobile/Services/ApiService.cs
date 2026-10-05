@@ -58,6 +58,59 @@ public class ApiService
     }
 
     // =========================================================
+    // GET MY NOTIFICATIONS
+    // =========================================================
+
+    public async Task<MobileNotificationsResponse?> GetNotificationsAsync()
+    {
+        try
+        {
+            HttpResponseMessage response =
+                await _httpClient.GetAsync(
+                    "api/v1/mobile/notifications?page=1&pageSize=20");
+
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content
+                .ReadFromJsonAsync<MobileNotificationsResponse>(
+                    CreateJsonOptions());
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"SmartJob API Error - Notifications: {ex.Message}");
+
+            throw;
+        }
+    }
+
+    // =========================================================
+    // MARK NOTIFICATION READ
+    // =========================================================
+
+    public async Task<bool> MarkNotificationReadAsync(Guid notificationId)
+    {
+        try
+        {
+            HttpResponseMessage response =
+                await _httpClient.PostAsync(
+                    $"api/v1/mobile/notifications/{notificationId}/read",
+                    null);
+
+            response.EnsureSuccessStatusCode();
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"SmartJob API Error - Mark Notification Read: {ex.Message}");
+
+            throw;
+        }
+    }
+
+    // =========================================================
     // GET ONE JOB'S FULL DETAILS
     // =========================================================
 
@@ -1129,4 +1182,43 @@ public class MobileSignatureConfirmRequest
 
     public string Type { get; set; } =
         string.Empty;
+}
+
+
+// =============================================================
+// MOBILE NOTIFICATIONS RESPONSE
+// =============================================================
+
+public class MobileNotificationsResponse
+{
+    public List<ApiNotification> Items { get; set; } = [];
+
+    public int TotalCount { get; set; }
+
+    public int Page { get; set; }
+
+    public int PageSize { get; set; }
+}
+
+
+// =============================================================
+// NOTIFICATION
+// =============================================================
+
+public class ApiNotification
+{
+    public Guid Id { get; set; }
+
+    public string Title { get; set; } =
+        string.Empty;
+
+    public string Message { get; set; } =
+        string.Empty;
+
+    public string Type { get; set; } =
+        string.Empty;
+
+    public bool IsRead { get; set; }
+
+    public DateTime CreatedAtUtc { get; set; }
 }

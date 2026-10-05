@@ -142,6 +142,8 @@ public static class DependencyInjection
         services.AddScoped<
             MobileSyncService>();
 
+        services.AddScoped<INotificationRepository, NotificationRepository>();
+
         services.AddScoped<
             CustomerService>();
 
