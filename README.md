@@ -1,12 +1,37 @@
 # Verteco SmartJob
 
-Person 1 (Alex)
+**Module:** INSY7315 — Information Systems 3E, Work Integrated Learning
+**Client:** Verteco
+**Group:** 20 — Team Vantage
+
+**Group Members:**
+ST10074970 - Isaac Phiri Group 3 
+ST10438433 - Caleb Forbes Group 1
+ST10367702 - Keeran Perumal Group 3
+ST10450571 - Erin Sarjoo Group 2
+ST10437348 - Alexandro Ornelas Group 1
+ST10453511 - Moegammad Alexander Group 2
+
+A digital field service and job card management system built for Verteco, with three components sharing one API: an ASP.NET Core MVC manager web app, a .NET MAUI technician mobile app, and the ASP.NET Core Web API itself, backed by Azure SQL and Azure Blob Storage.
+
+## Contents
+
+- [Person 1 — Backend, API & Reporting](#person-1-alex--backend-api--reporting)
+- [Person 2 — Web Front End](#person-2-caleb--web-front-end-setup)
+- [Person 3 — Security, Identity & Notifications](#person-3-moe--security-identity--notifications)
+- [Person 4 — Mobile Backend, API & Sync](#person-4-isaac--mobile-backend-api--sync)
+- [Person 5 — Mobile Front End](#person-5-erin-mobile-front-end)
+- [Person 6 — Mobile Security, DevOps & Hosting](#person-6-keeran-mobile-security-devops--hosting)
+
+---
+
+## Person 1 (Alex) — Backend, API & Reporting
 
 This folder is the backend, API, and reporting starting point for the group project. It contains Domain, Application, Infrastructure, API, and Contracts projects so the web and mobile teams can share DTOs.
 
 All jobs use one **Standard Job Card** and its six checklist items. Clients do not choose or edit a template.
 
-## What's included
+### What's included
 
 - Guarded job card lifecycle: Draft → Assigned → Accepted → InProgress → AwaitingApproval → Completed, with Reopened and Cancelled branches.
 - Submission validation for required fields, evidence, and both signatures; SHA-256 revision snapshots linked across resubmissions.
@@ -16,7 +41,7 @@ All jobs use one **Standard Job Card** and its six checklist items. Clients do n
 - Private Azure Blob Storage adapter, technician job routes, scoped evidence and signature uploads, and offline mobile sync. See [the mobile API guide](docs/mobile-api-testing.md) and its separate Postman collection.
 - `/api/v1` manager endpoints, dashboard aggregates, monthly reports, optional Gemini commentary, CSV/PDF exports, Swagger, and a Postman collection.
 
-## Open the solution
+### Open the solution
 
 Install the .NET 10 SDK and open `VertecoSmartJob.slnx` in Visual Studio. To run the automated .NET tests from this folder:
 
@@ -28,10 +53,9 @@ dotnet test tests/VertecoSmartJob.Tests/VertecoSmartJob.Tests.csproj
 
 The automated tests use an isolated in-memory SQLite database. The running API uses Azure SQL.
 
-## Set up Azure for local development
+### Set up Azure for local development
 
-
-### Save local settings in Visual Studio User Secrets
+#### Save local settings in Visual Studio User Secrets
 
 1. In Visual Studio **Solution Explorer**, right-click the **VertecoSmartJob.Api project** (not the solution) and choose **Manage User Secrets**. The project already has a `UserSecretsId`.
 2. Merge the following JSON into the `secrets.json` file that opens. Replace every placeholder with your own value; keep any other secrets you already use.
@@ -74,21 +98,24 @@ The automated tests use an isolated in-memory SQLite database. The running API u
 3. Save `secrets.json`, set **VertecoSmartJob.Api** as the startup project, select its **http** launch profile, and press **F5**. The API uses `http://localhost:5196`; Swagger is at `http://localhost:5196/swagger`. The **https** profile also exposes `https://localhost:7086`. The launch profiles set `ASPNETCORE_ENVIRONMENT=Development`, which makes User Secrets available.
 
 User Secrets live outside the repository and everyone configures their own local file. They are intended for development and are not encrypted. Never put real passwords, storage keys, or API keys in `appsettings.json`, the README, the Postman collection, or a commit.
-Development startup applies pending Azure SQL EF migrations. The `AddStandardJobCardTemplate` migration adds only the single required template and its six checklist items when no active standard template exists. Startup does **not** insert accounts or demo records. The existing Manager account and password set through Person 3's login flow remain in the database; the API never recreates them. Automated tests use a separate in-memory SQLite database and test-only fixtures. The database must be reachable before the API can start. If the SQL firewall or credentials are wrong, startup stops during migration. The Api now authenticates requests through **either** the development API-key header **or** a real JWT Bearer token — see Person 3's section below for how real login, password reset, and role enforcement work. Production startup is still intentionally blocked (see `Program.cs`) until the team confirms the hosting environment is ready; this guard predates Person 3's identity work and should be revisited once hosting is actually set up. For deployment, use the reviewed `docs/azure-sql-migration.sql` or EF migrations instead of having every production API instance migrate at startup.
+
+Development startup applies pending Azure SQL EF migrations. The `AddStandardJobCardTemplate` migration adds only the single required template and its six checklist items when no active standard template exists. Startup does **not** insert accounts or demo records. The existing Manager account and password set through Person 3's login flow remain in the database; the API never recreates them. Automated tests use a separate in-memory SQLite database and test-only fixtures. The database must be reachable before the API can start. If the SQL firewall or credentials are wrong, startup stops during migration. The Api now authenticates requests through **either** the development API-key header **or** a real JWT Bearer token — see Person 3's section below for how real login, password reset, and role enforcement work.
+
+For deployment, use the reviewed `docs/azure-sql-migration.sql` or EF migrations instead of having every production API instance migrate at startup.
 
 The idempotent deployment script now includes Person 3's `AddUserIdentityFields` and `AddPasswordResetTokens` migrations. It prepares the schema only; it does not enable Production hosting or replace the required deployment configuration review.
 
 After updating the code, restart the **API** in Visual Studio to apply the new migration. `GET /api/v1/jobtemplates/standard` should then return **200** with exactly six checklist items. It adds no demo customers, technicians, users, or jobs; those lists stay empty until records are created. If the template route still returns **404**, confirm the API restarted with the updated build and that `20261003120000_AddStandardJobCardTemplate` appears in `__EFMigrationsHistory`.
 
-## Free AI reporting and PDF downloads
+### Free AI reporting and PDF downloads
 
 The PDF is generated by the API itself; it needs no paid PDF service or extra storage. It includes the monthly statistics and the same AI commentary shown on the report page when that commentary is available. CSV remains statistics-only. The PDF still downloads if the AI provider is unavailable, with a clear note in place of commentary.
 
-## Use the Postman collection
+### Use the Postman collection
 
-The collection is `postman/VertecoSmartJob.Person1.postman_collection.json`. It contains **38 request examples**. It has no Postman assertion scripts, so a Runner result of **“0 tests”** means no automated assertions were defined; it does not indicate whether the HTTP responses were correct. Run the requests individually in the order below. Running the entire collection at once will encounter empty IDs, invalid job states, and requests that deliberately change data.
+The collection is `postman/VertecoSmartJob.Person1.postman_collection.json`. It contains **38 request examples**. It has no Postman assertion scripts, so a Runner result of **"0 tests"** means no automated assertions were defined; it does not indicate whether the HTTP responses were correct. Run the requests individually in the order below. Running the entire collection at once will encounter empty IDs, invalid job states, and requests that deliberately change data.
 
-### 1. Import and configure
+#### 1. Import and configure
 
 1. In Postman, choose **Import → File** and select the collection JSON above.
 2. Open the imported collection's **Variables** tab and set the values below. Collection variables work even when Postman shows **Environment: none**. Save the collection after editing them.
@@ -108,11 +135,11 @@ The collection is `postman/VertecoSmartJob.Person1.postman_collection.json`. It 
 3. Start the API in Visual Studio and send **Dashboard stats**. Expect **200 OK**. Every collection request already sends `X-SmartJob-Key: {{managerKey}}`; you do not need to log in or add Bearer authentication to use this collection as-is. A missing/wrong key normally gives **401**, while a valid key without the required Manager role gives **403**. To test real login/JWT, call `POST /api/v1/auth/login` manually or use Swagger's Authorize button as described below.
 4. In a JSON response, copy an `id` GUID into the relevant collection variable. For list responses, look in `items`. Do not include quotes around a GUID in the variable value. Empty `{{jobId}}`, `{{siteId}}`, or `{{userId}}` values make detail and write requests hit the wrong URL.
 
-### Authenticate in Swagger (Development)
+#### Authenticate in Swagger (Development)
 
 Open `http://localhost:5196/swagger` and click **Authorize**. For **SmartJobKey**, enter the development key value only; Swagger sends it as `X-SmartJob-Key`. For **Bearer**, first call `POST /api/v1/auth/login`, copy `accessToken` from the response, and enter only that token; Swagger adds the `Bearer` prefix. Authorize with one scheme at a time. If both are filled in, the API selects Bearer whenever an `Authorization` header is present. Click **Logout** in the Authorize dialog before switching schemes. Swagger is available only in Development.
 
-### 2. Run the read-only requests
+#### 2. Run the read-only requests
 
 These requests can be sent without changing data. For detail requests, first fill in the corresponding ID variable.
 
@@ -140,7 +167,7 @@ These requests can be sent without changing data. For detail requests, first fil
 | **List corrective actions** | **200**; defaults to `status=open`. Copy an `items[].id` into `correctiveActionId`; change `status` to `resolved` to view history. |
 | **Get corrective action** | **200** for a valid `correctiveActionId`; shows the reason, job number, and resolution fields. |
 
-### 3. Test customer, site, and job writes in order
+#### 3. Test customer, site, and job writes in order
 
 Each `POST` or `PATCH` request has a sample JSON body under Postman's **Body → raw → JSON**. Replace the `{{...}}` values via collection variables and edit sample names if you run the request more than once.
 
@@ -160,7 +187,7 @@ The collection's **Approve submitted job** request cannot approve a newly assign
 
 Next, use that completed job to send **Reopen job**. Expect **200** and status `Reopened`. To test **Cancel active job**, first set `jobId` to a *different* job in `Draft`, `Assigned`, `Accepted`, `InProgress`, `AwaitingApproval`, or `Reopened`; expect **200** and `Cancelled`. Cancelling a `Completed` or already `Cancelled` job correctly returns **409**. These requests change shared Azure data, so choose disposable records when possible.
 
-### 4. Test user management safely
+#### 4. Test user management safely
 
 The collection includes **List users**, **Get user**, **Suspend user**, and **Deactivate user**. Do not suspend or deactivate the preserved `manager@verteco.example` account: the development key maps to that user.
 
@@ -182,9 +209,8 @@ To create a disposable account before using the destructive user requests, make 
 
 Use a new email on repeat runs. Expect **201** and copy the returned `id` into `userId`. Then send **Get user** (**200**), **Edit user** (**200**), **Suspend user** (**200**, `isSuspended: true`), and **Deactivate user** (**204 No Content**). Change the Edit user's sample email to another unused address on repeat runs. An empty response body after **204** is correct. The Manager-only `PATCH /api/v1/users/{id}` route already existed when Person 3's branch was merged; it also synchronizes a linked Technician's name, email, and phone.
 
-**Note (Person 3):** a newly created user — whether via this request or **Create technician and account** below — has **no password** until a Manager explicitly sets one via `POST /api/v1/auth/users/{id}/set-password`. They cannot log in until that happens. See Person 3's section for details.
 
-### 5. Test technician creation and corrective actions
+#### 5. Test technician creation and corrective actions
 
 **Create technician and account** sends `POST /api/v1/technicians` as a Manager. Change the sample email before repeating it. Expect **201 Created** with both `id` (the new `technicianId`) and `userId` (the linked account for `/api/v1/users/{id}` suspend/reactivate/deactivate routes). The Technician and User are saved together. **Do not** call `POST /api/v1/users` again for this technician. Set the collection's `technicianId` to the returned `id`, then send **Edit technician** (`PATCH /api/v1/technicians/{{technicianId}}`); expect **200** and verify skills/availability. Name, email, and phone edits also update the linked User. The new endpoints require a Manager key.
 
@@ -194,7 +220,7 @@ Resolve the flag using **either** **Resolve corrective action** (`POST /api/v1/c
 
 Each flag creates one corrective-action record with a reason, open/resolved state, timestamps, actor IDs, and resolution notes. This is the minimal persisted workflow for Person 2's Flagged Items and Corrective Actions screens; it does not yet include independent tasks, assignees, or due dates. A new EF migration adds these fields and records. The API applies it on the next Development startup; deployed databases need the updated migration script.
 
-### Troubleshooting Postman and Azure
+#### Troubleshooting Postman and Azure
 
 | Symptom | Check |
 | --- | --- |
@@ -209,6 +235,8 @@ Each flag creates one corrective-action record with a reason, open/resolved stat
 | Postman `409` | Check the job's current `status` and flag state; edits require `Draft`, approval requires `AwaitingApproval` with no open flag, and a flag can be resolved only once. |
 | Postman `423` | The account is locked out after 5 failed login attempts; wait 15 minutes or have a Manager reset it via `set-password`. This is correct, intended behaviour — see Person 3's section. |
 | Postman Runner says **0 tests** | The collection has request examples but no Postman assertion scripts. Inspect response status/body for each request using the tables above. |
+
+---
 
 ## Person 2 (Caleb) — Web Front End setup
 
@@ -303,6 +331,8 @@ Client with IP address 'x.x.x.x' is not allowed to access the server.
 
 this is Azure SQL's firewall rejecting your public IP — not a code or configuration problem on the Web side. Whoever owns the Azure SQL server needs to add that IP under **Azure Portal → SQL servers → `smartjob` → Networking → Firewall rules**, which can take a few minutes to take effect. Since the Api won't start at all while this is unresolved, any Web page that depends on real data will hang or fail until it's fixed. Home/mobile IPs can change over time, so this may need to be re-added later.
 
+---
+
 ## Person 3 (Moe) — Security, Identity & Notifications
 
 This section documents the real authentication system, password reset flow, audit/notification wiring, and security hardening built on top of Persons 1 and 2's work — replacing the temporary dev-account login bridge that the Web app originally shipped with.
@@ -346,6 +376,12 @@ This section documents the real authentication system, password reset flow, audi
 **POPIA / privacy**
 - A **Privacy Notice** page (`/Privacy`, `PrivacyController` + `Views/Privacy/Index.cshtml`) covering what's stored, why (including the client-confirmed indefinite retention policy, for warranty claims and renewals), and how it's protected. Linked from the sidebar under Account. Anonymous-accessible by design, since a privacy notice should be readable without needing to log in first.
 
+**In-app notifications (mobile)**
+- The mobile Notifications screen was previously a static placeholder with hardcoded "No new notifications" text and no real data behind it. It's now backed by a real `Notification` entity (Domain), persisted by `EmailNotificationService` alongside every email it already sends — so each job assigned/submitted/approved/reopened/flagged event now produces both a real email **and** a persisted in-app notification for the relevant user.
+- `MobileNotificationsController` (`/api/v1/mobile/notifications`, Technician-only) exposes `GET` (paged, for the signed-in technician only) and `POST /{id}/read` (marks one read, with an ownership check so a technician can't mark someone else's notification read by guessing a GUID).
+- On mobile, `NotificationsViewModel` and the rewired `NotificationsPage.xaml` replace the old static page with a real `CollectionView` bound to live data, keeping the original empty-state visual (the bell icon) as the `CollectionView`'s `EmptyView` rather than a separate always-shown block.
+- **Known gap at submission:** the `AddNotifications` EF migration exists in the codebase but had not yet been added to `docs/azure-sql-migration.sql` — see the note under Person 4's section on regenerating that script before final submission.
+
 ### How to actually log in for the first time
 
 The existing Manager login has a working password. Any new account has no password until a Manager sets one:
@@ -383,6 +419,297 @@ These were verified directly, not just implemented:
 - **Role enforcement:** a Technician's valid, correctly-signed JWT was used against a Manager-only endpoint (`GET /api/v1/users`) and correctly received `403 Forbidden`.
 - **XSS:** `<script>alert('xss')</script>` entered into a job's notes field rendered as literal encoded text in the page's actual HTML source, not as an executable script — confirmed via View Page Source, not just the browser's rendered view.
 
-### Known limitations / handed to Alex
+---
 
-A separate document (`PERSON3_HANDOFF_TO_ALEX.md`) lists everything Person 3 changed in Alex's files. The user edit route in that handoff is already present, and Swagger now supports both authentication methods. Hosting remains pending: the Production startup guard is still in `Program.cs` until deployment settings and migration rollout are decided.
+## Person 4 (Isaac) — Mobile Backend, API & Sync
+
+| | |
+| --- | --- |
+| **Role** | Mobile Backend, API & Sync Lead |
+| **Development branch** | `Isaac-Mobile-Backend-API-and-Sync` |
+| **Latest sync commit** | `b71e8e7` — Add mobile delta pull sync |
+| **Verification** | 31 tests passed, 0 failed |
+
+This section records the work completed for the mobile-facing backend and offline synchronization implementation, and serves as a handover for the rest of the team.
+
+### Role overview
+
+Responsible for the mobile-facing backend, API, and synchronization layer — giving the mobile application a secure backend through which technicians can access assigned jobs, perform field-work actions, capture job information, and continue working when connectivity is weak or unavailable. This work was kept on a dedicated branch so it could be developed and tested without pushing directly to `main` or overwriting another team member's work.
+
+### Main work completed
+
+- Mobile job API endpoints for technician field work
+- Job accept and start workflow
+- Checklist response updates
+- Equipment and serial information capture
+- Evidence upload instruction and confirmation workflow
+- Technician and client signature confirmation
+- Job submission support
+- Offline push synchronization for queued mobile operations
+- Idempotency handling to prevent duplicate processing
+- RowVersion-based conflict detection
+- Checklist conflict handling and non-overlapping update support
+- Delta pull synchronization for reconnecting mobile devices
+- Entity Framework persistence and migrations for mobile synchronization
+- Automated build and test verification
+
+### Mobile API
+
+The mobile API is implemented under the versioned mobile route:
+
+```
+/api/v1/mobile/
+```
+
+Technician identity is obtained from authentication claims rather than accepting an arbitrary technician ID from the client. This supports ownership checks and helps prevent one technician from requesting another technician's jobs.
+
+**Job operations** — the mobile job controller supports the core field-work workflow:
+
+- Retrieve jobs assigned to the authenticated technician
+- Retrieve individual job details with access checks
+- Accept an assigned job
+- Start an accepted or reopened job
+- Update checklist responses during an in-progress job
+- Capture equipment/serial information
+- Request and confirm evidence uploads
+- Confirm technician and client signatures
+- Submit completed field work for review
+
+### Evidence upload workflow
+
+Evidence support was added for mobile field work. The file store restricts supported evidence to JPG, PNG, and PDF files, with a maximum file size of 10 MB. The mobile client requests temporary upload instructions, uploads the file, and then confirms the upload with the backend:
+
+1. The mobile app requests upload instructions from the API.
+2. The backend creates a short-lived upload instruction/token.
+3. The mobile app uploads the evidence file.
+4. The app confirms the upload.
+5. The backend checks the uploaded object and returns/stores the evidence reference for the job.
+
+The confirmation logic checks that the uploaded object exists and validates relevant information such as extension, size, content type (where available), and SHA-256 checksum.
+
+### Signatures and submission
+
+The mobile backend supports both Technician and Client signature types. Signature information is associated with the job, and the existing submission validation requires the required sign-off before the job can proceed through the submission workflow.
+
+Job submission also uses the existing revision/sealing mechanism. A revision is created when field work is submitted for review, protecting the submitted state from silent modification.
+
+### Equipment and serial capture
+
+Equipment capture was added to the mobile backend so technicians can record equipment information required during field work. This is exposed through the mobile API and persisted through the application/repository layer.
+
+### Offline synchronization
+
+Offline synchronization is a major part of this implementation. The mobile application can continue collecting changes while disconnected and later send queued operations to the backend after reconnecting.
+
+**Sync endpoints:**
+
+```
+GET  /api/v1/mobile/sync/pull
+POST /api/v1/mobile/sync/push
+```
+
+The pull endpoint supplies server-side job data to the mobile application. The push endpoint processes operations that were queued while the device was offline.
+
+**Offline push:** each queued operation includes an operation identifier and the relevant job/version information. The backend processes supported operations and returns a result for each item, so the mobile client can determine whether it was applied, replayed, or rejected because of a conflict.
+
+**Idempotency:** `MobileSyncOperation` records are used to remember operations that have already been processed, preventing a retry from applying the same offline operation twice. A unique database index is used for the technician and operation identifier combination.
+
+**RowVersion conflict detection:** entities use `RowVersion` values as concurrency tokens. The mobile device sends the version it originally worked from, and the backend compares that against the current server version before applying offline changes.
+
+- Matching versions allow the update to proceed.
+- Checklist item versions allow item-level conflict checking.
+- Non-overlapping checklist changes can be applied without overwriting unrelated work.
+- A conflicting update is returned as a conflict instead of silently overwriting the server state.
+
+### Delta pull / reconnect sync
+
+Rather than returning every assigned job on every reconnect, the backend can return only jobs that changed after the client's previous successful pull.
+
+A `MobileSyncChange` entity and persistence configuration were added. `AppDbContext` records a sync change whenever a `JobCard` or `JobChecklistItem` is added or modified. The repository can then query those change records for a technician within the requested synchronization window.
+
+The pull response contains `ServerTimeUtc`. The mobile application stores this value and uses it as the `since` value on its next pull. The server captures an upper synchronization boundary before reading changes, so the response has a consistent cutoff:
+
+```
+GET /api/v1/mobile/sync/pull?since=<previous ServerTimeUtc>
+```
+
+### Database and Entity Framework work
+
+This implementation added persistence support for mobile synchronization. The main synchronization entities are `MobileSyncOperation` (processed offline operations) and `MobileSyncChange` (delta-pull change tracking):
+
+- `MobileSyncOperation` entity and EF configuration
+- `MobileSyncChange` entity and EF configuration
+- `DbSet` registrations in `AppDbContext`
+- `RowVersion` refresh for added or modified entities
+- Automatic mobile change records for `JobCard` and `JobChecklistItem` changes
+- Repository support for full initial pull and filtered delta pull
+
+Relevant migrations:
+
+```
+MobileSyncOperations
+MobileSyncDeltaPull
+```
+
+### Security and access control
+
+Mobile controllers are restricted to the Technician role. The authenticated technician ID is read from the user's claims and used for job access and synchronization — mobile job access checks mean the API does not simply trust an ID supplied by the client.
+
+Evidence upload instructions are temporary rather than giving the mobile application unrestricted storage credentials.
+
+### Build and testing
+
+The solution was repeatedly built during development. After the delta-pull migration was generated, the complete available test suite was run successfully:
+
+| Total | Passed | Failed | Skipped |
+| --- | --- | --- | --- |
+| 31 | 31 | 0 | 0 |
+
+The existing tests include coverage for the implemented mobile backend areas such as synchronization conflict behavior and equipment capture. Passing the suite confirms that the committed changes compile and do not break the current automated tests.
+
+### Main areas of the solution
+
+| Location | Purpose |
+| --- | --- |
+| `src/VertecoSmartJob.Api/Controllers/Mobile/` | Mobile-facing API controllers, including job and sync endpoints. |
+| `src/VertecoSmartJob.Application/Jobs/` | Application services, including `MobileSyncService`. |
+| `src/VertecoSmartJob.Application/Abstractions/` | Repository/service abstractions used by the mobile backend. |
+| `src/VertecoSmartJob.Domain/Entities/` | Domain entities, including mobile synchronization tracking entities. |
+| `src/VertecoSmartJob.Infrastructure/Persistence/` | EF Core `DbContext`, repositories, configurations, and migrations. |
+| `tests/VertecoSmartJob.Tests/` | Automated project tests. |
+
+
+### Integration notes and remaining work
+
+The main mobile backend/API/sync implementation is complete on the development branch. The remaining work is mainly integration, end-to-end validation, and production hardening rather than another major mobile backend feature:
+
+- Integrate the branch with the team's latest shared backend changes.
+- Resolve merge conflicts carefully, since the branch was created from an older version of another backend branch.
+- Run the full automated test suite again after integration.
+- Apply EF migrations only to the intended team database/environment.
+- Perform full mobile-app-to-API offline/reconnect integration testing with the MAUI client.
+- Complete final project documentation/sequence diagrams required for submission.
+- Further harden evidence upload validation and production security where required.
+- Review edge cases such as job reassignment/unassignment during delta synchronization.
+
+### Final status
+
+The core deliverables implemented in this branch include the mobile job API, field-work operations, equipment capture, evidence/signature support, offline queued operation processing, idempotency, RowVersion conflict detection, checklist conflict handling, and reconnect delta synchronization.
+
+At the final verification point on this branch, the solution built successfully and all 31 available automated tests passed. The latest synchronization changes were committed and pushed to the branch. The next stage was team integration and final end-to-end validation (see the status note under Database and Entity Framework work above).
+
+---
+
+## Person 5 (Erin) — Mobile Front End
+
+
+### Overview
+
+SmartJob Technician Mobile is a .NET MAUI application developed as part of the Verteco SmartJob system, for technicians completing fieldwork. It provides a structured workflow for managing assigned jobs from initial review through to final submission.
+
+### Technology stack
+
+- .NET MAUI
+- C#
+- XAML
+- MVVM architecture
+- SQLite for local data storage
+- ASP.NET Core Web API integration
+
+### Mobile application
+
+The application provides technicians with a complete field workflow: accessing assigned jobs, reviewing job information, completing required checks, recording field information, and submitting completed work for approval.
+
+The final implementation includes job status management, equipment recording, photographic evidence, issue reporting, digital signatures, final review, and offline synchronisation.
+
+### Offline support
+
+SmartJob Mobile was designed to support technicians working in areas with unreliable network connectivity. Job and workflow information is stored locally using SQLite, while the Offline Sync functionality shows connectivity status, pending changes, and synchronisation status. A manual **Sync Now** option is available when connectivity is present. This directly reflects the WIL checklist's requirement for offline-capable field work, and was one of the harder pieces of the original scope to get right given it depends on Person 4's conflict-detection and delta-sync work on the backend.
+
+### Architecture
+
+The mobile application follows the MVVM pattern to keep the user interface separated from application logic:
+
+- **Views** — XAML pages used by the technician.
+- **ViewModels** — UI state, commands, and workflow logic.
+- **Models** — mobile and locally cached data structures.
+- **Services** — API communication, connectivity, local SQLite storage, and synchronisation.
+
+### API integration
+
+The application communicates with the SmartJob backend API for job information and field operations. Mobile API functionality is provided by the Person 4 backend implementation, while this (Person 5) application is responsible for presenting and managing that information through the technician interface. Authentication and final mobile security integration, including JWT and secure token handling, form part of Person 6's integration responsibilities.
+
+### User interface
+
+The application maintains the SmartJob dark and red visual identity introduced during Part 1, adapting the original Figma prototype into a functional mobile interface, with clear navigation, readable job information, validation messages, system feedback, and consistent controls throughout the technician workflow. It was also tested at different window sizes to confirm the interface remains usable and responsive. This continuity from the Part 1 prototype to a working Part 2 implementation is itself part of what the role was originally scoped to deliver — carrying the agreed visual identity through rather than redesigning it mid-project.
+
+### Validation and feedback
+
+The application provides validation throughout the technician workflow to prevent incomplete information from progressing to final submission, with clear feedback when information is missing, when synchronisation occurs, and when a job reaches a different lifecycle stage.
+
+### Testing
+
+The application was tested through the complete technician workflow using jobs supplied by the SmartJob backend — covering navigation, job progression, local persistence, validation, evidence capture, digital signatures, final submission, status changes, and synchronisation. The final Android project builds successfully using .NET MAUI.
+
+### Running the mobile application
+
+The SmartJob backend API and required development services must be running before testing functionality that communicates with the server. Open the SmartJob Mobile project in Visual Studio, restore the required NuGet packages, and run the application using a supported .NET MAUI target.
+
+### Project responsibilities
+
+This repository contains work completed as part of a six-person development team. This (Person 5) contribution focuses on the SmartJob Technician Mobile front end, including the technician interface, MVVM implementation, API consumption, local persistence, offline-first user experience, responsive design, and application feedback. Backend mobile API and synchronisation functionality are coordinated with Person 4, while mobile authentication, deployment, and Android release packaging are coordinated with Person 6.
+
+
+---
+
+## Person 6 (Keeran) — Mobile Security, DevOps & Hosting
+
+> No name was recorded in this section's source material — add it here before submission.
+
+**Role as originally scoped:** the group's initial role split assigned this position as DevOps + Hosting + API Platform Lead, covering both the web and mobile sides of deployment, release, and infrastructure — the only role in the original split explicitly covering both platforms rather than one. The final scope below shows that stayed true: Android/iOS release engineering, Azure hosting prep, and CI/CD all sit under this one role, alongside the mobile-specific authentication integration that connects Person 4's backend to Person 5's front end.
+
+This role focused on the security, deployment, and release side of the SmartJob mobile application.
+
+### What was worked on
+
+- Connected the mobile login to the real API using JWT authentication.
+- Added refresh tokens so users can stay signed in securely without having to log in every time.
+- Used .NET MAUI `SecureStorage` to safely store access and refresh tokens.
+- Added automatic token refresh and session-expiry handling.
+- Added secure logout, which clears stored tokens and revokes the refresh token.
+- Removed the hard-coded API key from the mobile app and changed API requests to use Bearer tokens.
+- Configured the mobile app to use the hosted Azure API in production. At final submission, `ApiConfiguration.BaseUrl` points at the hosted Azure URL unconditionally — there's no longer a Debug/Release split pointing local builds at an emulator address, so every build (Windows, Android, iOS; Debug or Release) talks to the same hosted API. Anyone needing to test against a locally-run Api instead will need to point this constant back at a local URL manually.
+- Updated the Android package name to `za.co.verteco.smartjob`.
+- Disabled cleartext HTTP for Android Release builds.
+- Added GitHub Actions for build checks, static analysis, and automated tests.
+- Added an Android build workflow that creates APK artifacts.
+- Set up secure Android release signing using a keystore and GitHub Secrets.
+- Built and tested a signed Android Release APK.
+- Added production health checks for the API and Web application.
+- Helped prepare the project for Azure hosting and production deployment.
+- Set up branch protection so changes to `main` require a pull request, approval, and successful CI checks.
+- Added iOS build and release documentation for the steps required on macOS.
+
+This work connects directly across the other three mobile-adjacent roles: it takes Person 4's backend endpoints and Person 5's front-end UI and is what actually makes them reachable from a real device — hosted, signed, and authenticated — rather than only working against a developer's local machine.
+
+### Security and deployment
+
+Sensitive information such as signing passwords, JWT keys, and database credentials are not stored directly in the repository — these values are kept in secure configuration or GitHub Secrets. The mobile app uses HTTPS, secure token storage, and refresh-token rotation to keep user sessions secure. The CI/CD workflow checks that the project builds successfully and that automated tests pass before changes are merged.
+
+### Mobile release
+
+The Android version can be built as a signed APK and connects to the hosted SmartJob Azure API.
+
+The final Android package ID is:
+
+```
+za.co.verteco.smartjob
+```
+
+The iOS version uses the same .NET MAUI project and authentication setup. The iOS build and release steps are documented in `docs/ios-build-and-release.md`.
+
+**Video Link:** https://youtu.be/Vq9oaBn_71Y?si=rwpBA2ztyZ8n7VZx
+
+**PowerPoint Presentation:** [VertecoSmartJobGroup20Pres.pptx](docs/VertecoSmartJobGroup20Pres.pptx)
+
+**Attendance Sheet:** [Attendance.docx](docs/Attendance.docx)
