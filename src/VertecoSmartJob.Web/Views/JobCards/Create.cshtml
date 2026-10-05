@@ -109,7 +109,7 @@
         <option value="">Leave unassigned</option>
         @foreach (var t in Model.Technicians)
         {
-            <option value="@t.Id" selected="@(Model.TechnicianId == t.Id)">@t.FullName — @t.Availability</option>
+            <option value="@t.Id" selected="@(Model.TechnicianId == t.Id)">@t.FullName - @t.Availability</option>
         }
       </select>
     </div>

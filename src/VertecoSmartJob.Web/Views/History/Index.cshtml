@@ -50,7 +50,7 @@
               <tr class="clickable" onclick="location.href='@Url.Action("Details", "JobCards", new { id = job.Id })'">
                 <td class="mono">@job.Number</td>
                 <td><div class="cell-primary">@job.CustomerName</div><div class="cell-sub">@job.SiteName</div></td>
-                <td>@(job.TechnicianName ?? "—")</td>
+                <td>@(job.TechnicianName ?? "-")</td>
                 <td><span class="pill pill-@job.Status.ToLowerInvariant()">@job.Status</span></td>
                 <td class="mono">@job.ScheduledDate.ToString("dd MMM yyyy")</td>
               </tr>

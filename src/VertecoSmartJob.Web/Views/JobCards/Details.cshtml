@@ -35,7 +35,7 @@
     <div class="card card-pad" style="border-color:var(--danger);background:var(--danger-bg);color:var(--danger);margin-bottom:16px;">
       <b class="tiny">This job card is flagged</b>
       <p class="tiny">@Model.FlagReason</p>
-      <p class="tiny muted" style="color:inherit;opacity:.8;">Flagged @(Model.FlaggedAtUtc?.ToString("dd MMM yyyy HH:mm") ?? "—") UTC. It can't be approved while flagged. Resolve the corrective action first.</p>
+      <p class="tiny muted" style="color:inherit;opacity:.8;">Flagged @(Model.FlaggedAtUtc?.ToString("dd MMM yyyy HH:mm") ?? "-") UTC. It can't be approved while flagged. Resolve the corrective action first.</p>
       <form asp-action="ResolveFlag" asp-route-id="@Model.Id" method="post" style="margin-top:8px;display:flex;gap:8px;align-items:flex-start;">
         @Html.AntiForgeryToken()
         <textarea name="resolutionNotes" placeholder="Resolution notes (required)" maxlength="2000" required style="flex:1;"></textarea>
@@ -61,7 +61,7 @@ else if (Model.Status != "Cancelled")
       <div class="section-card-head"><h3>Checklist</h3></div>
       <div class="section-card-body pad">
         <p class="tiny muted">
-          Read-only here on purpose — only the assigned technician can tick these, from mobile.
+          Read-only here on purpose - only the assigned technician can tick these, from mobile.
           There is no "start job" or "tick item" action on this screen; see the build guide's Job Details fix.
         </p>
         @{
@@ -83,7 +83,7 @@ else if (Model.Status != "Cancelled")
     @if (isMobileOwned)
     {
         <div class="card card-pad" style="border-color:var(--info);background:var(--info-bg);color:var(--info);">
-          This job is being actioned by the assigned technician on mobile right now — there's nothing for a manager to click until it reaches Awaiting Approval.
+          This job is being actioned by the assigned technician on mobile right now - there's nothing for a manager to click until it reaches Awaiting Approval.
         </div>
     }
 
@@ -121,7 +121,7 @@ else if (Model.Status != "Cancelled")
             }
             @foreach (var item in Model.Signatures)
             {
-                <div class="info-row"><span>@item.Type signature — @item.SignerName</span><a asp-action="Signature" asp-route-id="@Model.Id" asp-route-signatureId="@item.Id" target="_blank" rel="noopener">View signature</a></div>
+                <div class="info-row"><span>@item.Type signature - @item.SignerName</span><a asp-action="Signature" asp-route-id="@Model.Id" asp-route-signatureId="@item.Id" target="_blank" rel="noopener">View signature</a></div>
             }
           </div>
         </div>
@@ -143,7 +143,7 @@ else if (Model.Status != "Cancelled")
     {
         <div class="card card-pad review-panel">
           <h3>Manager review</h3>
-          <p class="tiny">Submitted for approval — evidence: @Model.EvidenceCount, technician signature: @(Model.HasTechnicianSignature ? "✓" : "✗"), client signature: @(Model.HasClientSignature ? "✓" : "✗").</p>
+          <p class="tiny">Submitted for approval - evidence: @Model.EvidenceCount, technician signature: @(Model.HasTechnicianSignature ? "✓" : "✗"), client signature: @(Model.HasClientSignature ? "✓" : "✗").</p>
           <form asp-action="Approve" asp-route-id="@Model.Id" method="post">
             @Html.AntiForgeryToken()
             <div class="field"><label>Review notes</label><textarea name="reviewNotes" maxlength="2000"></textarea></div>
@@ -181,7 +181,7 @@ else if (Model.Status != "Cancelled")
         <div class="card card-pad">
           @if (Model.Status == "Completed")
           {
-              <p class="tiny">Completed @(Model.CompletedAtUtc?.ToString("dd MMM yyyy HH:mm") ?? "—") UTC.</p>
+              <p class="tiny">Completed @(Model.CompletedAtUtc?.ToString("dd MMM yyyy HH:mm") ?? "-") UTC.</p>
               @if (!string.IsNullOrWhiteSpace(Model.ReviewNotes))
               {
                   <p class="tiny muted">Review notes: @Model.ReviewNotes</p>
@@ -197,7 +197,7 @@ else if (Model.Status != "Cancelled")
     @if (!string.IsNullOrWhiteSpace(Model.ReopenReason) && Model.Status == "Reopened")
     {
         <div class="card card-pad" style="border-color:var(--warning);background:var(--warning-bg);">
-          <b class="tiny">Reopened — reason given:</b>
+          <b class="tiny">Reopened - reason given:</b>
           <p class="tiny">@Model.ReopenReason</p>
         </div>
     }
@@ -229,7 +229,7 @@ else if (Model.Status != "Cancelled")
                 <div class="timeline-item">
                   <div class="timeline-dot"></div>
                   <div>
-                    <p>@action.Reason — @(action.IsOpen ? "open" : "resolved")</p>
+                    <p>@action.Reason - @(action.IsOpen ? "open" : "resolved")</p>
                     <span>Opened @action.OpenedAtUtc.ToString("dd MMM yyyy HH:mm") UTC</span>
                     @if (!action.IsOpen)
                     {
@@ -252,7 +252,7 @@ else if (Model.Status != "Cancelled")
                 <div class="timeline-item">
                   <div class="timeline-dot"></div>
                   <div>
-                    <p>Revision @rev.Number — @(rev.IntegrityValid ? "integrity OK" : "⚠ integrity check failed")</p>
+                    <p>Revision @rev.Number - @(rev.IntegrityValid ? "integrity OK" : "⚠ integrity check failed")</p>
                     <span>@rev.SubmittedAtUtc.ToString("dd MMM yyyy HH:mm") UTC · @rev.ContentHash[..12]…</span>
                   </div>
                 </div>

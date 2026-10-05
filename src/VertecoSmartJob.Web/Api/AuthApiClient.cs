@@ -12,7 +12,7 @@ public class AuthApiClient(HttpClient http)
         if (response.StatusCode is System.Net.HttpStatusCode.Unauthorized
             or System.Net.HttpStatusCode.Locked
             or System.Net.HttpStatusCode.Forbidden)
-            return null;   // bad credentials, locked out, or unconfirmed — caller shows a generic message
+            return null;   // bad credentials, locked out, or unconfirmed - caller shows a generic message
 
         await response.EnsureApiSuccessAsync(ct);
         return await response.Content.ReadFromJsonAsync<LoginResponse>(cancellationToken: ct);
