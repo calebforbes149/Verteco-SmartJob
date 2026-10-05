@@ -20,7 +20,6 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
-      id-token: write
     concurrency:
       group: smartjob-main-deploy
       cancel-in-progress: false
@@ -55,17 +54,11 @@ jobs:
           -p:UseAppHost=false
           --output "${{ runner.temp }}/smartjob-web"
 
-      - name: Sign in to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
       - name: Deploy API App Service
         uses: azure/webapps-deploy@v3
         with:
           app-name: verteco-smartjob-api
+          publish-profile: ${{ secrets.AZURE_API_PUBLISH_PROFILE }}
           package: ${{ runner.temp }}/smartjob-api
 
       - name: Check API readiness
@@ -78,6 +71,7 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: verteco-smartjob-web
+          publish-profile: ${{ secrets.AZURE_WEB_PUBLISH_PROFILE }}
           package: ${{ runner.temp }}/smartjob-web
 
       - name: Check web health
