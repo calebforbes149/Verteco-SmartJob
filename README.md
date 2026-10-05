@@ -1,5 +1,9 @@
 # Verteco SmartJob
 
+# To view Apk - Go into releases and use the password that is provided there in release for a quick run through with the mobile app
+
+# To run through the web app, the login is Email: alexxornelass755@gmail.com and password is: Test@verteco
+
 **Module:** INSY7315 — Information Systems 3E, Work Integrated Learning
 **Client:** Verteco
 **Group:** 20 — Team Vantage
