@@ -35,6 +35,10 @@ public class JobCard : SoftDeletableEntity
     public DateTime? CompletedAtUtc { get; private set; }
 
     public string? Notes { get; set; }
+    public string? FieldEquipmentName { get; private set; }
+    public string? FieldEquipmentSerialNumber { get; private set; }
+    public string? FieldEquipmentDescription { get; private set; }
+    public string? TechnicianComments { get; private set; }
     public string? ReviewNotes { get; private set; }
     public string? ReopenReason { get; private set; }
     public string? CancelReason { get; private set; }
@@ -148,11 +152,13 @@ public class JobCard : SoftDeletableEntity
             throw new InvalidJobStatusTransitionException(Status.ToString(), nameof(SubmitForReview));
         RequireAssignedTechnician(technicianId);
 
+        MarkVerifiedWorkflowSteps();
+
         var remaining = ChecklistItems.Count(i => !i.IsDone);
         if (remaining > 0)
             throw new ChecklistNotCompleteException(remaining);
 
-        var content = SnapshotContent();
+        var content = SnapshotContent(includeFieldData: true);
         var previous = Revisions.OrderBy(r => r.Number).LastOrDefault();
         var revision = JobCardRevision.Create(Id, (previous?.Number ?? 0) + 1, content, previous?.Id);
         Revisions.Add(revision);
@@ -238,6 +244,70 @@ public class JobCard : SoftDeletableEntity
         RequireEditable(technicianId);
         if (string.IsNullOrWhiteSpace(reference)) throw new ArgumentException("Evidence reference is required.");
         Evidence.Add(new JobEvidence { JobCardId = Id, Reference = reference.Trim(), Caption = caption.Trim() });
+        MarkVerifiedWorkflowSteps();
+    }
+
+    public void SetFieldEquipment(Guid technicianId, string name, string serialNumber, string? description)
+    {
+        RequireEditable(technicianId);
+        if (string.IsNullOrWhiteSpace(name) || name.Length > 200)
+            throw new ArgumentException("Equipment name must be between 1 and 200 characters.");
+        if (string.IsNullOrWhiteSpace(serialNumber) || serialNumber.Length > 100)
+            throw new ArgumentException("Serial number must be between 1 and 100 characters.");
+        if (description?.Length > 2000)
+            throw new ArgumentException("Equipment description cannot exceed 2000 characters.");
+        FieldEquipmentName = name.Trim();
+        FieldEquipmentSerialNumber = serialNumber.Trim();
+        FieldEquipmentDescription = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+    }
+
+    public void ClearFieldEquipment(Guid technicianId)
+    {
+        RequireEditable(technicianId);
+        FieldEquipmentName = null;
+        FieldEquipmentSerialNumber = null;
+        FieldEquipmentDescription = null;
+        foreach (var item in ChecklistItems.Where(i => i.Text.Equals(
+                     "Record equipment and serial numbers", StringComparison.OrdinalIgnoreCase)))
+            item.IsDone = false;
+    }
+
+    public void SetTechnicianComments(Guid technicianId, string? comments)
+    {
+        RequireEditable(technicianId);
+        if (comments?.Length > 2000)
+            throw new ArgumentException("Technician comments cannot exceed 2000 characters.");
+        TechnicianComments = string.IsNullOrWhiteSpace(comments) ? null : comments.Trim();
+    }
+
+    public void UpdateEvidenceCaption(Guid technicianId, Guid evidenceId, string caption)
+    {
+        RequireEditable(technicianId);
+        var evidence = Evidence.FirstOrDefault(e => e.Id == evidenceId)
+            ?? throw new KeyNotFoundException("Evidence not found on this job card.");
+        if (caption is null || caption.Length > 500)
+            throw new ArgumentException("Evidence caption cannot exceed 500 characters.");
+        evidence.Caption = caption.Trim();
+    }
+
+    public JobEvidence RemoveEvidence(Guid technicianId, Guid evidenceId)
+    {
+        RequireEditable(technicianId);
+        var evidence = Evidence.FirstOrDefault(e => e.Id == evidenceId)
+            ?? throw new KeyNotFoundException("Evidence not found on this job card.");
+        Evidence.Remove(evidence);
+        MarkVerifiedWorkflowSteps();
+        return evidence;
+    }
+
+    public JobSignature RemoveSignature(Guid technicianId, Guid signatureId)
+    {
+        RequireEditable(technicianId);
+        var signature = Signatures.FirstOrDefault(s => s.Id == signatureId)
+            ?? throw new KeyNotFoundException("Signature not found on this job card.");
+        Signatures.Remove(signature);
+        MarkVerifiedWorkflowSteps();
+        return signature;
     }
 
     public void AddSignature(Guid technicianId, string signerName, string type, string reference)
@@ -247,6 +317,19 @@ public class JobCard : SoftDeletableEntity
             throw new ArgumentException("Signer name and signature reference are required.");
         if (type is not ("Technician" or "Client")) throw new ArgumentException("Signature type must be Technician or Client.");
         Signatures.Add(new JobSignature { JobCardId = Id, SignerName = signerName.Trim(), Type = type, Reference = reference.Trim() });
+        MarkVerifiedWorkflowSteps();
+    }
+
+    public void MarkVerifiedWorkflowSteps()
+    {
+        foreach (var item in ChecklistItems)
+        {
+            if (item.Text.Equals("Capture photographic evidence", StringComparison.OrdinalIgnoreCase))
+                item.IsDone = Evidence.Count > 0;
+            else if (item.Text.Equals("Obtain technician and client sign-off", StringComparison.OrdinalIgnoreCase))
+                item.IsDone = Signatures.Any(s => s.Type == "Technician") &&
+                              Signatures.Any(s => s.Type == "Client");
+        }
     }
 
     private void RequireEditable(Guid technicianId)
@@ -262,15 +345,31 @@ public class JobCard : SoftDeletableEntity
             throw new InvalidJobStatusTransitionException(Status.ToString(), "Assigned technician required");
     }
 
-    private string SnapshotContent() => JsonSerializer.Serialize(new
+    private string SnapshotContent(bool includeFieldData)
     {
-        Number, CustomerId, SiteId, JobTemplateId, TechnicianId, Priority, ScheduledDate, Notes,
-        Checklist = ChecklistItems.OrderBy(i => i.Order).Select(i => new { i.Order, i.Text, i.IsDone }).ToArray(),
-        Evidence = Evidence.OrderBy(e => e.Id).Select(e => new { e.Reference, e.Caption }).ToArray(),
-        Signatures = Signatures.OrderBy(s => s.Id).Select(s => new { s.Type, s.SignerName, s.Reference }).ToArray()
-    });
+        var checklist = ChecklistItems.OrderBy(i => i.Order).Select(i => new { i.Order, i.Text, i.IsDone }).ToArray();
+        var evidence = Evidence.OrderBy(e => e.Id).Select(e => new { e.Reference, e.Caption }).ToArray();
+        var signatures = Signatures.OrderBy(s => s.Id).Select(s => new { s.Type, s.SignerName, s.Reference }).ToArray();
+        if (!includeFieldData)
+            return JsonSerializer.Serialize(new
+            {
+                Number, CustomerId, SiteId, JobTemplateId, TechnicianId, Priority, ScheduledDate, Notes,
+                Checklist = checklist, Evidence = evidence, Signatures = signatures
+            });
+        return JsonSerializer.Serialize(new
+        {
+            Number, CustomerId, SiteId, JobTemplateId, TechnicianId, Priority, ScheduledDate, Notes,
+            Checklist = checklist, Evidence = evidence, Signatures = signatures,
+            FieldEquipmentName, FieldEquipmentSerialNumber, FieldEquipmentDescription, TechnicianComments
+        });
+    }
 
-    private string ComputeHash() => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(SnapshotContent())));
+    private string ComputeHash()
+    {
+        var latest = Revisions.OrderBy(r => r.Number).LastOrDefault();
+        var includesFieldData = latest?.ContentJson.Contains("\"FieldEquipmentName\"", StringComparison.Ordinal) == true;
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(SnapshotContent(includesFieldData))));
+    }
 }
 
 public class JobChecklistItem : Entity

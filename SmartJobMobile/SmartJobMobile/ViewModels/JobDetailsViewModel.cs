@@ -20,10 +20,18 @@ public class JobDetailsViewModel : INotifyPropertyChanged
         {
             _selectedJob = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(StartButtonText));
         }
     }
 
     public ICommand StartJobCommand { get; }
+
+    public string StartButtonText => SelectedJob.Status switch
+    {
+        "Reopened" => "RESUME REOPENED JOB",
+        "In Progress" => "CONTINUE JOB",
+        _ => "START JOB"
+    };
 
     public JobDetailsViewModel(
         Job job,
@@ -108,6 +116,25 @@ public class JobDetailsViewModel : INotifyPropertyChanged
                 return;
             }
 
+            if (SelectedJob.Status == "Reopened")
+            {
+                bool restarted = await _apiService.StartJobAsync(SelectedJob.ApiId);
+                if (!restarted)
+                {
+                    await Shell.Current.DisplayAlertAsync(
+                        "Unable to Resume Job",
+                        "SmartJob could not resume this reopened job. Please check your connection and try again.",
+                        "OK");
+                    return;
+                }
+
+                SelectedJob.Status = "In Progress";
+                OnPropertyChanged(nameof(SelectedJob));
+                OnPropertyChanged(nameof(StartButtonText));
+                await NavigateToChecklistAsync();
+                return;
+            }
+
             // -------------------------------------------------
             // COMPLETED JOB
             // -------------------------------------------------
@@ -186,6 +213,7 @@ public class JobDetailsViewModel : INotifyPropertyChanged
 
                 OnPropertyChanged(
                     nameof(SelectedJob));
+                OnPropertyChanged(nameof(StartButtonText));
 
                 await NavigateToChecklistAsync();
 
@@ -213,7 +241,7 @@ public class JobDetailsViewModel : INotifyPropertyChanged
     }
 
     // =========================================================
-    // NAVIGATE TO CHECKLIST
+    // START FIELD WORK
     // =========================================================
     private async Task NavigateToChecklistAsync()
     {
@@ -226,14 +254,14 @@ public class JobDetailsViewModel : INotifyPropertyChanged
         {
             await Shell.Current.DisplayAlertAsync(
                 "Navigation Error",
-                "SmartJob could not open the checklist.",
+                "SmartJob could not open the field workflow.",
                 "OK");
 
             return;
         }
 
         await window.Page.Navigation.PushAsync(
-            new ChecklistPage(
+            new EquipmentPage(
                 SelectedJob));
     }
 

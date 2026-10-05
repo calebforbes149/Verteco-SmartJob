@@ -37,6 +37,11 @@ public class JobCardDetailDto
     public DateOnly ScheduledDate { get; set; }
     public DateTime? CompletedAtUtc { get; set; }
     public string? Notes { get; set; }
+    public string? FieldEquipmentName { get; set; }
+    public string? FieldEquipmentSerialNumber { get; set; }
+    public string? FieldEquipmentDescription { get; set; }
+    public string? TechnicianComments { get; set; }
+    public List<JobSiteEquipmentDto> SiteEquipmentOptions { get; set; } = [];
     public string? ReviewNotes { get; set; }
     public string? ReopenReason { get; set; }
     public string? CancelReason { get; set; }
@@ -46,6 +51,8 @@ public class JobCardDetailDto
     public List<CorrectiveActionDto> CorrectiveActions { get; set; } = [];
     public List<JobRevisionDto> Revisions { get; set; } = [];
     public int EvidenceCount { get; set; }
+    public List<JobEvidenceDto> Evidence { get; set; } = [];
+    public List<JobSignatureDto> Signatures { get; set; } = [];
     public bool HasTechnicianSignature { get; set; }
     public bool HasClientSignature { get; set; }
 
@@ -58,6 +65,28 @@ public class JobChecklistItemDto
     public int Order { get; set; }
     public string Text { get; set; } = string.Empty;
     public bool IsDone { get; set; }
+}
+
+public class JobSiteEquipmentDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string SerialNumber { get; set; } = string.Empty;
+    public string? Description { get; set; }
+}
+
+public class JobEvidenceDto
+{
+    public Guid Id { get; set; }
+    public string Caption { get; set; } = string.Empty;
+    public bool IsImage { get; set; }
+}
+
+public class JobSignatureDto
+{
+    public Guid Id { get; set; }
+    public string Type { get; set; } = string.Empty;
+    public string SignerName { get; set; } = string.Empty;
 }
 
 public class CreateJobCardRequest
@@ -100,6 +129,16 @@ public class CancelJobRequest
 public class FlagJobRequest
 {
     public string Reason { get; set; } = string.Empty;
+}
+
+public class UpdateTechnicianCommentsRequest
+{
+    public string? Comments { get; set; }
+}
+
+public class UpdateEvidenceCaptionRequest
+{
+    public string Caption { get; set; } = string.Empty;
 }
 
 public class ResolveFlagRequest

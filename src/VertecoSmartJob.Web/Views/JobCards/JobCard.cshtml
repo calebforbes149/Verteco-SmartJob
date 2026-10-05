@@ -1,0 +1,137 @@
+@model JobCardDetailDto
+@{
+    ViewData["Title"] = $"Job card {Model.Number}";
+    var done = Model.ChecklistItems.Count(item => item.IsDone);
+    var total = Model.ChecklistItems.Count;
+    var percent = total == 0 ? 0 : (int)Math.Round(100d * done / total);
+}
+
+<style>
+  .job-sheet { max-width: 980px; margin: 0 auto 28px; padding: 38px 46px; background: #fff; color: #192333; border: 1px solid #dce0e4; border-radius: 10px; }
+  .job-sheet-head { display: flex; justify-content: space-between; gap: 24px; align-items: center; border-bottom: 4px solid #e21d16; padding-bottom: 20px; }
+  .job-sheet-logo { max-width: 190px; max-height: 70px; object-fit: contain; }
+  .job-sheet-title { font-size: 28px; font-weight: 700; margin: 26px 0 4px; }
+  .job-sheet-subtitle { color: #617080; margin: 0 0 20px; }
+  .job-sheet-status { color: #b21e18; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+  .job-sheet-section { margin-top: 30px; break-inside: avoid-page; }
+  .job-sheet-section h2 { background: #f2f3f5; padding: 11px 14px; font-size: 17px; margin: 0 0 12px; }
+  .job-sheet-row { display: grid; grid-template-columns: 190px 1fr; gap: 15px; padding: 9px 6px; border-bottom: 1px solid #e3e6e9; }
+  .job-sheet-row strong { color: #243653; }
+  .job-sheet-media { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+  .job-sheet-media figure { margin: 0; border: 1px solid #e3e6e9; padding: 10px; break-inside: avoid; }
+  .job-sheet-media img { width: 100%; max-height: 320px; object-fit: contain; background: #f5f5f5; }
+  .job-sheet-media figcaption { margin-top: 8px; font-weight: 600; overflow-wrap: anywhere; }
+  .job-sheet-signatures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+  .job-sheet-signature { border-bottom: 1px solid #cbd2d9; padding: 10px; }
+  .job-sheet-signature img { display: block; max-width: 100%; max-height: 105px; object-fit: contain; margin: 12px 0; }
+  .job-sheet-actions { display: flex; gap: 10px; align-items: center; margin: 14px auto; max-width: 980px; }
+  @@media (max-width: 700px) { .job-sheet { padding: 20px; } .job-sheet-row { grid-template-columns: 1fr; gap: 3px; } .job-sheet-media, .job-sheet-signatures { grid-template-columns: 1fr; } }
+  @@media print { .job-sheet-actions, header, nav, aside { display: none !important; } .job-sheet { border: 0; box-shadow: none; margin: 0; max-width: none; padding: 0; } }
+</style>
+
+<div class="job-sheet-actions">
+  <a asp-action="Details" asp-route-id="@Model.Id">← Back to job details</a>
+  <a class="btn btn-primary btn-sm" asp-action="DownloadPdf" asp-route-id="@Model.Id">Download PDF</a>
+</div>
+
+<article class="job-sheet">
+  <div class="job-sheet-head">
+    <img class="job-sheet-logo" src="~/images/verteco-logo-full.png" alt="Verteco SmartJob" />
+    <span class="job-sheet-status">@Model.Status</span>
+  </div>
+  <h1 class="job-sheet-title">Job card @Model.Number</h1>
+  <p class="job-sheet-subtitle">@Model.CustomerName · @Model.SiteName</p>
+
+  <section class="job-sheet-section">
+    <h2>Job details</h2>
+    <div class="job-sheet-row"><strong>Customer</strong><span>@Model.CustomerName</span></div>
+    <div class="job-sheet-row"><strong>Site</strong><span>@Model.SiteName</span></div>
+    <div class="job-sheet-row"><strong>Technician</strong><span>@(Model.TechnicianName ?? "Not assigned")</span></div>
+    <div class="job-sheet-row"><strong>Scheduled</strong><span>@Model.ScheduledDate.ToString("dd MMM yyyy")</span></div>
+    <div class="job-sheet-row"><strong>Priority</strong><span>@Model.Priority</span></div>
+    <div class="job-sheet-row"><strong>Template</strong><span>@Model.TemplateName</span></div>
+    @if (Model.CompletedAtUtc is { } completed)
+    {
+      <div class="job-sheet-row"><strong>Completed</strong><span>@completed.ToString("dd MMM yyyy HH:mm") UTC</span></div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.Notes))
+    {
+      <div class="job-sheet-row"><strong>Job notes</strong><span>@Model.Notes</span></div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.ReopenReason))
+    {
+      <div class="job-sheet-row"><strong>Rework reason</strong><span>@Model.ReopenReason</span></div>
+    }
+  </section>
+
+  <section class="job-sheet-section">
+    <h2>Field work</h2>
+    <div class="job-sheet-row"><strong>Equipment</strong><span>@(Model.FieldEquipmentName ?? "Not recorded")</span></div>
+    @if (!string.IsNullOrWhiteSpace(Model.FieldEquipmentSerialNumber))
+    {
+      <div class="job-sheet-row"><strong>Serial number</strong><span>@Model.FieldEquipmentSerialNumber</span></div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.FieldEquipmentDescription))
+    {
+      <div class="job-sheet-row"><strong>Equipment details</strong><span style="white-space:pre-wrap;">@Model.FieldEquipmentDescription</span></div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.TechnicianComments))
+    {
+      <div class="job-sheet-row"><strong>Technician comments</strong><span style="white-space:pre-wrap;">@Model.TechnicianComments</span></div>
+    }
+  </section>
+
+  <section class="job-sheet-section">
+    <h2>Work checklist · @percent% complete</h2>
+    @foreach (var item in Model.ChecklistItems.OrderBy(item => item.Order))
+    {
+      <div class="job-sheet-row"><strong>@(item.IsDone ? "✓ Done" : "○ Pending")</strong><span>@item.Text</span></div>
+    }
+  </section>
+
+  <section class="job-sheet-section">
+    <h2>Evidence · @Model.Evidence.Count item(s)</h2>
+    @if (Model.Evidence.Count == 0)
+    {
+      <p>No evidence has been confirmed.</p>
+    }
+    <div class="job-sheet-media">
+      @foreach (var item in Model.Evidence)
+      {
+        <figure>
+          @if (item.IsImage)
+          {
+            <a asp-action="Evidence" asp-route-id="@Model.Id" asp-route-evidenceId="@item.Id" target="_blank" rel="noopener"><img src="@Url.Action("Evidence", "JobCards", new { id = Model.Id, evidenceId = item.Id })" alt="@item.Caption" loading="lazy" /></a>
+          }
+          else
+          {
+            <a asp-action="Evidence" asp-route-id="@Model.Id" asp-route-evidenceId="@item.Id" target="_blank" rel="noopener">Open attached file</a>
+          }
+          <figcaption>@item.Caption</figcaption>
+        </figure>
+      }
+    </div>
+  </section>
+
+  <section class="job-sheet-section">
+    <h2>Sign-off</h2>
+    @if (Model.Signatures.Count == 0)
+    {
+      <p>No signatures have been confirmed.</p>
+    }
+    <div class="job-sheet-signatures">
+      @foreach (var item in Model.Signatures)
+      {
+        <div class="job-sheet-signature">
+          <strong>@item.Type · @item.SignerName</strong>
+          <a asp-action="Signature" asp-route-id="@Model.Id" asp-route-signatureId="@item.Id" target="_blank" rel="noopener"><img src="@Url.Action("Signature", "JobCards", new { id = Model.Id, signatureId = item.Id })" alt="@item.Type signature by @item.SignerName" /></a>
+        </div>
+      }
+    </div>
+  </section>
+
+  @if (!string.IsNullOrWhiteSpace(Model.ReviewNotes))
+  {
+    <section class="job-sheet-section"><h2>Manager review</h2><p>@Model.ReviewNotes</p></section>
+  }
+</article>

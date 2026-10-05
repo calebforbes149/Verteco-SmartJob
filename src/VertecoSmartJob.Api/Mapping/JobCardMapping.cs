@@ -39,6 +39,15 @@ public static class JobCardMapping
         ScheduledDate = job.ScheduledDate,
         CompletedAtUtc = job.CompletedAtUtc,
         Notes = job.Notes,
+        FieldEquipmentName = job.FieldEquipmentName,
+        FieldEquipmentSerialNumber = job.FieldEquipmentSerialNumber,
+        FieldEquipmentDescription = job.FieldEquipmentDescription,
+        TechnicianComments = job.TechnicianComments,
+        SiteEquipmentOptions = job.Site?.Equipment.OrderBy(e => e.Name)
+            .Select(e => new JobSiteEquipmentDto
+            {
+                Id = e.Id, Name = e.Name, SerialNumber = e.SerialNumber, Description = e.Description
+            }).ToList() ?? [],
         ReviewNotes = job.ReviewNotes,
         ReopenReason = job.ReopenReason,
         CancelReason = job.CancelReason,
@@ -48,6 +57,14 @@ public static class JobCardMapping
         CorrectiveActions = job.CorrectiveActions.OrderByDescending(a => a.OpenedAtUtc)
             .Select(a => a.ToDto(job.Number)).ToList(),
         EvidenceCount = job.Evidence.Count,
+        Evidence = job.Evidence.OrderBy(e => e.Id).Select(e => new JobEvidenceDto
+        {
+            Id = e.Id, Caption = e.Caption, IsImage = IsImageReference(e.Reference)
+        }).ToList(),
+        Signatures = job.Signatures.OrderBy(s => s.Type).Select(s => new JobSignatureDto
+        {
+            Id = s.Id, Type = s.Type, SignerName = s.SignerName
+        }).ToList(),
         HasTechnicianSignature = job.Signatures.Any(s => s.Type == "Technician"),
         HasClientSignature = job.Signatures.Any(s => s.Type == "Client"),
         Revisions = job.Revisions.OrderBy(r => r.Number).Select(r => new JobRevisionDto
@@ -64,6 +81,14 @@ public static class JobCardMapping
             IsDone = i.IsDone
         }).ToList()
     };
+
+    private static bool IsImageReference(string reference)
+    {
+        var name = reference.StartsWith("blob:", StringComparison.OrdinalIgnoreCase)
+            ? reference.Split(':').ElementAtOrDefault(1) ?? string.Empty
+            : reference;
+        return Path.GetExtension(name).ToLowerInvariant() is ".jpg" or ".jpeg" or ".png";
+    }
 
     public static CorrectiveActionDto ToDto(this CorrectiveAction action, string? jobNumber = null) => new()
     {

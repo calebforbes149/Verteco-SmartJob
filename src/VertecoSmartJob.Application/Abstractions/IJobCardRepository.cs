@@ -14,6 +14,8 @@ public interface IJobCardRepository
     Task AddRevisionAsync(JobCardRevision revision, CancellationToken ct = default);
     Task AddEvidenceAsync(JobEvidence evidence, CancellationToken ct = default);
     Task AddSignatureAsync(JobSignature signature, CancellationToken ct = default);
+    void RemoveEvidence(JobEvidence evidence);
+    void RemoveSignature(JobSignature signature);
     Task AddCorrectiveActionAsync(CorrectiveAction action, CancellationToken ct = default);
     Task<string> NextJobNumberAsync(CancellationToken ct = default);
     Task<List<JobCard>> GetDashboardSnapshotAsync(CancellationToken ct = default);

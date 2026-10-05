@@ -195,6 +195,11 @@
                 </Border>
 
 
+                <VerticalStackLayout
+                    x:Name="SafetyChecklistHost"
+                    Margin="0,24,0,0" />
+
+
                 <!-- ================================================= -->
                 <!-- EQUIPMENT INFORMATION -->
                 <!-- ================================================= -->
@@ -219,6 +224,24 @@
 
 
                 <!-- EQUIPMENT NAME -->
+                <VerticalStackLayout
+                    IsVisible="{Binding HasSiteEquipmentOptions}"
+                    Spacing="6"
+                    Margin="0,0,0,16">
+                    <Label
+                        Text="PREVIOUSLY RECORDED AT THIS SITE"
+                        TextColor="#8D939A"
+                        FontSize="10"
+                        FontAttributes="Bold" />
+                    <Picker
+                        Title="Select existing equipment instead of re-entering it"
+                        ItemsSource="{Binding SiteEquipmentOptions}"
+                        ItemDisplayBinding="{Binding DisplayName}"
+                        SelectedItem="{Binding SelectedSiteEquipment}"
+                        TextColor="#E4E5E7"
+                        BackgroundColor="#171A1F" />
+                </VerticalStackLayout>
+
                 <VerticalStackLayout Spacing="7">
 
                     <Label
@@ -369,6 +392,11 @@
 
 
                 <!-- ================================================= -->
+                <!-- EQUIPMENT DETAILS CHECK -->
+                <VerticalStackLayout
+                    x:Name="EquipmentChecklistHost"
+                    Margin="0,24,0,0" />
+
                 <!-- EQUIPMENT NOTES -->
                 <!-- ================================================= -->
 
@@ -416,6 +444,23 @@
 
 
                 <!-- ================================================= -->
+                <!-- WORK COMPLETION CHECK -->
+                <VerticalStackLayout
+                    x:Name="WorkChecklistHost"
+                    Margin="0,24,0,0" />
+
+                <Button
+                    Text="REMOVE SAVED EQUIPMENT FROM THIS JOB"
+                    Command="{Binding RemoveEquipmentCommand}"
+                    IsVisible="{Binding HasSavedEquipment}"
+                    BackgroundColor="Transparent"
+                    TextColor="#ED6464"
+                    BorderColor="#5B292D"
+                    BorderWidth="1"
+                    HeightRequest="48"
+                    CornerRadius="6"
+                    Margin="0,18,0,0" />
+
                 <!-- ERROR -->
                 <!-- ================================================= -->
 
@@ -447,6 +492,7 @@
                 <Button
                     Text="SAVE &amp; CONTINUE"
                     Command="{Binding ContinueCommand}"
+                    IsEnabled="{Binding CanContinue}"
                     BackgroundColor="#ED3B3B"
                     TextColor="#FFFFFF"
                     FontSize="12"

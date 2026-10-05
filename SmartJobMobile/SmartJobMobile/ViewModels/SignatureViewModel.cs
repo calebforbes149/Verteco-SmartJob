@@ -21,6 +21,33 @@ public class SignatureViewModel : INotifyPropertyChanged
     private string _errorMessage = string.Empty;
     private bool _hasError;
     private bool _isSaving;
+    private bool _isLoadingExisting;
+    private bool _savedDataLoaded;
+    private Guid? _technicianSignatureId;
+    private Guid? _clientSignatureId;
+    private string _savedTechnicianName = string.Empty;
+    private string _savedClientName = string.Empty;
+    private ImageSource? _technicianSignaturePreview;
+    private ImageSource? _clientSignaturePreview;
+
+    public bool HasTechnicianSignature => _technicianSignatureId.HasValue;
+    public bool HasClientSignature => _clientSignatureId.HasValue;
+    public bool CanContinue => !IsSaving && !IsLoadingExisting && _savedDataLoaded;
+    public bool IsLoadingExisting
+    {
+        get => _isLoadingExisting;
+        private set { _isLoadingExisting = value; OnPropertyChanged(); OnPropertyChanged(nameof(CanContinue)); }
+    }
+    public ImageSource? TechnicianSignaturePreview
+    {
+        get => _technicianSignaturePreview;
+        private set { _technicianSignaturePreview = value; OnPropertyChanged(); }
+    }
+    public ImageSource? ClientSignaturePreview
+    {
+        get => _clientSignaturePreview;
+        private set { _clientSignaturePreview = value; OnPropertyChanged(); }
+    }
 
     // =========================================================
     // JOB INFORMATION
@@ -115,6 +142,7 @@ public class SignatureViewModel : INotifyPropertyChanged
         {
             _isSaving = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(CanContinue));
         }
     }
 
@@ -131,6 +159,99 @@ public class SignatureViewModel : INotifyPropertyChanged
         _job = job;
         _apiService = apiService;
         _connectivityService = connectivityService;
+        _ = LoadExistingSignaturesAsync();
+    }
+
+    private async Task LoadExistingSignaturesAsync()
+    {
+        if (!_connectivityService.IsOnline || _job.ApiId == Guid.Empty)
+        {
+            ShowError("Connect to the API to load saved signatures before editing this job.");
+            return;
+        }
+        try
+        {
+            IsLoadingExisting = true;
+            var detail = await _apiService.GetJobDetailsAsync(_job.ApiId);
+            if (detail is null) return;
+            _savedDataLoaded = true;
+            OnPropertyChanged(nameof(CanContinue));
+            var technician = detail.Signatures.LastOrDefault(s => s.Type == "Technician");
+            var client = detail.Signatures.LastOrDefault(s => s.Type == "Client");
+            _technicianSignatureId = technician?.Id;
+            _clientSignatureId = client?.Id;
+            TechnicianSignaturePreview = null;
+            ClientSignaturePreview = null;
+            OnPropertyChanged(nameof(HasTechnicianSignature));
+            OnPropertyChanged(nameof(HasClientSignature));
+            if (technician is not null)
+            {
+                _savedTechnicianName = technician.SignerName;
+                TechnicianName = technician.SignerName;
+                try
+                {
+                    var bytes = await _apiService.GetSignatureFileAsync(_job.ApiId, technician.Id);
+                    TechnicianSignaturePreview = ImageSource.FromStream(() => new MemoryStream(bytes));
+                }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Technician signature preview unavailable: {ex}"); }
+            }
+            else
+            {
+                _savedTechnicianName = string.Empty;
+            }
+            if (client is not null)
+            {
+                _savedClientName = client.SignerName;
+                ClientName = client.SignerName;
+                try
+                {
+                    var bytes = await _apiService.GetSignatureFileAsync(_job.ApiId, client.Id);
+                    ClientSignaturePreview = ImageSource.FromStream(() => new MemoryStream(bytes));
+                }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Client signature preview unavailable: {ex}"); }
+            }
+            else
+            {
+                _savedClientName = string.Empty;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Saved signatures load failed: {ex}");
+            ShowError("Saved signatures could not be loaded. Please reconnect and try again.");
+        }
+        finally { IsLoadingExisting = false; }
+    }
+
+    public async Task RemoveExistingSignatureAsync(string type)
+    {
+        var id = type == "Technician" ? _technicianSignatureId : _clientSignatureId;
+        if (!id.HasValue || IsSaving) return;
+        try
+        {
+            IsSaving = true;
+            await _apiService.RemoveSignatureAsync(_job.ApiId, id.Value);
+            if (type == "Technician")
+            {
+                _technicianSignatureId = null;
+                TechnicianSignaturePreview = null;
+                TechnicianConfirmed = false;
+            }
+            else
+            {
+                _clientSignatureId = null;
+                ClientSignaturePreview = null;
+                ClientConfirmed = false;
+            }
+            await LoadExistingSignaturesAsync();
+            ClearError();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Signature removal failed: {ex}");
+            ShowError("The saved signature could not be removed. Please try again.");
+        }
+        finally { IsSaving = false; }
     }
 
     // =========================================================
@@ -138,10 +259,12 @@ public class SignatureViewModel : INotifyPropertyChanged
     // =========================================================
 
     public async Task SubmitDrawnSignaturesAsync(
-        string technicianSignaturePath,
-        string clientSignaturePath)
+        string? technicianSignaturePath,
+        string? clientSignaturePath)
     {
         ClearError();
+
+        if (IsLoadingExisting || IsSaving) return;
 
         // Make sure this is a real backend job.
         if (_job.ApiId == Guid.Empty)
@@ -152,8 +275,22 @@ public class SignatureViewModel : INotifyPropertyChanged
             return;
         }
 
+        if (technicianSignaturePath is null && HasTechnicianSignature &&
+            !string.Equals(TechnicianName, _savedTechnicianName, StringComparison.Ordinal))
+        {
+            ShowError("Draw a new technician signature to change the signer name.");
+            return;
+        }
+
+        if (clientSignaturePath is null && HasClientSignature &&
+            !string.Equals(ClientName, _savedClientName, StringComparison.Ordinal))
+        {
+            ShowError("Draw a new client signature to change the signer name.");
+            return;
+        }
+
         // Technician name.
-        if (string.IsNullOrWhiteSpace(TechnicianName))
+        if (technicianSignaturePath is not null && string.IsNullOrWhiteSpace(TechnicianName))
         {
             ShowError(
                 "Please enter the technician name.");
@@ -162,7 +299,7 @@ public class SignatureViewModel : INotifyPropertyChanged
         }
 
         // Technician confirmation.
-        if (!TechnicianConfirmed)
+        if (technicianSignaturePath is not null && !TechnicianConfirmed)
         {
             ShowError(
                 "The technician must confirm the job information.");
@@ -171,10 +308,8 @@ public class SignatureViewModel : INotifyPropertyChanged
         }
 
         // Technician signature file.
-        if (string.IsNullOrWhiteSpace(
-                technicianSignaturePath) ||
-            !File.Exists(
-                technicianSignaturePath))
+        if ((technicianSignaturePath is null && !HasTechnicianSignature) ||
+            (technicianSignaturePath is not null && !File.Exists(technicianSignaturePath)))
         {
             ShowError(
                 "Please provide the technician signature.");
@@ -183,7 +318,7 @@ public class SignatureViewModel : INotifyPropertyChanged
         }
 
         // Client name.
-        if (string.IsNullOrWhiteSpace(ClientName))
+        if (clientSignaturePath is not null && string.IsNullOrWhiteSpace(ClientName))
         {
             ShowError(
                 "Please enter the client name.");
@@ -192,7 +327,7 @@ public class SignatureViewModel : INotifyPropertyChanged
         }
 
         // Client confirmation.
-        if (!ClientConfirmed)
+        if (clientSignaturePath is not null && !ClientConfirmed)
         {
             ShowError(
                 "The client must confirm the completed work.");
@@ -201,10 +336,8 @@ public class SignatureViewModel : INotifyPropertyChanged
         }
 
         // Client signature file.
-        if (string.IsNullOrWhiteSpace(
-                clientSignaturePath) ||
-            !File.Exists(
-                clientSignaturePath))
+        if ((clientSignaturePath is null && !HasClientSignature) ||
+            (clientSignaturePath is not null && !File.Exists(clientSignaturePath)))
         {
             ShowError(
                 "Please provide the client signature.");
@@ -231,16 +364,18 @@ public class SignatureViewModel : INotifyPropertyChanged
             IsSaving = true;
 
             // Upload technician signature.
-            await UploadSignatureAsync(
-                technicianSignaturePath,
-                TechnicianName.Trim(),
-                "Technician");
+            if (technicianSignaturePath is not null)
+                await UploadSignatureAsync(
+                    technicianSignaturePath,
+                    TechnicianName.Trim(),
+                    "Technician");
 
             // Upload client signature.
-            await UploadSignatureAsync(
-                clientSignaturePath,
-                ClientName.Trim(),
-                "Client");
+            if (clientSignaturePath is not null)
+                await UploadSignatureAsync(
+                    clientSignaturePath,
+                    ClientName.Trim(),
+                    "Client");
 
             // Continue to final review.
             await Shell.Current.Navigation.PushAsync(
@@ -296,7 +431,7 @@ public class SignatureViewModel : INotifyPropertyChanged
         // Ask the backend for an upload location.
         MobileEvidenceUploadResponse upload =
             await _apiService
-                .CreateEvidenceUploadAsync(
+                .CreateSignatureUploadAsync(
                     _job.ApiId,
                     extension);
 

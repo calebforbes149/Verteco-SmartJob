@@ -209,6 +209,18 @@ namespace VertecoSmartJob.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("DeletedAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("FieldEquipmentDescription")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("FieldEquipmentName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("FieldEquipmentSerialNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("FlagReason")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
@@ -268,6 +280,10 @@ namespace VertecoSmartJob.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid?>("TechnicianId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TechnicianComments")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
 
                     b.HasKey("Id");
 

@@ -96,6 +96,24 @@ public sealed class AzureBlobFileStore(
             .DeleteIfExistsAsync(cancellationToken: ct);
     }
 
+    public async Task<FieldStoredFile?> ReadAsync(
+        string reference,
+        CancellationToken ct = default)
+    {
+        var parts = reference.Split(':');
+        if (parts.Length != 4 || parts[0] != "blob" || parts[2] != "sha256" ||
+            parts[3].Length != 64 || !parts[3].All(Uri.IsHexDigit) ||
+            !Guid.TryParseExact(Path.GetFileNameWithoutExtension(parts[1]), "N", out _) ||
+            !ContentTypes.TryGetValue(Path.GetExtension(parts[1]), out var contentType))
+            throw new ArgumentException("Invalid blob reference.", nameof(reference));
+
+        var blob = container.GetBlobClient(parts[1]);
+        if (!await blob.ExistsAsync(ct))
+            return null;
+
+        return new FieldStoredFile(await blob.OpenReadAsync(cancellationToken: ct), contentType);
+    }
+
     public async Task<FieldUploadInstruction> CreateUploadInstructionAsync(
         string extension,
         CancellationToken ct = default)

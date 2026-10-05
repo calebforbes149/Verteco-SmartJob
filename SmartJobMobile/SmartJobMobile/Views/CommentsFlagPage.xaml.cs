@@ -28,6 +28,9 @@ public partial class CommentsFlagPage : ContentPage
                 job,
                 apiService,
                 connectivityService);
+
+        SectionChecklistHost.Children.Add(
+            new ChecklistSectionView(job, ChecklistSection.ResultsAndIssues));
     }
 
     private async void BackButton_Clicked(

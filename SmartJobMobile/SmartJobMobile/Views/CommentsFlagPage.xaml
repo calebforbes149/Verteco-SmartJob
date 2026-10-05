@@ -302,6 +302,7 @@
                             <Switch
                                 Grid.Column="1"
                                 IsToggled="{Binding IsFlagged}"
+                                IsEnabled="{Binding CanChangeFlag}"
                                 OnColor="#ED3B3B"
                                 VerticalOptions="Center"
                                 MinimumWidthRequest="44"
@@ -314,6 +315,7 @@
                         <!-- FLAG DETAILS -->
                         <VerticalStackLayout
                             IsVisible="{Binding IsFlagged}"
+                            IsEnabled="{Binding CanChangeFlag}"
                             Spacing="0">
 
                             <BoxView
@@ -444,6 +446,11 @@
 
 
                 <!-- ================================================= -->
+                <!-- SECTION CHECKS -->
+                <VerticalStackLayout
+                    x:Name="SectionChecklistHost"
+                    Margin="0,24,0,0" />
+
                 <!-- ERROR -->
                 <!-- ================================================= -->
 
@@ -476,6 +483,7 @@
                 <Button
                     Text="SAVE &amp; CONTINUE"
                     Command="{Binding ContinueCommand}"
+                    IsEnabled="{Binding CanContinue}"
                     BackgroundColor="#ED3B3B"
                     TextColor="#FFFFFF"
                     FontSize="12"

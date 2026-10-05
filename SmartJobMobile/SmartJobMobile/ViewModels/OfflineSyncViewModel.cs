@@ -414,25 +414,6 @@ public class OfflineSyncViewModel : INotifyPropertyChanged
                             StringComparison.OrdinalIgnoreCase))
                     .ToList();
 
-            if (supportedItems.Count == 0)
-            {
-                await LoadQueueInformationAsync();
-
-                SyncStatus =
-                    PendingOperations == 0
-                        ? "Up to date"
-                        : "Pending unsupported operations";
-
-                await Shell.Current.DisplayAlert(
-                    "Nothing Ready to Sync",
-                    PendingOperations == 0
-                        ? "There are no pending operations to synchronise."
-                        : $"{PendingOperations} older test operation(s) are still stored on this device, but there are no supported checklist operations ready to send.",
-                    "OK");
-
-                return;
-            }
-
             // =====================================================
             // BUILD PUSH REQUEST
             // =====================================================
@@ -571,29 +552,14 @@ public class OfflineSyncViewModel : INotifyPropertyChanged
             // NOTHING VALID TO SEND
             // =====================================================
 
-            if (request.Operations.Count == 0)
-            {
-                await LoadQueueInformationAsync();
-
-                SyncStatus =
-                    "Nothing valid to sync";
-
-                await Shell.Current.DisplayAlert(
-                    "Sync Not Started",
-                    "No valid checklist operations were available to send.",
-                    "OK");
-
-                return;
-            }
-
             // =====================================================
             // SEND TO REAL API
             // =====================================================
 
             MobileSyncPushResponse? response =
-                await _apiService
-                    .PushSyncDataAsync(
-                        request);
+                request.Operations.Count == 0
+                    ? new MobileSyncPushResponse()
+                    : await _apiService.PushSyncDataAsync(request);
 
             if (response == null)
             {
@@ -706,8 +672,10 @@ public class OfflineSyncViewModel : INotifyPropertyChanged
             // =====================================================
 
             MobileSyncPullResponse? pullResponse =
-                await _apiService
-                    .PullSyncDataAsync();
+                await PullAssignedJobsAsync();
+
+            if (pullResponse is null)
+                throw new InvalidOperationException("The sync API returned no jobs response.");
 
             if (pullResponse != null)
             {
@@ -784,6 +752,8 @@ public class OfflineSyncViewModel : INotifyPropertyChanged
                         .SaveChecklistItemsAsync(
                             cachedChecklistItems);
                 }
+
+                await RemoveUnassignedJobsAsync(pullResponse.RemovedJobIds);
             }
 
             // =====================================================
@@ -890,8 +860,7 @@ public class OfflineSyncViewModel : INotifyPropertyChanged
                 "#FFC107";
 
             MobileSyncPullResponse? response =
-                await _apiService
-                    .PullSyncDataAsync();
+                await PullAssignedJobsAsync();
 
             // -------------------------------------------------
             // CHECK SERVER RESPONSE
@@ -994,6 +963,8 @@ public class OfflineSyncViewModel : INotifyPropertyChanged
                         cachedChecklistItems);
             }
 
+            await RemoveUnassignedJobsAsync(response.RemovedJobIds);
+
             // -------------------------------------------------
             // UPDATE UI AFTER SUCCESSFUL CACHE
             // -------------------------------------------------
@@ -1034,6 +1005,25 @@ public class OfflineSyncViewModel : INotifyPropertyChanged
                 "Sync Pull Error",
                 ex.Message,
                 "OK");
+        }
+    }
+
+    private async Task<MobileSyncPullResponse?> PullAssignedJobsAsync()
+    {
+        var knownJobIds = (await _localDatabaseService.GetJobsAsync())
+            .Select(job => Guid.TryParse(job.JobId, out var id) ? id : Guid.Empty)
+            .Where(id => id != Guid.Empty)
+            .ToList();
+        return await _apiService.PullSyncDataAsync(knownJobIds);
+    }
+
+    private async Task RemoveUnassignedJobsAsync(IEnumerable<Guid> removedJobIds)
+    {
+        foreach (var id in removedJobIds)
+        {
+            var cached = await _localDatabaseService.GetJobAsync(id.ToString());
+            if (cached is not null)
+                await _localDatabaseService.DeleteJobAsync(cached);
         }
     }
 

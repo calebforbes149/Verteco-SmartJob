@@ -268,6 +268,31 @@
 
 
                         <!-- TECHNICIAN SIGNATURE -->
+                        <VerticalStackLayout
+                            IsVisible="{Binding HasTechnicianSignature}"
+                            Spacing="8"
+                            Margin="0,16,0,4">
+                            <Label
+                                Text="SAVED TECHNICIAN SIGNATURE"
+                                TextColor="#73B986"
+                                FontSize="10"
+                                FontAttributes="Bold" />
+                            <Image
+                                Source="{Binding TechnicianSignaturePreview}"
+                                HeightRequest="120"
+                                BackgroundColor="#F5F5F3"
+                                Aspect="AspectFit" />
+                            <Button
+                                Text="REMOVE SAVED SIGNATURE"
+                                Clicked="RemoveTechnicianSignature_Clicked"
+                                BackgroundColor="Transparent"
+                                TextColor="#ED6464" />
+                            <Label
+                                Text="Leave the pad empty to keep this signature, or draw a new one to replace it."
+                                TextColor="#858B93"
+                                FontSize="10" />
+                        </VerticalStackLayout>
+
                         <Label
                             Text="TECHNICIAN SIGNATURE *"
                             TextColor="#8D939A"
@@ -458,6 +483,31 @@
 
 
                         <!-- CLIENT SIGNATURE -->
+                        <VerticalStackLayout
+                            IsVisible="{Binding HasClientSignature}"
+                            Spacing="8"
+                            Margin="0,16,0,4">
+                            <Label
+                                Text="SAVED CLIENT SIGNATURE"
+                                TextColor="#73B986"
+                                FontSize="10"
+                                FontAttributes="Bold" />
+                            <Image
+                                Source="{Binding ClientSignaturePreview}"
+                                HeightRequest="120"
+                                BackgroundColor="#F5F5F3"
+                                Aspect="AspectFit" />
+                            <Button
+                                Text="REMOVE SAVED SIGNATURE"
+                                Clicked="RemoveClientSignature_Clicked"
+                                BackgroundColor="Transparent"
+                                TextColor="#ED6464" />
+                            <Label
+                                Text="Leave the pad empty to keep this signature, or draw a new one to replace it."
+                                TextColor="#858B93"
+                                FontSize="10" />
+                        </VerticalStackLayout>
+
                         <Label
                             Text="CLIENT SIGNATURE *"
                             TextColor="#8D939A"
@@ -629,6 +679,13 @@
 
 
                 <!-- ================================================= -->
+                <Label
+                    Text="The sign-off check is marked complete after both signatures are saved."
+                    TextColor="#858B93"
+                    FontSize="11"
+                    Margin="0,22,0,0"
+                    LineBreakMode="WordWrap" />
+
                 <!-- ERROR -->
                 <!-- ================================================= -->
 
@@ -661,6 +718,7 @@
                 <Button
                     Text="CONTINUE TO REVIEW"
                     Clicked="ContinueToReview_Clicked"
+                    IsEnabled="{Binding CanContinue}"
                     BackgroundColor="#ED3B3B"
                     TextColor="#FFFFFF"
                     FontSize="12"

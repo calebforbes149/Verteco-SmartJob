@@ -1,6 +1,7 @@
 ﻿using SmartJobMobile.Models;
 using SmartJobMobile.Services;
 using SmartJobMobile.Views;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
@@ -23,6 +24,16 @@ public class PhotoCaptureViewModel : INotifyPropertyChanged
     private bool _hasPhoto;
     private bool _hasError;
     private bool _isSaving;
+    private bool _isLoadingSavedEvidence;
+    private bool _savedDataLoaded;
+
+    public ObservableCollection<SavedEvidenceItem> SavedEvidence { get; } = new();
+    public bool HasSavedEvidence => SavedEvidence.Count > 0;
+    public bool IsLoadingSavedEvidence
+    {
+        get => _isLoadingSavedEvidence;
+        private set { _isLoadingSavedEvidence = value; OnPropertyChanged(); OnPropertyChanged(nameof(CanContinue)); }
+    }
 
     // =========================================================
     // REAL JOB INFORMATION
@@ -125,7 +136,7 @@ public class PhotoCaptureViewModel : INotifyPropertyChanged
     }
 
     public bool CanContinue =>
-        !IsSaving;
+        !IsSaving && !IsLoadingSavedEvidence && _savedDataLoaded;
 
     // =========================================================
     // COMMANDS
@@ -179,6 +190,91 @@ public class PhotoCaptureViewModel : INotifyPropertyChanged
             new Command(
                 async () =>
                     await ContinueAsync());
+
+        _ = LoadSavedEvidenceAsync();
+    }
+
+    private async Task LoadSavedEvidenceAsync()
+    {
+        if (!_connectivityService.IsOnline || _job.ApiId == Guid.Empty)
+        {
+            ShowError("Connect to the API to load saved photos before editing this job.");
+            return;
+        }
+        try
+        {
+            IsLoadingSavedEvidence = true;
+            var detail = await _apiService.GetJobDetailsAsync(_job.ApiId);
+            if (detail is null) throw new InvalidOperationException("The job card was not returned.");
+            _savedDataLoaded = true;
+            OnPropertyChanged(nameof(CanContinue));
+            SavedEvidence.Clear();
+            foreach (var evidence in detail.Evidence)
+            {
+                var saved = new SavedEvidenceItem(evidence.Id, evidence.Caption);
+                SavedEvidence.Add(saved);
+                if (evidence.IsImage)
+                {
+                    try
+                    {
+                        var bytes = await _apiService.GetEvidenceFileAsync(_job.ApiId, evidence.Id);
+                        saved.Preview = ImageSource.FromStream(() => new MemoryStream(bytes));
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Evidence preview unavailable: {ex}");
+                    }
+                }
+            }
+            OnPropertyChanged(nameof(HasSavedEvidence));
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Saved evidence load failed: {ex}");
+            ShowError("Saved photos could not be loaded. Please reconnect and try again.");
+        }
+        finally { IsLoadingSavedEvidence = false; }
+    }
+
+    public async Task<bool> SaveCaptionAsync(Guid evidenceId)
+    {
+        var item = SavedEvidence.FirstOrDefault(e => e.Id == evidenceId);
+        if (item is null || IsSaving) return false;
+        try
+        {
+            IsSaving = true;
+            await _apiService.UpdateEvidenceCaptionAsync(_job.ApiId, evidenceId, item.Caption);
+            item.MarkSaved();
+            ClearError();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Evidence caption update failed: {ex}");
+            ShowError("The photo description could not be saved. Please try again.");
+            return false;
+        }
+        finally { IsSaving = false; }
+    }
+
+    public async Task RemoveSavedEvidenceAsync(Guid evidenceId)
+    {
+        var item = SavedEvidence.FirstOrDefault(e => e.Id == evidenceId);
+        if (item is null || IsSaving) return;
+        try
+        {
+            IsSaving = true;
+            await _apiService.RemoveEvidenceAsync(_job.ApiId, evidenceId);
+            SavedEvidence.Remove(item);
+            OnPropertyChanged(nameof(HasSavedEvidence));
+            ClearError();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Saved evidence removal failed: {ex}");
+            ShowError("The saved photo could not be removed. Please try again.");
+        }
+        finally { IsSaving = false; }
     }
 
     // =========================================================
@@ -266,6 +362,11 @@ public class PhotoCaptureViewModel : INotifyPropertyChanged
         string extension =
             Path.GetExtension(
                 photo.FileName);
+
+        if (extension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase))
+        {
+            extension = ".jpg";
+        }
 
         if (string.IsNullOrWhiteSpace(
             extension))
@@ -363,6 +464,22 @@ public class PhotoCaptureViewModel : INotifyPropertyChanged
     private async Task ContinueAsync()
     {
         ClearError();
+
+        if (IsLoadingSavedEvidence || IsSaving) return;
+        if (!_savedDataLoaded)
+        {
+            ShowError("Saved photos have not loaded. Reopen this screen while connected to the API.");
+            return;
+        }
+
+        foreach (var changed in SavedEvidence.Where(item => item.HasUnsavedChanges).ToArray())
+            if (!await SaveCaptionAsync(changed.Id)) return;
+
+        if (!HasPhoto && HasSavedEvidence)
+        {
+            await Shell.Current.Navigation.PushAsync(new CommentsFlagPage(_job));
+            return;
+        }
 
         // ---------------------------------------------------------
         // VALIDATE PHOTO
@@ -554,4 +671,33 @@ public class PhotoCaptureViewModel : INotifyPropertyChanged
             new PropertyChangedEventArgs(
                 propertyName));
     }
+}
+
+public sealed class SavedEvidenceItem : INotifyPropertyChanged
+{
+    private string _caption;
+    private string _savedCaption;
+    private ImageSource? _preview;
+
+    public SavedEvidenceItem(Guid id, string caption)
+    {
+        Id = id;
+        _caption = caption;
+        _savedCaption = caption;
+    }
+
+    public Guid Id { get; }
+    public bool HasUnsavedChanges => _caption != _savedCaption;
+    public void MarkSaved() => _savedCaption = _caption;
+    public string Caption
+    {
+        get => _caption;
+        set { _caption = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Caption))); }
+    }
+    public ImageSource? Preview
+    {
+        get => _preview;
+        set { _preview = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Preview))); }
+    }
+    public event PropertyChangedEventHandler? PropertyChanged;
 }

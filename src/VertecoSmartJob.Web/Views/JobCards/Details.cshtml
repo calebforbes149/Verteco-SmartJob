@@ -21,6 +21,13 @@
       }
     </div>
   </div>
+  @if (User.IsInRole("Manager"))
+  {
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <a class="btn btn-sm" asp-action="JobCard" asp-route-id="@Model.Id">View full job card</a>
+        <a class="btn btn-primary btn-sm" asp-action="DownloadPdf" asp-route-id="@Model.Id">Download PDF</a>
+      </div>
+  }
 </div>
 
 @if (Model.IsFlagged)
@@ -77,6 +84,46 @@ else if (Model.Status != "Cancelled")
     {
         <div class="card card-pad" style="border-color:var(--info);background:var(--info-bg);color:var(--info);">
           This job is being actioned by the assigned technician on mobile right now — there's nothing for a manager to click until it reaches Awaiting Approval.
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.FieldEquipmentName) ||
+         !string.IsNullOrWhiteSpace(Model.TechnicianComments))
+    {
+        <div class="card section-card">
+          <div class="section-card-head"><h3>Field work</h3></div>
+          <div class="section-card-body pad">
+            @if (!string.IsNullOrWhiteSpace(Model.FieldEquipmentName))
+            {
+                <div class="info-row"><span>Equipment</span><strong>@Model.FieldEquipmentName</strong></div>
+                <div class="info-row"><span>Serial number</span><strong>@Model.FieldEquipmentSerialNumber</strong></div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.TechnicianComments))
+            {
+                <div class="info-row"><span>Technician comments</span><span style="white-space:pre-wrap;">@Model.TechnicianComments</span></div>
+            }
+          </div>
+        </div>
+    }
+
+    @if (User.IsInRole("Manager"))
+    {
+        <div class="card section-card">
+          <div class="section-card-head"><h3>Evidence and signatures</h3></div>
+          <div class="section-card-body pad">
+            @if (Model.Evidence.Count == 0 && Model.Signatures.Count == 0)
+            {
+                <p class="tiny muted">No files have been confirmed for this job yet.</p>
+            }
+            @foreach (var item in Model.Evidence)
+            {
+                <div class="info-row"><span>@item.Caption</span><a asp-action="Evidence" asp-route-id="@Model.Id" asp-route-evidenceId="@item.Id" target="_blank" rel="noopener">View evidence</a></div>
+            }
+            @foreach (var item in Model.Signatures)
+            {
+                <div class="info-row"><span>@item.Type signature — @item.SignerName</span><a asp-action="Signature" asp-route-id="@Model.Id" asp-route-signatureId="@item.Id" target="_blank" rel="noopener">View signature</a></div>
+            }
+          </div>
         </div>
     }
 

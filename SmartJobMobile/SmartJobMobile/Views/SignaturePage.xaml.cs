@@ -65,8 +65,9 @@ public partial class SignaturePage : ContentPage
     {
         try
         {
-            // Make sure both people have actually signed.
-            if (TechnicianSignaturePad.Lines.Count == 0)
+            if (!_viewModel.CanContinue) return;
+
+            if (TechnicianSignaturePad.Lines.Count == 0 && !_viewModel.HasTechnicianSignature)
             {
                 await DisplayAlertAsync(
                     "Technician Signature Required",
@@ -76,7 +77,7 @@ public partial class SignaturePage : ContentPage
                 return;
             }
 
-            if (ClientSignaturePad.Lines.Count == 0)
+            if (ClientSignaturePad.Lines.Count == 0 && !_viewModel.HasClientSignature)
             {
                 await DisplayAlertAsync(
                     "Client Signature Required",
@@ -86,42 +87,26 @@ public partial class SignaturePage : ContentPage
                 return;
             }
 
-            // Create temporary PNG files for the signatures.
-            string technicianSignaturePath =
-                Path.Combine(
-                    FileSystem.CacheDirectory,
-                    $"technician_signature_{Guid.NewGuid():N}.png");
-
-            string clientSignaturePath =
-                Path.Combine(
-                    FileSystem.CacheDirectory,
-                    $"client_signature_{Guid.NewGuid():N}.png");
-
-            // Save technician signature.
-            using (Stream technicianStream =
-                   await TechnicianSignaturePad.GetImageStream(
-                       500,
-                       200))
+            string? technicianSignaturePath = null;
+            if (TechnicianSignaturePad.Lines.Count > 0)
             {
-                using FileStream fileStream =
-                    File.Create(technicianSignaturePath);
-
+                technicianSignaturePath = Path.Combine(FileSystem.CacheDirectory,
+                    $"technician_signature_{Guid.NewGuid():N}.png");
+                using Stream technicianStream = await TechnicianSignaturePad.GetImageStream(500, 200);
+                using FileStream fileStream = File.Create(technicianSignaturePath);
                 await technicianStream.CopyToAsync(fileStream);
             }
 
-            // Save client signature.
-            using (Stream clientStream =
-                   await ClientSignaturePad.GetImageStream(
-                       500,
-                       200))
+            string? clientSignaturePath = null;
+            if (ClientSignaturePad.Lines.Count > 0)
             {
-                using FileStream fileStream =
-                    File.Create(clientSignaturePath);
-
+                clientSignaturePath = Path.Combine(FileSystem.CacheDirectory,
+                    $"client_signature_{Guid.NewGuid():N}.png");
+                using Stream clientStream = await ClientSignaturePad.GetImageStream(500, 200);
+                using FileStream fileStream = File.Create(clientSignaturePath);
                 await clientStream.CopyToAsync(fileStream);
             }
 
-            // Give the generated PNG files to the existing ViewModel.
             await _viewModel.SubmitDrawnSignaturesAsync(
                 technicianSignaturePath,
                 clientSignaturePath);
@@ -133,5 +118,17 @@ public partial class SignaturePage : ContentPage
                 $"The signatures could not be processed.\n\n{ex.Message}",
                 "OK");
         }
+    }
+
+    private async void RemoveTechnicianSignature_Clicked(object? sender, EventArgs e)
+    {
+        if (!await DisplayAlertAsync("Remove signature", "Remove the saved technician signature from this job card?", "Remove", "Cancel")) return;
+        await _viewModel.RemoveExistingSignatureAsync("Technician");
+    }
+
+    private async void RemoveClientSignature_Clicked(object? sender, EventArgs e)
+    {
+        if (!await DisplayAlertAsync("Remove signature", "Remove the saved client signature from this job card?", "Remove", "Cancel")) return;
+        await _viewModel.RemoveExistingSignatureAsync("Client");
     }
 }

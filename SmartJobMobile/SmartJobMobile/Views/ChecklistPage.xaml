@@ -132,7 +132,7 @@
                         SemanticProperties.HeadingLevel="Level1" />
 
                     <Label
-                        Text="Complete each required check before continuing."
+                        Text="Mark work as it is completed. Photos and sign-offs happen on the following screens; all requirements are checked when you submit."
                         TextColor="#7C828A"
                         FontSize="12" />
 

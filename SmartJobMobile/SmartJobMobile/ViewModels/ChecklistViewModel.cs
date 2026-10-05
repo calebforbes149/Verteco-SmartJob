@@ -15,6 +15,7 @@ public class ChecklistViewModel : INotifyPropertyChanged
     private readonly LocalDatabaseService _localDatabaseService;
     private readonly ApiService _apiService;
     private readonly ConnectivityService _connectivityService;
+    private readonly Func<string, bool>? _visibleItem;
 
     private string _technicianNotes = string.Empty;
     private int _completedCount;
@@ -88,6 +89,8 @@ public class ChecklistViewModel : INotifyPropertyChanged
 
     public int TotalCount =>
         ChecklistItems.Count;
+
+    public bool HasItems => TotalCount > 0;
 
     public string ProgressText =>
         $"{CompletedCount} / {TotalCount}";
@@ -165,7 +168,8 @@ public class ChecklistViewModel : INotifyPropertyChanged
         Job job,
         LocalDatabaseService localDatabaseService,
         ApiService apiService,
-        ConnectivityService connectivityService)
+        ConnectivityService connectivityService,
+        Func<string, bool>? visibleItem = null)
     {
         _job =
             job;
@@ -178,6 +182,8 @@ public class ChecklistViewModel : INotifyPropertyChanged
 
         _connectivityService =
             connectivityService;
+
+        _visibleItem = visibleItem;
 
         ContinueCommand =
             new Command(
@@ -252,6 +258,8 @@ public class ChecklistViewModel : INotifyPropertyChanged
         }
     }
 
+    public Task RefreshAsync() => LoadChecklistAsync();
+
     // =========================================================
     // LOAD FROM REAL API
     // =========================================================
@@ -274,7 +282,8 @@ public class ChecklistViewModel : INotifyPropertyChanged
         foreach (
             ApiChecklistItem apiItem
             in detail.ChecklistItems
-                .OrderBy(item => item.Order))
+                .OrderBy(item => item.Order)
+                .Where(item => _visibleItem?.Invoke(item.Text) ?? true))
         {
             ChecklistItemViewModel item =
                 new ChecklistItemViewModel
@@ -302,6 +311,7 @@ public class ChecklistViewModel : INotifyPropertyChanged
         UpdateProgress();
 
         OnPropertyChanged(nameof(TotalCount));
+        OnPropertyChanged(nameof(HasItems));
         OnPropertyChanged(nameof(ProgressText));
         OnPropertyChanged(nameof(Progress));
         OnPropertyChanged(nameof(CanContinue));
@@ -333,6 +343,12 @@ public class ChecklistViewModel : INotifyPropertyChanged
             CachedChecklistItem cachedItem
             in cachedItems)
         {
+            if (!(_visibleItem?.Invoke(cachedItem.Text) ?? true))
+            {
+                order++;
+                continue;
+            }
+
             ChecklistItemViewModel item =
                 new ChecklistItemViewModel
                 {
@@ -362,6 +378,7 @@ public class ChecklistViewModel : INotifyPropertyChanged
         UpdateProgress();
 
         OnPropertyChanged(nameof(TotalCount));
+        OnPropertyChanged(nameof(HasItems));
         OnPropertyChanged(nameof(ProgressText));
         OnPropertyChanged(nameof(Progress));
         OnPropertyChanged(nameof(CanContinue));
@@ -783,6 +800,7 @@ public class ChecklistViewModel : INotifyPropertyChanged
                 item => item.IsCompleted);
 
         OnPropertyChanged(nameof(TotalCount));
+        OnPropertyChanged(nameof(HasItems));
         OnPropertyChanged(nameof(ProgressText));
         OnPropertyChanged(nameof(Progress));
         OnPropertyChanged(nameof(CanContinue));
@@ -799,16 +817,6 @@ public class ChecklistViewModel : INotifyPropertyChanged
             await Shell.Current.DisplayAlert(
                 "Checklist Unavailable",
                 "There are no checklist items available for this job.",
-                "OK");
-
-            return;
-        }
-
-        if (CompletedCount < TotalCount)
-        {
-            await Shell.Current.DisplayAlert(
-                "Checklist Incomplete",
-                "Please tick all checklist items before continuing.",
                 "OK");
 
             return;
@@ -931,8 +939,11 @@ public class ChecklistItemViewModel :
                 value;
 
             OnPropertyChanged();
+            OnPropertyChanged(nameof(CanEdit));
         }
     }
+
+    public bool CanEdit => !IsUpdating;
 
     public void SetCompletedFromServer(
         bool value)

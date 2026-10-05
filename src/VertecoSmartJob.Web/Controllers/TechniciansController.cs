@@ -102,6 +102,35 @@ public class TechniciansController(TechniciansApiClient technicians, UsersApiCli
     [Authorize(Roles = "Manager")]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SetPassword(Guid id, Guid userId, string newPassword,
+        string confirmPassword, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 8 ||
+            newPassword != confirmPassword)
+        {
+            TempData["Error"] = "Passwords must match and contain at least 8 characters.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        var technician = await technicians.GetByIdAsync(id, ct);
+        if (technician?.UserId != userId)
+            return NotFound();
+
+        try
+        {
+            await users.SetPasswordAsync(userId, newPassword, ct);
+            TempData["Toast"] = "Technician password set. Share it with the technician securely.";
+        }
+        catch (ApiException ex)
+        {
+            TempData["Error"] = ex.Detail ?? ex.Title;
+        }
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [Authorize(Roles = "Manager")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Suspend(Guid id, Guid userId, CancellationToken ct)
     {
         try { await users.SuspendAsync(userId, ct); TempData["Toast"] = "Account suspended."; }

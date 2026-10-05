@@ -12,6 +12,10 @@ public class JobCardConfiguration : IEntityTypeConfiguration<JobCard>
         b.HasIndex(x => x.Number).IsUnique();
 
         b.Property(x => x.Notes).HasMaxLength(2000);
+        b.Property(x => x.FieldEquipmentName).HasMaxLength(200);
+        b.Property(x => x.FieldEquipmentSerialNumber).HasMaxLength(100);
+        b.Property(x => x.FieldEquipmentDescription).HasMaxLength(2000);
+        b.Property(x => x.TechnicianComments).HasMaxLength(2000);
         b.Property(x => x.ReviewNotes).HasMaxLength(2000);
         b.Property(x => x.ReopenReason).HasMaxLength(1000);
         b.Property(x => x.CancelReason).HasMaxLength(1000);

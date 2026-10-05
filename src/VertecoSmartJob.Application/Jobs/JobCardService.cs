@@ -119,6 +119,7 @@ public class JobCardService(
     public async Task<JobCard> SubmitForReviewAsync(Guid jobId, Guid technicianId, CancellationToken ct = default)
     {
         var job = await RequireJobAsync(jobId, ct);
+        job.MarkVerifiedWorkflowSteps();
         var failures = submissionStrategies.Select(s => s.Validate(job)).Where(e => e is not null).ToArray();
         if (failures.Length > 0)
             throw new Domain.Exceptions.SubmissionInvalidException(string.Join(" ", failures));
@@ -191,6 +192,48 @@ public class JobCardService(
         return job;
     }
 
+    public async Task<JobCard> UpdateEvidenceCaptionAsync(Guid jobId, Guid technicianId, Guid evidenceId, string caption, CancellationToken ct = default)
+    {
+        var job = await RequireJobAsync(jobId, ct);
+        job.UpdateEvidenceCaption(technicianId, evidenceId, caption);
+        await SaveWithAuditAsync(job, "EvidenceCaptionUpdated", ct);
+        return job;
+    }
+
+    public async Task<JobCard> RemoveEvidenceAsync(Guid jobId, Guid technicianId, Guid evidenceId, CancellationToken ct = default)
+    {
+        var job = await RequireJobAsync(jobId, ct);
+        var evidence = job.RemoveEvidence(technicianId, evidenceId);
+        jobCards.RemoveEvidence(evidence);
+        await SaveWithAuditAsync(job, "EvidenceRemoved", ct);
+        return job;
+    }
+
+    public async Task<JobCard> RemoveSignatureAsync(Guid jobId, Guid technicianId, Guid signatureId, CancellationToken ct = default)
+    {
+        var job = await RequireJobAsync(jobId, ct);
+        var signature = job.RemoveSignature(technicianId, signatureId);
+        jobCards.RemoveSignature(signature);
+        await SaveWithAuditAsync(job, "SignatureRemoved", ct);
+        return job;
+    }
+
+    public async Task<JobCard> SetTechnicianCommentsAsync(Guid jobId, Guid technicianId, string? comments, CancellationToken ct = default)
+    {
+        var job = await RequireJobAsync(jobId, ct);
+        job.SetTechnicianComments(technicianId, comments);
+        await SaveWithAuditAsync(job, "TechnicianCommentsUpdated", ct);
+        return job;
+    }
+
+    public async Task<JobCard> ClearFieldEquipmentAsync(Guid jobId, Guid technicianId, CancellationToken ct = default)
+    {
+        var job = await RequireJobAsync(jobId, ct);
+        job.ClearFieldEquipment(technicianId);
+        await SaveWithAuditAsync(job, "FieldEquipmentRemoved", ct);
+        return job;
+    }
+
     public async Task EnsureFieldEditAllowedAsync(Guid jobId, Guid technicianId, CancellationToken ct = default)
     {
         var job = await RequireJobAsync(jobId, ct);
@@ -254,6 +297,10 @@ public class JobCardService(
                     "This serial number is already registered to another site.");
             }
 
+            existing.Name = name;
+            existing.Description = description;
+            job.SetFieldEquipment(technicianId, name, serialNumber, description);
+            await SaveWithAuditAsync(job, "EquipmentCaptured", ct);
             return existing;
         }
 
@@ -266,6 +313,8 @@ public class JobCardService(
         };
 
         await sites.AddEquipmentAsync(equipment, ct);
+
+        job.SetFieldEquipment(technicianId, name, serialNumber, description);
 
         await audit.AddAsync(
             new AuditLog
@@ -284,6 +333,11 @@ public class JobCardService(
     public async Task<JobCard> AddSignatureAsync(Guid jobId, Guid technicianId, string signerName, string type, string reference, CancellationToken ct = default)
     {
         var job = await RequireJobAsync(jobId, ct);
+        foreach (var previous in job.Signatures.Where(s => s.Type == type).ToArray())
+        {
+            job.RemoveSignature(technicianId, previous.Id);
+            jobCards.RemoveSignature(previous);
+        }
         job.AddSignature(technicianId, signerName, type, reference);
         await jobCards.AddSignatureAsync(job.Signatures.Last(), ct);
         await SaveWithAuditAsync(job, "SignatureAdded", ct);

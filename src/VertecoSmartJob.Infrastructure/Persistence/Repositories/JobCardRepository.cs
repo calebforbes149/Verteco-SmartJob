@@ -10,7 +10,7 @@ public class JobCardRepository(AppDbContext db) : IJobCardRepository
 {
     private IQueryable<JobCard> FullGraph() => db.JobCards.AsSplitQuery()
         .Include(j => j.Customer)
-        .Include(j => j.Site)
+        .Include(j => j.Site).ThenInclude(s => s!.Equipment)
         .Include(j => j.JobTemplate)
         .Include(j => j.Technician)
         .Include(j => j.ChecklistItems)
@@ -98,6 +98,10 @@ public class JobCardRepository(AppDbContext db) : IJobCardRepository
 
     public async Task AddSignatureAsync(JobSignature signature, CancellationToken ct = default) =>
         await db.JobSignatures.AddAsync(signature, ct);
+
+    public void RemoveEvidence(JobEvidence evidence) => db.JobEvidence.Remove(evidence);
+
+    public void RemoveSignature(JobSignature signature) => db.JobSignatures.Remove(signature);
 
     public async Task AddCorrectiveActionAsync(CorrectiveAction action, CancellationToken ct = default) =>
         await db.CorrectiveActions.AddAsync(action, ct);

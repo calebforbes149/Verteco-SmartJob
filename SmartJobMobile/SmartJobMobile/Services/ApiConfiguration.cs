@@ -2,18 +2,7 @@ namespace SmartJobMobile.Services;
 
 public static class ApiConfiguration
 {
-    public static string BaseUrl
-    {
-        get
-        {
-#if ANDROID
-            // Android emulator uses 10.0.2.2 to reach
-            // localhost on the Windows development machine.
-            return "http://10.0.2.2:5196/";
-#else
-            // Windows development.
-            return "http://localhost:5196/";
-#endif
-        }
-    }
+    // The phone must use the same hosted API as the manager web app.
+    public static string BaseUrl =>
+        "https://verteco-smartjob-api-hcdyfgf4cagdh2db.southafricanorth-01.azurewebsites.net/";
 }

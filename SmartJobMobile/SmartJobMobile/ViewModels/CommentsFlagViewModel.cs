@@ -21,6 +21,18 @@ public class CommentsFlagViewModel : INotifyPropertyChanged
     private string _errorMessage = string.Empty;
     private bool _hasError;
     private bool _isSaving;
+    private bool _isLoading;
+    private bool _commentsTouched;
+    private bool _alreadyFlagged;
+    private bool _savedDataLoaded;
+
+    public bool CanChangeFlag => !_alreadyFlagged;
+
+    public bool IsLoading
+    {
+        get => _isLoading;
+        private set { _isLoading = value; OnPropertyChanged(); OnPropertyChanged(nameof(CanContinue)); }
+    }
 
     // =========================================================
     // REAL JOB INFORMATION
@@ -41,7 +53,9 @@ public class CommentsFlagViewModel : INotifyPropertyChanged
         get => _comments;
         set
         {
+            if (_comments == value) return;
             _comments = value;
+            _commentsTouched = true;
             OnPropertyChanged();
         }
     }
@@ -142,7 +156,7 @@ public class CommentsFlagViewModel : INotifyPropertyChanged
         }
     }
 
-    public bool CanContinue => !IsSaving;
+    public bool CanContinue => !IsSaving && !IsLoading && _savedDataLoaded;
 
     public ICommand ContinueCommand { get; }
 
@@ -162,6 +176,46 @@ public class CommentsFlagViewModel : INotifyPropertyChanged
         ContinueCommand =
             new Command(
                 async () => await ContinueAsync());
+
+        _ = LoadSavedWorkAsync();
+    }
+
+    private async Task LoadSavedWorkAsync()
+    {
+        if (!_connectivityService.IsOnline || _job.ApiId == Guid.Empty)
+        {
+            ShowError("Connect to the API to load saved comments before editing this job.");
+            return;
+        }
+        try
+        {
+            IsLoading = true;
+            var detail = await _apiService.GetJobDetailsAsync(_job.ApiId);
+            if (detail is null) return;
+            _savedDataLoaded = true;
+            OnPropertyChanged(nameof(CanContinue));
+            if (!_commentsTouched)
+            {
+                _comments = detail.TechnicianComments ?? string.Empty;
+                OnPropertyChanged(nameof(Comments));
+            }
+            _alreadyFlagged = detail.IsFlagged;
+            OnPropertyChanged(nameof(CanChangeFlag));
+            if (_alreadyFlagged)
+            {
+                IsFlagged = true;
+                var reason = detail.FlagReason ?? string.Empty;
+                SelectedFlagReason = FlagReasons.FirstOrDefault(option =>
+                    reason.StartsWith(option + ":", StringComparison.OrdinalIgnoreCase)) ?? "Other";
+                FlagDetails = reason.Contains(':') ? reason[(reason.IndexOf(':') + 1)..].Trim() : reason;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Saved comments load failed: {ex}");
+            ShowError("Saved comments could not be loaded. Please reconnect and try again.");
+        }
+        finally { IsLoading = false; }
     }
 
     // =========================================================
@@ -171,6 +225,13 @@ public class CommentsFlagViewModel : INotifyPropertyChanged
     private async Task ContinueAsync()
     {
         ClearError();
+
+        if (IsLoading || IsSaving) return;
+        if (!_savedDataLoaded)
+        {
+            ShowError("Saved comments have not loaded. Reopen this screen while connected to the API.");
+            return;
+        }
 
         if (_job.ApiId == Guid.Empty)
         {
@@ -182,7 +243,7 @@ public class CommentsFlagViewModel : INotifyPropertyChanged
 
         // A reason and description are required
         // when the technician flags the job.
-        if (IsFlagged)
+        if (IsFlagged && !_alreadyFlagged)
         {
             if (string.IsNullOrWhiteSpace(
                 SelectedFlagReason))
@@ -211,8 +272,9 @@ public class CommentsFlagViewModel : INotifyPropertyChanged
             }
         }
 
-        if (IsSaving)
+        if (_commentsTouched && !_connectivityService.IsOnline)
         {
+            ShowError("Saving technician comments requires an internet connection. Please reconnect and try again.");
             return;
         }
 
@@ -222,7 +284,13 @@ public class CommentsFlagViewModel : INotifyPropertyChanged
 
             // Only call the backend when the technician
             // actually selected Flag this job.
-            if (IsFlagged)
+            if (_commentsTouched)
+            {
+                await _apiService.SaveTechnicianCommentsAsync(_job.ApiId, Comments);
+                _commentsTouched = false;
+            }
+
+            if (IsFlagged && !_alreadyFlagged)
             {
                 string reason =
                     $"{SelectedFlagReason}: {FlagDetails.Trim()}";
@@ -230,11 +298,9 @@ public class CommentsFlagViewModel : INotifyPropertyChanged
                 await _apiService.FlagJobAsync(
                     _job.ApiId,
                     reason);
+                _alreadyFlagged = true;
+                OnPropertyChanged(nameof(CanChangeFlag));
             }
-
-            // Comments are currently workflow notes only because
-            // Person 4's API does not expose a technician-comments
-            // endpoint. Do not create an unsupported sync operation.
 
             await Shell.Current.Navigation.PushAsync(
                 new SignaturePage(_job));

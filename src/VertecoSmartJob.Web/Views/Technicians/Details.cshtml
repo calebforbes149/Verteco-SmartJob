@@ -63,6 +63,14 @@
                                 <button type="submit" class="btn btn-danger btn-sm">Deactivate</button>
                             </form>
                         </div>
+                        <form asp-action="SetPassword" asp-route-id="@Model.Technician.Id" asp-route-userId="@Model.Account.Id" method="post" autocomplete="off" style="margin-top:16px;">
+                            @Html.AntiForgeryToken()
+                            <h4>Set technician sign-in password</h4>
+                            <p class="tiny muted">The technician signs in to the mobile app using @Model.Account.Email and this password. Share it securely.</p>
+                            <div class="field"><label for="newPassword">New password</label><input id="newPassword" name="newPassword" type="password" minlength="8" autocomplete="new-password" required /></div>
+                            <div class="field"><label for="confirmPassword">Confirm password</label><input id="confirmPassword" name="confirmPassword" type="password" minlength="8" autocomplete="new-password" required /></div>
+                            <button type="submit" class="btn btn-sm">Set password</button>
+                        </form>
                     }
                 }
             </div>

@@ -485,7 +485,7 @@
             <!-- ================================================= -->
 
             <Button
-                Text="START JOB"
+                Text="{Binding StartButtonText}"
                 BackgroundColor="#ED3B3B"
                 TextColor="#FFFFFF"
                 FontAttributes="Bold"

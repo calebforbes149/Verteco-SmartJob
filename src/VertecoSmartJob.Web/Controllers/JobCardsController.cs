@@ -32,6 +32,44 @@ public class JobCardsController(
     }
 
     [Authorize(Roles = "Manager")]
+    public async Task<IActionResult> JobCard(Guid id, CancellationToken ct)
+    {
+        var job = await jobCards.GetByIdAsync(id, ct);
+        if (job is null) return NotFound();
+        Response.Headers["Cache-Control"] = "no-store";
+        return View(job);
+    }
+
+    [Authorize(Roles = "Manager")]
+    public async Task<IActionResult> DownloadPdf(Guid id, CancellationToken ct)
+    {
+        var job = await jobCards.GetByIdAsync(id, ct);
+        if (job is null) return NotFound();
+        var pdf = await jobCards.GetJobCardPdfAsync(id, ct);
+        if (pdf is null) return NotFound();
+        Response.Headers["Cache-Control"] = "no-store";
+        return File(pdf, "application/pdf", $"job-card-{job.Number}.pdf");
+    }
+
+    [Authorize(Roles = "Manager")]
+    public async Task<IActionResult> Evidence(Guid id, Guid evidenceId, CancellationToken ct)
+    {
+        var file = await jobCards.GetEvidenceFileAsync(id, evidenceId, ct);
+        if (file is null) return NotFound();
+        Response.Headers["Cache-Control"] = "no-store";
+        return File(file.Value.Content, file.Value.ContentType);
+    }
+
+    [Authorize(Roles = "Manager")]
+    public async Task<IActionResult> Signature(Guid id, Guid signatureId, CancellationToken ct)
+    {
+        var file = await jobCards.GetSignatureFileAsync(id, signatureId, ct);
+        if (file is null) return NotFound();
+        Response.Headers["Cache-Control"] = "no-store";
+        return File(file.Value.Content, file.Value.ContentType);
+    }
+
+    [Authorize(Roles = "Manager")]
     [HttpGet]
     public async Task<IActionResult> Create(CancellationToken ct)
     {

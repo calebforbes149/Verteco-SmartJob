@@ -37,6 +37,32 @@ public class JobCardsApiClient(HttpClient http)
         return await response.Content.ReadFromJsonAsync<JobCardDetailDto>(cancellationToken: ct);
     }
 
+    public Task<(byte[] Content, string ContentType)?> GetEvidenceFileAsync(
+        Guid jobId, Guid evidenceId, CancellationToken ct = default) =>
+        GetFileAsync($"api/v1/jobcards/{jobId}/evidence/{evidenceId}/file", ct);
+
+    public Task<(byte[] Content, string ContentType)?> GetSignatureFileAsync(
+        Guid jobId, Guid signatureId, CancellationToken ct = default) =>
+        GetFileAsync($"api/v1/jobcards/{jobId}/signatures/{signatureId}/file", ct);
+
+    public async Task<byte[]?> GetJobCardPdfAsync(Guid jobId, CancellationToken ct = default)
+    {
+        using var response = await http.GetAsync($"api/v1/jobcards/{jobId}/pdf", ct);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
+        await response.EnsureApiSuccessAsync(ct);
+        return await response.Content.ReadAsByteArrayAsync(ct);
+    }
+
+    private async Task<(byte[] Content, string ContentType)?> GetFileAsync(
+        string path, CancellationToken ct)
+    {
+        using var response = await http.GetAsync(path, ct);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
+        await response.EnsureApiSuccessAsync(ct);
+        return (await response.Content.ReadAsByteArrayAsync(ct),
+            response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream");
+    }
+
     public async Task<JobCardDetailDto> CreateAsync(CreateJobCardRequest request, CancellationToken ct = default)
     {
         var response = await http.PostAsJsonAsync("api/v1/jobcards", request, ct);

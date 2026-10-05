@@ -204,6 +204,59 @@
                 <!-- ================================================= -->
 
                 <VerticalStackLayout
+                    IsVisible="{Binding HasSavedEvidence}"
+                    Spacing="10"
+                    Margin="0,24,0,20">
+                    <Label
+                        Text="SAVED JOB PHOTOS"
+                        TextColor="#FFFFFF"
+                        FontSize="14"
+                        FontAttributes="Bold" />
+                    <Label
+                        Text="These photos stay on the job card. Edit a description, remove a photo, or add another below."
+                        TextColor="#858B93"
+                        FontSize="11"
+                        LineBreakMode="WordWrap" />
+                    <VerticalStackLayout
+                        BindableLayout.ItemsSource="{Binding SavedEvidence}"
+                        Spacing="12">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <Border
+                                    BackgroundColor="#111419"
+                                    Stroke="#292D33"
+                                    StrokeThickness="1"
+                                    Padding="12">
+                                    <VerticalStackLayout Spacing="8">
+                                        <Image
+                                            Source="{Binding Preview}"
+                                            HeightRequest="180"
+                                            Aspect="AspectFit" />
+                                        <Entry
+                                            Text="{Binding Caption, Mode=TwoWay}"
+                                            Placeholder="Photo description"
+                                            TextColor="#E4E5E7"
+                                            BackgroundColor="#171A1F" />
+                                        <Button
+                                            Text="SAVE DESCRIPTION"
+                                            CommandParameter="{Binding Id}"
+                                            Clicked="SaveEvidenceCaption_Clicked"
+                                            BackgroundColor="#171A1F"
+                                            TextColor="#E4E5E7" />
+                                        <Button
+                                            Text="REMOVE SAVED PHOTO"
+                                            CommandParameter="{Binding Id}"
+                                            Clicked="RemoveSavedEvidence_Clicked"
+                                            BackgroundColor="Transparent"
+                                            TextColor="#ED6464" />
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout
                     Spacing="2"
                     Margin="0,28,0,12">
 
@@ -426,6 +479,13 @@
 
 
                 <!-- ================================================= -->
+                <Label
+                    Text="The photographic evidence check is marked complete when your photo is saved."
+                    TextColor="#858B93"
+                    FontSize="11"
+                    Margin="0,22,0,0"
+                    LineBreakMode="WordWrap" />
+
                 <!-- ERROR -->
                 <!-- ================================================= -->
 
@@ -458,6 +518,7 @@
                 <Button
                     Text="SAVE EVIDENCE &amp; CONTINUE"
                     Command="{Binding ContinueCommand}"
+                    IsEnabled="{Binding CanContinue}"
                     BackgroundColor="#ED3B3B"
                     TextColor="#FFFFFF"
                     FontSize="12"

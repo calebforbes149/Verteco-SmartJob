@@ -216,6 +216,44 @@ public class ApiService
         }
     }
 
+    public async Task RemoveEquipmentAsync(Guid jobId)
+    {
+        using var response = await _httpClient.DeleteAsync($"api/v1/mobile/jobs/{jobId}/equipment");
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task SaveTechnicianCommentsAsync(Guid jobId, string? comments)
+    {
+        using var response = await _httpClient.PutAsJsonAsync(
+            $"api/v1/mobile/jobs/{jobId}/comments", new { Comments = comments });
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<byte[]> GetEvidenceFileAsync(Guid jobId, Guid evidenceId) =>
+        await _httpClient.GetByteArrayAsync($"api/v1/mobile/jobs/{jobId}/evidence/{evidenceId}/file");
+
+    public async Task<byte[]> GetSignatureFileAsync(Guid jobId, Guid signatureId) =>
+        await _httpClient.GetByteArrayAsync($"api/v1/mobile/jobs/{jobId}/signatures/{signatureId}/file");
+
+    public async Task UpdateEvidenceCaptionAsync(Guid jobId, Guid evidenceId, string caption)
+    {
+        using var response = await _httpClient.PatchAsJsonAsync(
+            $"api/v1/mobile/jobs/{jobId}/evidence/{evidenceId}/caption", new { Caption = caption });
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task RemoveEvidenceAsync(Guid jobId, Guid evidenceId)
+    {
+        using var response = await _httpClient.DeleteAsync($"api/v1/mobile/jobs/{jobId}/evidence/{evidenceId}");
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task RemoveSignatureAsync(Guid jobId, Guid signatureId)
+    {
+        using var response = await _httpClient.DeleteAsync($"api/v1/mobile/jobs/{jobId}/signatures/{signatureId}");
+        response.EnsureSuccessStatusCode();
+    }
+
     // =========================================================
     // CREATE EVIDENCE UPLOAD INSTRUCTIONS
     // =========================================================
@@ -224,6 +262,19 @@ public class ApiService
         CreateEvidenceUploadAsync(
             Guid jobId,
             string extension)
+        => await CreateUploadInstructionsAsync(jobId, extension, "evidence");
+
+    public async Task<MobileEvidenceUploadResponse>
+        CreateSignatureUploadAsync(
+            Guid jobId,
+            string extension)
+        => await CreateUploadInstructionsAsync(jobId, extension, "signatures");
+
+    private async Task<MobileEvidenceUploadResponse>
+        CreateUploadInstructionsAsync(
+            Guid jobId,
+            string extension,
+            string kind)
     {
         try
         {
@@ -235,7 +286,7 @@ public class ApiService
 
             HttpResponseMessage response =
                 await _httpClient.PostAsJsonAsync(
-                    $"api/v1/mobile/jobs/{jobId}/evidence/upload-instructions",
+                    $"api/v1/mobile/jobs/{jobId}/{kind}/upload-instructions",
                     request,
                     CreateJsonOptions());
 
@@ -566,13 +617,17 @@ public class ApiService
     // =========================================================
 
     public async Task<MobileSyncPullResponse?>
-        PullSyncDataAsync()
+        PullSyncDataAsync(IReadOnlyCollection<Guid>? knownJobIds = null)
     {
         try
         {
+            string query = knownJobIds is { Count: > 0 }
+                ? "?" + string.Join("&", knownJobIds.Take(500).Select(id => $"knownJobIds={id:D}"))
+                : string.Empty;
+
             HttpResponseMessage response =
                 await _httpClient.GetAsync(
-                    "api/v1/mobile/sync/pull");
+                    "api/v1/mobile/sync/pull" + query);
 
             string rawJson =
                 await response.Content.ReadAsStringAsync();
@@ -784,6 +839,20 @@ public class ApiJobDetail
 
     public string? Notes { get; set; }
 
+    public string? FieldEquipmentName { get; set; }
+
+    public string? FieldEquipmentSerialNumber { get; set; }
+
+    public string? FieldEquipmentDescription { get; set; }
+
+    public string? TechnicianComments { get; set; }
+
+    public List<ApiSiteEquipment> SiteEquipmentOptions { get; set; } = [];
+
+    public List<ApiJobEvidence> Evidence { get; set; } = [];
+
+    public List<ApiJobSignature> Signatures { get; set; } = [];
+
     public string? ReviewNotes { get; set; }
 
     public string? ReopenReason { get; set; }
@@ -822,6 +891,29 @@ public class ApiChecklistItem
     public bool IsDone { get; set; }
 }
 
+public class ApiSiteEquipment
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string SerialNumber { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string DisplayName => $"{Name} ({SerialNumber})";
+}
+
+public class ApiJobEvidence
+{
+    public Guid Id { get; set; }
+    public string Caption { get; set; } = string.Empty;
+    public bool IsImage { get; set; }
+}
+
+public class ApiJobSignature
+{
+    public Guid Id { get; set; }
+    public string Type { get; set; } = string.Empty;
+    public string SignerName { get; set; } = string.Empty;
+}
+
 
 // =============================================================
 // MOBILE SYNC PULL RESPONSE
@@ -832,6 +924,8 @@ public class MobileSyncPullResponse
     public DateTime ServerTimeUtc { get; set; }
 
     public List<MobileSyncJob> Jobs { get; set; } = [];
+
+    public List<Guid> RemovedJobIds { get; set; } = [];
 }
 
 

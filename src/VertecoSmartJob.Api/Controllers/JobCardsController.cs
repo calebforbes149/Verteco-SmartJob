@@ -4,6 +4,7 @@ using System.Security.Claims;
 using VertecoSmartJob.Api.Mapping;
 using VertecoSmartJob.Application.Abstractions;
 using VertecoSmartJob.Application.Jobs;
+using VertecoSmartJob.Application.Files;
 using VertecoSmartJob.Contracts.Common;
 using VertecoSmartJob.Contracts.Jobs;
 using VertecoSmartJob.Domain.Enums;
@@ -62,6 +63,54 @@ public class JobCardsController(JobCardService jobCardService) : ControllerBase
         var job = await jobCardService.GetByIdAsync(id, ct);
         if (job is not null && User.IsInRole("Technician") && job.TechnicianId != ActorTechnicianId) return Forbid();
         return job is null ? NotFound() : Ok(job.ToDetailDto());
+    }
+
+    [Authorize(Roles = "Manager")]
+    [HttpGet("{id:guid}/evidence/{evidenceId:guid}/file")]
+    public async Task<IActionResult> ViewEvidence(Guid id, Guid evidenceId, [FromServices] IFieldFileStore fileStore, CancellationToken ct)
+    {
+        var job = await jobCardService.GetByIdAsync(id, ct);
+        var evidence = job?.Evidence.FirstOrDefault(item => item.Id == evidenceId);
+        if (evidence is null) return NotFound();
+        var file = await fileStore.ReadAsync(evidence.Reference, ct);
+        return file is null ? NotFound() : File(file.Content, file.ContentType, enableRangeProcessing: true);
+    }
+
+    [Authorize(Roles = "Manager")]
+    [HttpGet("{id:guid}/signatures/{signatureId:guid}/file")]
+    public async Task<IActionResult> ViewSignature(Guid id, Guid signatureId, [FromServices] IFieldFileStore fileStore, CancellationToken ct)
+    {
+        var job = await jobCardService.GetByIdAsync(id, ct);
+        var signature = job?.Signatures.FirstOrDefault(item => item.Id == signatureId);
+        if (signature is null) return NotFound();
+        var file = await fileStore.ReadAsync(signature.Reference, ct);
+        return file is null ? NotFound() : File(file.Content, file.ContentType, enableRangeProcessing: true);
+    }
+
+    [Authorize(Roles = "Manager")]
+    [HttpGet("{id:guid}/pdf")]
+    public async Task<IActionResult> DownloadPdf(Guid id, [FromServices] IFieldFileStore fileStore, CancellationToken ct)
+    {
+        var job = await jobCardService.GetByIdAsync(id, ct);
+        if (job is null) return NotFound();
+
+        var files = new Dictionary<Guid, JobCardPdfAsset>();
+        foreach (var item in job.Evidence.Select(e => (e.Id, e.Reference))
+                     .Concat(job.Signatures.Select(s => (s.Id, s.Reference))))
+        {
+            FieldStoredFile? stored;
+            try { stored = await fileStore.ReadAsync(item.Reference, ct); }
+            catch (ArgumentException) { continue; } // Legacy/demo references have no Blob file.
+            if (stored is null) continue;
+            await using var content = stored.Content;
+            using var buffer = new MemoryStream();
+            await content.CopyToAsync(buffer, ct);
+            files[item.Id] = new JobCardPdfAsset(buffer.ToArray(), stored.ContentType);
+        }
+
+        Response.Headers["Cache-Control"] = "no-store";
+        var pdf = JobCardPdfRenderer.Render(job.ToDetailDto(), files);
+        return File(pdf, "application/pdf", $"job-card-{job.Number}.pdf");
     }
 
     [Authorize(Roles = "Manager")]

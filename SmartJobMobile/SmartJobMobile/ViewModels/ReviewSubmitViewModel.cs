@@ -162,6 +162,25 @@ public class ReviewSubmitViewModel : INotifyPropertyChanged
         {
             IsSubmitting = true;
 
+            ApiJobDetail? current = await _apiService.GetJobDetailsAsync(_job.ApiId);
+            if (current is null)
+            {
+                ShowError("SmartJob could not load the latest job card. Please try again.");
+                return;
+            }
+
+            var unfinished = current.ChecklistItems
+                .Where(item => !item.IsDone)
+                .Select(item => item.Text)
+                .ToList();
+            if (unfinished.Count > 0)
+            {
+                ShowError("Complete the remaining checklist items before submitting: " +
+                    string.Join(", ", unfinished.Take(3)) +
+                    (unfinished.Count > 3 ? $" and {unfinished.Count - 3} more." : "."));
+                return;
+            }
+
             bool submitted =
                 await _apiService.SubmitJobAsync(
                     _job.ApiId);

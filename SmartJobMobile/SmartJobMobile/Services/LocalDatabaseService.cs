@@ -85,6 +85,16 @@ public class LocalDatabaseService
         await InitializeAsync();
 
         await _database!
+            .Table<CachedChecklistItem>()
+            .Where(item => item.JobId == job.JobId)
+            .DeleteAsync();
+
+        await _database!
+            .Table<SyncQueueItem>()
+            .Where(item => item.JobId == job.JobId)
+            .DeleteAsync();
+
+        await _database!
             .DeleteAsync(job);
     }
 

@@ -1,6 +1,7 @@
 ﻿using SmartJobMobile.Models;
 using SmartJobMobile.Services;
 using SmartJobMobile.Views;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
@@ -23,6 +24,40 @@ public class EquipmentViewModel : INotifyPropertyChanged
     private string _errorMessage = string.Empty;
     private bool _hasError;
     private bool _isSaving;
+    private bool _isLoading;
+    private bool _hasSavedEquipment;
+    private bool _savedDataLoaded;
+    private ApiSiteEquipment? _selectedSiteEquipment;
+
+    public ObservableCollection<ApiSiteEquipment> SiteEquipmentOptions { get; } = new();
+
+    public bool HasSiteEquipmentOptions => SiteEquipmentOptions.Count > 0;
+
+    public ApiSiteEquipment? SelectedSiteEquipment
+    {
+        get => _selectedSiteEquipment;
+        set
+        {
+            _selectedSiteEquipment = value;
+            OnPropertyChanged();
+            if (value is null) return;
+            EquipmentName = value.Name;
+            SerialNumber = value.SerialNumber;
+            ReadDescription(value.Description);
+        }
+    }
+
+    public bool HasSavedEquipment
+    {
+        get => _hasSavedEquipment;
+        private set { _hasSavedEquipment = value; OnPropertyChanged(); }
+    }
+
+    public bool IsLoading
+    {
+        get => _isLoading;
+        private set { _isLoading = value; OnPropertyChanged(); OnPropertyChanged(nameof(CanContinue)); }
+    }
 
     // =========================================================
     // EQUIPMENT FIELDS
@@ -125,9 +160,11 @@ public class EquipmentViewModel : INotifyPropertyChanged
     }
 
     public bool CanContinue =>
-        !IsSaving;
+        !IsSaving && !IsLoading && _savedDataLoaded;
 
     public ICommand ContinueCommand { get; }
+    public ICommand RemoveEquipmentCommand { get; }
+    public event EventHandler? EquipmentRemoved;
 
     // =========================================================
     // CONSTRUCTOR
@@ -155,6 +192,91 @@ public class EquipmentViewModel : INotifyPropertyChanged
             new Command(
                 async () =>
                     await ContinueAsync());
+
+        RemoveEquipmentCommand = new Command(async () => await RemoveEquipmentAsync());
+        _ = LoadEquipmentAsync();
+    }
+
+    private async Task LoadEquipmentAsync()
+    {
+        if (!_connectivityService.IsOnline || _job.ApiId == Guid.Empty)
+        {
+            ShowError("Connect to the API to load saved equipment before editing this job.");
+            return;
+        }
+        try
+        {
+            IsLoading = true;
+            var detail = await _apiService.GetJobDetailsAsync(_job.ApiId);
+            if (detail is null) return;
+            _savedDataLoaded = true;
+            OnPropertyChanged(nameof(CanContinue));
+            SiteEquipmentOptions.Clear();
+            foreach (var option in detail.SiteEquipmentOptions)
+                SiteEquipmentOptions.Add(option);
+            OnPropertyChanged(nameof(HasSiteEquipmentOptions));
+
+            if (!string.IsNullOrWhiteSpace(detail.FieldEquipmentSerialNumber))
+            {
+                EquipmentName = detail.FieldEquipmentName ?? string.Empty;
+                SerialNumber = detail.FieldEquipmentSerialNumber;
+                ReadDescription(detail.FieldEquipmentDescription);
+                HasSavedEquipment = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Equipment load failed: {ex}");
+            ShowError("Saved equipment details could not be loaded. Please reconnect and try again.");
+        }
+        finally { IsLoading = false; }
+    }
+
+    private void ReadDescription(string? description)
+    {
+        AssetNumber = string.Empty;
+        ModelNumber = string.Empty;
+        var notes = new List<string>();
+        foreach (var line in (description ?? string.Empty).Split('\n'))
+        {
+            var text = line.TrimEnd('\r');
+            if (text.StartsWith("Asset Number: ", StringComparison.OrdinalIgnoreCase))
+                AssetNumber = text[14..];
+            else if (text.StartsWith("Model Number: ", StringComparison.OrdinalIgnoreCase))
+                ModelNumber = text[14..];
+            else if (text.StartsWith("Notes: ", StringComparison.OrdinalIgnoreCase))
+                notes.Add(text[7..]);
+            else if (!string.IsNullOrWhiteSpace(text))
+                notes.Add(text);
+        }
+        EquipmentNotes = string.Join(Environment.NewLine, notes);
+    }
+
+    private async Task RemoveEquipmentAsync()
+    {
+        if (IsLoading || IsSaving) return;
+        if (!_savedDataLoaded)
+        {
+            ShowError("Saved equipment has not loaded. Reopen this screen while connected to the API.");
+            return;
+        }
+        try
+        {
+            IsSaving = true;
+            if (HasSavedEquipment)
+                await _apiService.RemoveEquipmentAsync(_job.ApiId);
+            HasSavedEquipment = false;
+            SelectedSiteEquipment = null;
+            EquipmentName = SerialNumber = AssetNumber = ModelNumber = EquipmentNotes = string.Empty;
+            EquipmentRemoved?.Invoke(this, EventArgs.Empty);
+            ClearError();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Equipment removal failed: {ex}");
+            ShowError("The equipment entry could not be removed. Please try again.");
+        }
+        finally { IsSaving = false; }
     }
 
     // =========================================================
@@ -164,6 +286,20 @@ public class EquipmentViewModel : INotifyPropertyChanged
     private async Task ContinueAsync()
     {
         ClearError();
+
+        if (IsLoading || IsSaving) return;
+
+        if (string.IsNullOrWhiteSpace(EquipmentName) &&
+            string.IsNullOrWhiteSpace(SerialNumber))
+        {
+            if (HasSavedEquipment)
+            {
+                await RemoveEquipmentAsync();
+                if (HasSavedEquipment) return;
+            }
+            await Shell.Current.Navigation.PushAsync(new PhotoCapturePage(_job));
+            return;
+        }
 
         // -----------------------------------------------------
         // VALIDATION
@@ -187,10 +323,6 @@ public class EquipmentViewModel : INotifyPropertyChanged
             return;
         }
 
-        if (IsSaving)
-        {
-            return;
-        }
 
         // -----------------------------------------------------
         // REAL JOB ID
@@ -291,6 +423,8 @@ public class EquipmentViewModel : INotifyPropertyChanged
 
                 return;
             }
+
+            HasSavedEquipment = true;
 
             // -------------------------------------------------
             // CONTINUE TO PHOTO EVIDENCE

@@ -26,12 +26,21 @@ public partial class EquipmentPage : ContentPage
         ConnectivityService connectivityService =
             services.GetRequiredService<ConnectivityService>();
 
-        BindingContext =
+        var viewModel =
             new EquipmentViewModel(
                 job,
                 localDatabaseService,
                 apiService,
                 connectivityService);
+        BindingContext = viewModel;
+
+        SafetyChecklistHost.Children.Add(
+            new ChecklistSectionView(job, ChecklistSection.SiteSafety));
+        var equipmentChecklist = new ChecklistSectionView(job, ChecklistSection.EquipmentDetails);
+        EquipmentChecklistHost.Children.Add(equipmentChecklist);
+        viewModel.EquipmentRemoved += async (_, _) => await equipmentChecklist.RefreshAsync();
+        WorkChecklistHost.Children.Add(
+            new ChecklistSectionView(job, ChecklistSection.WorkCompleted));
     }
 
     private async void BackButton_Clicked(

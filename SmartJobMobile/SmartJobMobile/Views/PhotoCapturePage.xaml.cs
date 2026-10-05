@@ -7,6 +7,8 @@ namespace SmartJobMobile.Views;
 
 public partial class PhotoCapturePage : ContentPage
 {
+    private readonly PhotoCaptureViewModel _viewModel;
+
     public PhotoCapturePage(Job job)
     {
         InitializeComponent();
@@ -26,12 +28,13 @@ public partial class PhotoCapturePage : ContentPage
         ConnectivityService connectivityService =
             services.GetRequiredService<ConnectivityService>();
 
-        BindingContext =
+        _viewModel =
             new PhotoCaptureViewModel(
                 job,
                 localDatabaseService,
                 apiService,
                 connectivityService);
+        BindingContext = _viewModel;
     }
 
     private async void BackButton_Clicked(
@@ -39,5 +42,18 @@ public partial class PhotoCapturePage : ContentPage
         EventArgs e)
     {
         await Shell.Current.GoToAsync("..");
+    }
+
+    private async void SaveEvidenceCaption_Clicked(object? sender, EventArgs e)
+    {
+        if (sender is Button { CommandParameter: Guid id })
+            await _viewModel.SaveCaptionAsync(id);
+    }
+
+    private async void RemoveSavedEvidence_Clicked(object? sender, EventArgs e)
+    {
+        if (sender is not Button { CommandParameter: Guid id }) return;
+        if (!await DisplayAlertAsync("Remove photo", "Remove this photo from the current job card?", "Remove", "Cancel")) return;
+        await _viewModel.RemoveSavedEvidenceAsync(id);
     }
 }

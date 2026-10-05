@@ -167,6 +167,72 @@ public class MobileJobsController(
         });
     }
 
+    [HttpDelete("{id:guid}/equipment")]
+    public async Task<ActionResult<JobCardDetailDto>> RemoveEquipment(Guid id, CancellationToken ct)
+    {
+        if (!await CanAccessJob(id, ct)) return Forbid();
+        await jobCardService.ClearFieldEquipmentAsync(id, ActorTechnicianId, ct);
+        return Ok((await jobCardService.GetByIdAsync(id, ct))!.ToDetailDto());
+    }
+
+    [HttpPut("{id:guid}/comments")]
+    public async Task<ActionResult<JobCardDetailDto>> SaveComments(
+        Guid id, [FromBody] UpdateTechnicianCommentsRequest request, CancellationToken ct)
+    {
+        if (!await CanAccessJob(id, ct)) return Forbid();
+        await jobCardService.SetTechnicianCommentsAsync(id, ActorTechnicianId, request.Comments, ct);
+        return Ok((await jobCardService.GetByIdAsync(id, ct))!.ToDetailDto());
+    }
+
+    [HttpGet("{id:guid}/evidence/{evidenceId:guid}/file")]
+    public async Task<IActionResult> GetEvidenceFile(Guid id, Guid evidenceId, CancellationToken ct)
+    {
+        if (!await CanAccessJob(id, ct)) return Forbid();
+        var job = await jobCardService.GetByIdAsync(id, ct);
+        var evidence = job?.Evidence.FirstOrDefault(e => e.Id == evidenceId);
+        if (evidence is null) return NotFound();
+        var file = await fileStore.ReadAsync(evidence.Reference, ct);
+        Response.Headers.CacheControl = "no-store";
+        return file is null ? NotFound() : File(file.Content, file.ContentType);
+    }
+
+    [HttpPatch("{id:guid}/evidence/{evidenceId:guid}/caption")]
+    public async Task<ActionResult<JobCardDetailDto>> UpdateEvidenceCaption(
+        Guid id, Guid evidenceId, [FromBody] UpdateEvidenceCaptionRequest request, CancellationToken ct)
+    {
+        if (!await CanAccessJob(id, ct)) return Forbid();
+        await jobCardService.UpdateEvidenceCaptionAsync(id, ActorTechnicianId, evidenceId, request.Caption, ct);
+        return Ok((await jobCardService.GetByIdAsync(id, ct))!.ToDetailDto());
+    }
+
+    [HttpDelete("{id:guid}/evidence/{evidenceId:guid}")]
+    public async Task<ActionResult<JobCardDetailDto>> RemoveEvidence(Guid id, Guid evidenceId, CancellationToken ct)
+    {
+        if (!await CanAccessJob(id, ct)) return Forbid();
+        await jobCardService.RemoveEvidenceAsync(id, ActorTechnicianId, evidenceId, ct);
+        return Ok((await jobCardService.GetByIdAsync(id, ct))!.ToDetailDto());
+    }
+
+    [HttpGet("{id:guid}/signatures/{signatureId:guid}/file")]
+    public async Task<IActionResult> GetSignatureFile(Guid id, Guid signatureId, CancellationToken ct)
+    {
+        if (!await CanAccessJob(id, ct)) return Forbid();
+        var job = await jobCardService.GetByIdAsync(id, ct);
+        var signature = job?.Signatures.FirstOrDefault(s => s.Id == signatureId);
+        if (signature is null) return NotFound();
+        var file = await fileStore.ReadAsync(signature.Reference, ct);
+        Response.Headers.CacheControl = "no-store";
+        return file is null ? NotFound() : File(file.Content, file.ContentType);
+    }
+
+    [HttpDelete("{id:guid}/signatures/{signatureId:guid}")]
+    public async Task<ActionResult<JobCardDetailDto>> RemoveSignature(Guid id, Guid signatureId, CancellationToken ct)
+    {
+        if (!await CanAccessJob(id, ct)) return Forbid();
+        await jobCardService.RemoveSignatureAsync(id, ActorTechnicianId, signatureId, ct);
+        return Ok((await jobCardService.GetByIdAsync(id, ct))!.ToDetailDto());
+    }
+
     // Creates a temporary upload link for the mobile app
     [HttpPost("{id:guid}/evidence/upload-instructions")]
     [EnableRateLimiting("evidence")]
