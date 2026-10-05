@@ -1,0 +1,94 @@
+﻿@model JobCardListViewModel
+@{
+    ViewData["Title"] = "Job Cards";
+}
+
+<div class="page-head">
+  <div>
+    <div class="page-title">Job Cards</div>
+    <div class="page-desc">Every job card, searchable and filterable.</div>
+  </div>
+  @if (User.IsInRole("Manager"))
+  {
+      <div class="page-actions">
+        <a class="btn btn-primary" asp-action="Create">+ New job card</a>
+      </div>
+  }
+</div>
+
+<form method="get" class="filter-bar">
+  <div class="search-wrap">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.6" y2="16.6"/></svg>
+    <input type="text" name="Q" value="@Model.Query.Q" placeholder="Job number, customer or site…" />
+  </div>
+  <select name="Status">
+    <option value="">All statuses</option>
+    @foreach (var s in JobCardListViewModel.Statuses)
+    {
+        <option value="@s" selected="@(Model.Query.Status == s)">@s</option>
+    }
+  </select>
+  <select name="Priority">
+    <option value="">All priorities</option>
+    @foreach (var p in JobCardListViewModel.Priorities)
+    {
+        <option value="@p" selected="@(Model.Query.Priority == p)">@p</option>
+    }
+  </select>
+  <select name="Flagged">
+    <option value="">Flagged or not</option>
+    <option value="true" selected="@(Model.Query.Flagged == true)">Flagged only</option>
+    <option value="false" selected="@(Model.Query.Flagged == false)">Not flagged</option>
+  </select>
+  <button type="submit" class="btn btn-sm">Filter</button>
+</form>
+
+<div class="card">
+  @if (Model.Results.Items.Count == 0)
+  {
+      <div class="empty-state"><b>No job cards match those filters</b></div>
+  }
+  else
+  {
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Job #</th><th>Customer / Site</th><th>Technician</th><th>Priority</th><th>Status</th><th>Flag</th><th>Scheduled</th></tr></thead>
+        <tbody>
+        @foreach (var job in Model.Results.Items)
+        {
+          <tr class="clickable" onclick="location.href='@Url.Action("Details", new { id = job.Id })'">
+            <td class="mono">@job.Number</td>
+            <td><div class="cell-primary">@job.CustomerName</div><div class="cell-sub">@job.SiteName</div></td>
+            <td>@(job.TechnicianName ?? "-")</td>
+            <td><span class="pill pill-@job.Priority.ToLowerInvariant()">@job.Priority</span></td>
+            <td><span class="pill pill-@job.Status.ToLowerInvariant()">@job.Status</span></td>
+            <td>
+              @if (job.IsFlagged)
+              {
+                  <span class="flag-badge" title="@job.FlagReason">⚑ Flagged</span>
+              }
+            </td>
+            <td class="mono">@job.ScheduledDate.ToString("dd MMM yyyy")</td>
+          </tr>
+        }
+        </tbody>
+      </table>
+      </div>
+  }
+</div>
+
+@if (Model.Results.TotalPages > 1)
+{
+    <div class="pagination">
+      @for (var p = 1; p <= Model.Results.TotalPages; p++)
+      {
+          <a class="@(p == Model.Results.Page ? "page-link active" : "page-link")"
+             asp-action="Index"
+             asp-route-Page="@p"
+             asp-route-PageSize="@Model.Query.PageSize"
+             asp-route-Q="@Model.Query.Q"
+             asp-route-Status="@Model.Query.Status"
+             asp-route-Priority="@Model.Query.Priority">@p</a>
+      }
+    </div>
+}

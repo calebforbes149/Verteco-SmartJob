@@ -1,0 +1,62 @@
+name: SmartJob CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+
+  push:
+    branches:
+      - main
+      - develop
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build, Analyse and Test
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Display .NET information
+        run: dotnet --info
+
+      - name: Restore solution
+        run: dotnet restore ./VertecoSmartJob.slnx
+
+      - name: Run static analysis
+        run: >
+          dotnet format analyzers
+          ./VertecoSmartJob.slnx
+          --verify-no-changes
+          --no-restore
+          --severity error
+
+      - name: Build solution
+        run: >
+          dotnet build
+          ./VertecoSmartJob.slnx
+          --configuration Release
+          --no-restore
+
+      - name: Run automated tests
+        run: >
+          dotnet test
+          ./tests/VertecoSmartJob.Tests/VertecoSmartJob.Tests.csproj
+          --configuration Release
+          --no-build
+          --verbosity normal

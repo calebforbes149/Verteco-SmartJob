@@ -1,0 +1,79 @@
+﻿@model TechnicianDetailsViewModel
+@{
+    ViewData["Title"] = Model.Technician.FullName;
+}
+
+<div class="page-head">
+    <div>
+        <div class="breadcrumb"><a asp-action="Index">Technicians</a> / @Model.Technician.FullName</div>
+        <div class="page-title">@Model.Technician.FullName</div>
+        <div class="page-desc"><span class="pill">@Model.Technician.Availability</span></div>
+    </div>
+    @if (User.IsInRole("Manager"))
+    {
+        <div class="page-actions">
+            <a class="btn btn-sm" asp-action="Edit" asp-route-id="@Model.Technician.Id">Edit</a>
+        </div>
+    }
+</div>
+
+<div class="two-col">
+    <div>
+        <div class="card section-card">
+            <div class="section-card-head"><h3>Technician info</h3></div>
+            <div class="section-card-body pad">
+                <div class="info-row"><span>Email</span><span>@Model.Technician.Email</span></div>
+                <div class="info-row"><span>Phone</span><span>@Model.Technician.Phone</span></div>
+                <div class="info-row"><span>Skills</span><span>@string.Join(", ", Model.Technician.Skills)</span></div>
+                <div class="info-row"><span>Jobs completed</span><span class="mono">@Model.Technician.JobsCompleted</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <div class="card section-card">
+            <div class="section-card-head"><h3>User account</h3></div>
+            <div class="section-card-body pad">
+                @if (Model.Account is null)
+                {
+                    <p class="tiny muted">This technician has no linked user account.</p>
+                }
+                else
+                {
+                    <div class="info-row"><span>Status</span><span class="pill" style="background:@(Model.Account.IsSuspended ? "var(--danger-bg)" : "var(--success-bg)");color:@(Model.Account.IsSuspended ? "var(--danger)" : "var(--success)");">@(Model.Account.IsSuspended ? "Suspended" : "Active")</span></div>
+                    @if (User.IsInRole("Manager"))
+                    {
+                        <div class="form-actions" style="border-top:none;padding-top:12px;">
+                            @if (Model.Account.IsSuspended)
+                            {
+                                <form asp-action="Reactivate" asp-route-id="@Model.Technician.Id" asp-route-userId="@Model.Account.Id" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm">Reactivate</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <form asp-action="Suspend" asp-route-id="@Model.Technician.Id" asp-route-userId="@Model.Account.Id" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm">Suspend</button>
+                                </form>
+                            }
+                            <form asp-action="Deactivate" asp-route-id="@Model.Technician.Id" asp-route-userId="@Model.Account.Id" method="post" onsubmit="return confirm('Deactivate this account? This offboards the technician.');">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-danger btn-sm">Deactivate</button>
+                            </form>
+                        </div>
+                        <form asp-action="SetPassword" asp-route-id="@Model.Technician.Id" asp-route-userId="@Model.Account.Id" method="post" autocomplete="off" style="margin-top:16px;">
+                            @Html.AntiForgeryToken()
+                            <h4>Set technician sign-in password</h4>
+                            <p class="tiny muted">The technician signs in to the mobile app using @Model.Account.Email and this password. Share it securely.</p>
+                            <div class="field"><label for="newPassword">New password</label><input id="newPassword" name="newPassword" type="password" minlength="8" autocomplete="new-password" required /></div>
+                            <div class="field"><label for="confirmPassword">Confirm password</label><input id="confirmPassword" name="confirmPassword" type="password" minlength="8" autocomplete="new-password" required /></div>
+                            <button type="submit" class="btn btn-sm">Set password</button>
+                        </form>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>

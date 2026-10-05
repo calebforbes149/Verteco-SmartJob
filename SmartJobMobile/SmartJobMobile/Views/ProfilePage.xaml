@@ -1,0 +1,547 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="SmartJobMobile.Views.ProfilePage"
+    BackgroundColor="#0A0C0F"
+    Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- HEADER -->
+        <VerticalStackLayout
+            Grid.Row="0"
+            Padding="24,22,24,0"
+            Spacing="0">
+
+            <Grid
+                ColumnDefinitions="Auto,*"
+                ColumnSpacing="14">
+
+                <Border
+                    Grid.Column="0"
+                    BackgroundColor="#111419"
+                    Stroke="#272B31"
+                    StrokeThickness="1"
+                    WidthRequest="48"
+                    HeightRequest="48"
+                    Padding="0"
+                    VerticalOptions="Center">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8" />
+                    </Border.StrokeShape>
+
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer
+                            Tapped="BackButton_Clicked" />
+                    </Border.GestureRecognizers>
+
+                    <Label
+                        Text="‹"
+                        TextColor="#B8BCC2"
+                        FontSize="30"
+                        HorizontalTextAlignment="Center"
+                        VerticalTextAlignment="Center"
+                        Margin="0,-3,0,0"
+                        SemanticProperties.Description="Go back" />
+
+                </Border>
+
+                <VerticalStackLayout
+                    Grid.Column="1"
+                    Spacing="2"
+                    VerticalOptions="Center">
+
+                    <Label
+                        Text="VERTECO"
+                        TextColor="#F2F2F2"
+                        FontSize="9"
+                        FontAttributes="Bold"
+                        CharacterSpacing="2.2" />
+
+                    <HorizontalStackLayout Spacing="4">
+
+                        <Label
+                            Text="SMART"
+                            TextColor="#FFFFFF"
+                            FontSize="20"
+                            FontAttributes="Bold" />
+
+                        <Label
+                            Text="JOB"
+                            TextColor="#ED3B3B"
+                            FontSize="20"
+                            FontAttributes="Bold" />
+
+                    </HorizontalStackLayout>
+
+                    <Label
+                        Text="TECHNICIAN CONSOLE"
+                        TextColor="#686E76"
+                        FontSize="7"
+                        FontAttributes="Bold"
+                        CharacterSpacing="1.6" />
+
+                </VerticalStackLayout>
+
+            </Grid>
+
+            <BoxView
+                HeightRequest="1"
+                Color="#24282E"
+                Margin="0,20,0,0" />
+
+        </VerticalStackLayout>
+
+
+        <!-- CONTENT -->
+        <ScrollView Grid.Row="1">
+
+            <VerticalStackLayout
+                Padding="24,26,24,32"
+                Spacing="0">
+
+                <!-- INTRO -->
+                <VerticalStackLayout Spacing="5">
+
+                    <Label
+                        Text="ACCOUNT"
+                        TextColor="#ED3B3B"
+                        FontSize="9"
+                        FontAttributes="Bold"
+                        CharacterSpacing="2" />
+
+                    <Label
+                        Text="Technician Profile"
+                        TextColor="#FFFFFF"
+                        FontSize="30"
+                        FontAttributes="Bold"
+                        SemanticProperties.HeadingLevel="Level1" />
+
+                    <Label
+                        Text="View your technician account and application information."
+                        TextColor="#7C828A"
+                        FontSize="12"
+                        LineBreakMode="WordWrap" />
+
+                </VerticalStackLayout>
+
+
+                <!-- PROFILE IDENTITY -->
+                <Border
+                    BackgroundColor="#111419"
+                    Stroke="#292D33"
+                    StrokeThickness="1"
+                    Padding="0"
+                    Margin="0,24,0,0">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8" />
+                    </Border.StrokeShape>
+
+                    <VerticalStackLayout Spacing="0">
+
+                        <BoxView
+                            HeightRequest="2"
+                            Color="#ED3B3B" />
+
+                        <VerticalStackLayout
+                            Padding="22"
+                            Spacing="0"
+                            HorizontalOptions="Fill">
+
+                            <Border
+                                WidthRequest="76"
+                                HeightRequest="76"
+                                BackgroundColor="#241416"
+                                Stroke="#5A292D"
+                                StrokeThickness="1"
+                                HorizontalOptions="Center"
+                                Padding="0">
+
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="38" />
+                                </Border.StrokeShape>
+
+                                <Label
+                                    Text="{Binding Initials}"
+                                    TextColor="#ED3B3B"
+                                    FontSize="25"
+                                    FontAttributes="Bold"
+                                    HorizontalTextAlignment="Center"
+                                    VerticalTextAlignment="Center"
+                                    SemanticProperties.Description="Technician initials" />
+
+                            </Border>
+
+                            <Label
+                                Text="{Binding TechnicianName}"
+                                TextColor="#FFFFFF"
+                                FontSize="21"
+                                FontAttributes="Bold"
+                                HorizontalTextAlignment="Center"
+                                Margin="0,14,0,0"
+                                LineBreakMode="WordWrap" />
+
+                            <Label
+                                Text="Field Technician"
+                                TextColor="#7C828A"
+                                FontSize="11"
+                                HorizontalTextAlignment="Center"
+                                Margin="0,4,0,0" />
+
+                            <Border
+                                BackgroundColor="#111916"
+                                Stroke="#263C2E"
+                                StrokeThickness="1"
+                                Padding="11,5"
+                                HorizontalOptions="Center"
+                                Margin="0,12,0,0">
+
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="5" />
+                                </Border.StrokeShape>
+
+                                <Label
+                                    Text="ACTIVE"
+                                    TextColor="#73B986"
+                                    FontSize="8"
+                                    FontAttributes="Bold"
+                                    CharacterSpacing="1" />
+
+                            </Border>
+
+                        </VerticalStackLayout>
+
+                    </VerticalStackLayout>
+
+                </Border>
+
+
+                <!-- ACCOUNT DETAILS -->
+                <VerticalStackLayout
+                    Spacing="2"
+                    Margin="0,28,0,12">
+
+                    <Label
+                        Text="ACCOUNT DETAILS"
+                        TextColor="#FFFFFF"
+                        FontSize="14"
+                        FontAttributes="Bold"
+                        CharacterSpacing="0.5" />
+
+                    <Label
+                        Text="Technician account information"
+                        TextColor="#646A72"
+                        FontSize="10" />
+
+                </VerticalStackLayout>
+
+
+                <Border
+                    BackgroundColor="#111419"
+                    Stroke="#292D33"
+                    StrokeThickness="1"
+                    Padding="18">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8" />
+                    </Border.StrokeShape>
+
+                    <VerticalStackLayout Spacing="0">
+
+                        <!-- FULL NAME -->
+                        <Label
+                            Text="FULL NAME"
+                            TextColor="#646A72"
+                            FontSize="8"
+                            FontAttributes="Bold"
+                            CharacterSpacing="0.8" />
+
+                        <Label
+                            Text="{Binding TechnicianName}"
+                            TextColor="#E4E5E7"
+                            FontSize="12"
+                            FontAttributes="Bold"
+                            Margin="0,5,0,0"
+                            LineBreakMode="WordWrap" />
+
+                        <BoxView
+                            HeightRequest="1"
+                            Color="#292D33"
+                            Margin="0,14" />
+
+
+                        <!-- EMPLOYEE NUMBER -->
+                        <Label
+                            Text="EMPLOYEE NUMBER"
+                            TextColor="#646A72"
+                            FontSize="8"
+                            FontAttributes="Bold"
+                            CharacterSpacing="0.8" />
+
+                        <Label
+                            Text="{Binding EmployeeNumber}"
+                            TextColor="#C4C7CB"
+                            FontSize="12"
+                            Margin="0,5,0,0" />
+
+                        <BoxView
+                            HeightRequest="1"
+                            Color="#292D33"
+                            Margin="0,14" />
+
+
+                        <!-- EMAIL -->
+                        <Label
+                            Text="EMAIL ADDRESS"
+                            TextColor="#646A72"
+                            FontSize="8"
+                            FontAttributes="Bold"
+                            CharacterSpacing="0.8" />
+
+                        <Label
+                            Text="{Binding EmailAddress}"
+                            TextColor="#C4C7CB"
+                            FontSize="12"
+                            Margin="0,5,0,0"
+                            LineBreakMode="WordWrap" />
+
+                        <BoxView
+                            HeightRequest="1"
+                            Color="#292D33"
+                            Margin="0,14" />
+
+
+                        <!-- ROLE -->
+                        <Label
+                            Text="ROLE"
+                            TextColor="#646A72"
+                            FontSize="8"
+                            FontAttributes="Bold"
+                            CharacterSpacing="0.8" />
+
+                        <Label
+                            Text="Technician"
+                            TextColor="#C4C7CB"
+                            FontSize="12"
+                            Margin="0,5,0,0" />
+
+                    </VerticalStackLayout>
+
+                </Border>
+
+
+                <!-- APP STATUS -->
+                <VerticalStackLayout
+                    Spacing="2"
+                    Margin="0,28,0,12">
+
+                    <Label
+                        Text="APPLICATION"
+                        TextColor="#FFFFFF"
+                        FontSize="14"
+                        FontAttributes="Bold"
+                        CharacterSpacing="0.5" />
+
+                    <Label
+                        Text="Application and synchronisation information"
+                        TextColor="#646A72"
+                        FontSize="10" />
+
+                </VerticalStackLayout>
+
+
+                <Border
+                    BackgroundColor="#111419"
+                    Stroke="#292D33"
+                    StrokeThickness="1"
+                    Padding="18">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8" />
+                    </Border.StrokeShape>
+
+                    <VerticalStackLayout Spacing="0">
+
+                        <!-- CONNECTION -->
+                        <Grid
+    ColumnDefinitions="*,Auto"
+    ColumnSpacing="12"
+    Padding="0,6">
+
+                            <Grid.GestureRecognizers>
+                                <TapGestureRecognizer
+            Tapped="OfflineSync_Tapped" />
+                            </Grid.GestureRecognizers>
+
+                            <VerticalStackLayout
+        Grid.Column="0"
+        Spacing="3">
+
+                                <Label
+            Text="CONNECTION"
+            TextColor="#646A72"
+            FontSize="8"
+            FontAttributes="Bold"
+            CharacterSpacing="0.8" />
+
+                                <Label
+            Text="Network status"
+            TextColor="#C4C7CB"
+            FontSize="11" />
+
+                            </VerticalStackLayout>
+
+                            <Label
+        Grid.Column="1"
+        Text="SEE OFFLINE SYNC  ›"
+        TextColor="#ED3B3B"
+        FontSize="9"
+        FontAttributes="Bold"
+        CharacterSpacing="0.4"
+        VerticalOptions="Center"
+        HorizontalTextAlignment="End"
+        SemanticProperties.Description="Open offline synchronisation" />
+
+                        </Grid>
+
+
+                        <BoxView
+                            HeightRequest="1"
+                            Color="#292D33"
+                            Margin="0,14" />
+
+
+                        <!-- SYNC -->
+                        <Grid
+                            ColumnDefinitions="*,Auto"
+                            ColumnSpacing="12">
+
+                            <VerticalStackLayout
+                                Grid.Column="0"
+                                Spacing="3">
+
+                                <Label
+                                    Text="SYNCHRONISATION"
+                                    TextColor="#646A72"
+                                    FontSize="8"
+                                    FontAttributes="Bold"
+                                    CharacterSpacing="0.8" />
+
+                                <Label
+                                    Text="Mobile data"
+                                    TextColor="#C4C7CB"
+                                    FontSize="11" />
+
+                            </VerticalStackLayout>
+
+                            <Label
+                                Grid.Column="1"
+                                Text="MANAGED BY SYNC"
+                                TextColor="#8D939A"
+                                FontSize="8"
+                                FontAttributes="Bold"
+                                CharacterSpacing="0.4"
+                                VerticalOptions="Center"
+                                HorizontalTextAlignment="End" />
+
+                        </Grid>
+
+
+                        <BoxView
+                            HeightRequest="1"
+                            Color="#292D33"
+                            Margin="0,14" />
+
+
+                        <!-- VERSION -->
+                        <Grid
+                            ColumnDefinitions="*,Auto"
+                            ColumnSpacing="12">
+
+                            <VerticalStackLayout
+                                Grid.Column="0"
+                                Spacing="3">
+
+                                <Label
+                                    Text="APP VERSION"
+                                    TextColor="#646A72"
+                                    FontSize="8"
+                                    FontAttributes="Bold"
+                                    CharacterSpacing="0.8" />
+
+                                <Label
+                                    Text="SmartJob Mobile"
+                                    TextColor="#C4C7CB"
+                                    FontSize="11" />
+
+                            </VerticalStackLayout>
+
+                            <Label
+                                Grid.Column="1"
+                                Text="1.0.0"
+                                TextColor="#E4E5E7"
+                                FontSize="10"
+                                FontAttributes="Bold"
+                                VerticalOptions="Center" />
+
+                        </Grid>
+
+                    </VerticalStackLayout>
+
+                </Border>
+
+
+                <!-- LOGOUT -->
+                <Button
+                    Text="LOG OUT"
+                    Command="{Binding LogoutCommand}"
+                    BackgroundColor="#111419"
+                    TextColor="#ED7777"
+                    BorderColor="#5A292D"
+                    BorderWidth="1"
+                    FontSize="11"
+                    FontAttributes="Bold"
+                    CharacterSpacing="0.8"
+                    HeightRequest="50"
+                    CornerRadius="6"
+                    Margin="0,28,0,0"
+                    SemanticProperties.Description="Log out of SmartJob" />
+
+
+                <!-- FOOTER -->
+                <BoxView
+                    HeightRequest="1"
+                    Color="#20242A"
+                    Margin="0,28,0,0" />
+
+                <Grid
+                    ColumnDefinitions="*,Auto"
+                    Margin="0,12,0,0">
+
+                    <Label
+                        Text="VERTECO SMARTJOB"
+                        TextColor="#50555C"
+                        FontSize="8"
+                        FontAttributes="Bold"
+                        CharacterSpacing="1.5" />
+
+                    <Label
+                        Grid.Column="1"
+                        Text="PROFILE"
+                        TextColor="#50555C"
+                        FontSize="8"
+                        CharacterSpacing="1.2" />
+
+                </Grid>
+
+            </VerticalStackLayout>
+
+        </ScrollView>
+
+    </Grid>
+
+</ContentPage>

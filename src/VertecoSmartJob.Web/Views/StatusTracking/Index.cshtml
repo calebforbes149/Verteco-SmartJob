@@ -1,0 +1,58 @@
+@model List<JobCardSummaryDto>
+@{
+    ViewData["Title"] = "Status Tracking";
+    var columns = new List<(string Status, string Label)>
+    {
+        ("Draft", "Draft"),
+        ("Assigned", "Assigned"),
+        ("Accepted", "Accepted"),
+        ("InProgress", "In progress"),
+        ("AwaitingApproval", "Awaiting approval"),
+        ("Reopened", "Reopened"),
+        ("Completed", "Completed")
+    };
+    if (Model.Any(job => job.Status == "Cancelled"))
+    {
+        columns.Add(("Cancelled", "Cancelled"));
+    }
+}
+
+<div class="page-head">
+  <div>
+    <div class="page-title">Status Tracking</div>
+    <div class="page-desc">Every job card, grouped by where it stands right now. A flag can appear at any stage.</div>
+  </div>
+  <div class="page-actions"><a class="btn btn-primary" asp-controller="JobCards" asp-action="Create">New job card</a></div>
+</div>
+
+<div class="status-board-scroll" role="region" aria-label="Job card status board" tabindex="0">
+  <div class="status-board" style="grid-template-columns:repeat(@columns.Count,minmax(175px,1fr));min-width:@(columns.Count * 187)px;">
+    @foreach (var column in columns)
+    {
+      var jobs = Model.Where(job => job.Status == column.Status).ToList();
+      <section class="kanban-col" aria-label="@column.Label jobs">
+        <div class="kanban-col-head"><b>@column.Label</b><span class="kanban-count">@jobs.Count</span></div>
+        @foreach (var job in jobs)
+        {
+          <a class="kanban-card status-card" asp-controller="JobCards" asp-action="Details" asp-route-id="@job.Id" aria-label="@job.Number, @job.CustomerName, @column.Label">
+            <div class="jc">@job.Number</div>
+            <div class="kc-title">@job.CustomerName</div>
+            <div class="status-card-site">@job.SiteName</div>
+            @if (job.IsFlagged)
+            {
+              <div class="status-card-flag"><span class="flag-badge" title="@job.FlagReason">⚑ Flagged</span></div>
+            }
+            <div class="kanban-card-foot">
+              <span class="pill pill-@job.Priority.ToLowerInvariant()">@job.Priority</span>
+              <span class="status-card-technician">@(job.TechnicianName ?? "Needs technician")</span>
+            </div>
+          </a>
+        }
+        @if (jobs.Count == 0)
+        {
+          <div class="status-column-empty">No job cards</div>
+        }
+      </section>
+    }
+  </div>
+</div>

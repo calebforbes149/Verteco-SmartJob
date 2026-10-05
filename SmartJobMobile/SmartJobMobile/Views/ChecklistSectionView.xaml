@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="SmartJobMobile.Views.ChecklistSectionView">
+
+    <VerticalStackLayout Spacing="10">
+        <Label
+            x:Name="SectionTitle"
+            TextColor="#FFFFFF"
+            FontSize="14"
+            FontAttributes="Bold"
+            CharacterSpacing="0.5" />
+
+        <Label
+            x:Name="SectionHint"
+            TextColor="#858B93"
+            FontSize="11"
+            LineBreakMode="WordWrap" />
+
+        <ActivityIndicator
+            IsRunning="{Binding IsLoading}"
+            IsVisible="{Binding IsLoading}"
+            Color="#ED3B3B" />
+
+        <VerticalStackLayout
+            BindableLayout.ItemsSource="{Binding ChecklistItems}"
+            Spacing="8">
+            <BindableLayout.ItemTemplate>
+                <DataTemplate>
+                    <Border
+                        BackgroundColor="#111419"
+                        Stroke="#292D33"
+                        StrokeThickness="1"
+                        Padding="12">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="8" />
+                        </Border.StrokeShape>
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                            <CheckBox
+                                Grid.Column="0"
+                                IsChecked="{Binding IsCompleted, Mode=TwoWay}"
+                                IsEnabled="{Binding CanEdit}"
+                                Color="#ED3B3B"
+                                VerticalOptions="Center"
+                                MinimumHeightRequest="44"
+                                MinimumWidthRequest="44" />
+                            <Label
+                                Grid.Column="1"
+                                Text="{Binding Text}"
+                                TextColor="#E4E5E7"
+                                FontSize="12"
+                                VerticalOptions="Center"
+                                LineBreakMode="WordWrap" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </BindableLayout.ItemTemplate>
+        </VerticalStackLayout>
+    </VerticalStackLayout>
+</ContentView>

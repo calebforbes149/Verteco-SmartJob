@@ -1,0 +1,53 @@
+# Visual Studio
+.vs/
+**/.vs/
+
+# Build output
+bin/
+obj/
+**/bin/
+**/obj/
+
+# Application data
+App_Data/
+
+# User-specific Visual Studio files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# .NET / MAUI generated files
+artifacts/
+**/artifacts/
+
+# Local databases
+*.db
+*.db3
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+
+# Local environment and secrets
+.env
+secrets.json
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+
+# Android signing
+signing/
+*.jks
+*.keystore
+keystore.properties
+signing.properties

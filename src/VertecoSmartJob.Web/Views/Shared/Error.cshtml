@@ -1,0 +1,21 @@
+﻿@model ErrorViewModel
+@{
+    ViewData["Title"] = "Error";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Error · SmartJob</title>
+<link rel="stylesheet" href="~/css/site.css" asp-append-version="true">
+</head>
+<body style="padding:40px;font-family:sans-serif;">
+  <h1>Something went wrong.</h1>
+  @if (Model.ShowRequestId)
+  {
+      <p><small>Request ID: <code>@Model.RequestId</code></small></p>
+  }
+  <p><a href="/">Back to Dashboard</a></p>
+</body>
+</html>

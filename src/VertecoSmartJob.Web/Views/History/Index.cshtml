@@ -1,0 +1,63 @@
+﻿@model HistoryViewModel
+@{
+    ViewData["Title"] = "Historical Records";
+}
+
+<div class="page-head">
+  <div>
+    <div class="page-title">Historical Records</div>
+    <div class="page-desc">Look up a piece of equipment by serial number to see its full job history. Verteco keeps job card data indefinitely so a technician can trace an asset's service record.</div>
+  </div>
+</div>
+
+<form method="get" class="filter-bar">
+  <div class="search-wrap">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.6" y2="16.6"/></svg>
+    <input type="text" name="serial" value="@Model.Serial" placeholder="Equipment serial number…" />
+  </div>
+  <button type="submit" class="btn btn-primary btn-sm">Search</button>
+</form>
+
+@if (Model.Searched)
+{
+    @if (Model.Equipment is null)
+    {
+        <div class="card card-pad" style="border-color:var(--warning);background:var(--warning-bg);">
+          No equipment found with serial <span class="mono">@Model.Serial</span>. Job history below is a plain text match, so it may still show related results.
+        </div>
+    }
+    else
+    {
+        <div class="card card-pad" style="margin-bottom:16px;">
+          <b>@Model.Equipment.Name</b> <span class="mono tiny muted">@Model.Equipment.SerialNumber</span>
+          <p class="tiny muted">@Model.Equipment.Description</p>
+        </div>
+    }
+
+    <div class="card">
+      @if (Model.Jobs.Items.Count == 0)
+      {
+          <div class="empty-state"><b>No job history matches that serial number</b></div>
+      }
+      else
+      {
+          <div class="table-wrap">
+          <table>
+            <thead><tr><th>Job #</th><th>Customer / Site</th><th>Technician</th><th>Status</th><th>Scheduled</th></tr></thead>
+            <tbody>
+            @foreach (var job in Model.Jobs.Items)
+            {
+              <tr class="clickable" onclick="location.href='@Url.Action("Details", "JobCards", new { id = job.Id })'">
+                <td class="mono">@job.Number</td>
+                <td><div class="cell-primary">@job.CustomerName</div><div class="cell-sub">@job.SiteName</div></td>
+                <td>@(job.TechnicianName ?? "-")</td>
+                <td><span class="pill pill-@job.Status.ToLowerInvariant()">@job.Status</span></td>
+                <td class="mono">@job.ScheduledDate.ToString("dd MMM yyyy")</td>
+              </tr>
+            }
+            </tbody>
+          </table>
+          </div>
+      }
+    </div>
+}

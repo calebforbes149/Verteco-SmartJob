@@ -1,0 +1,139 @@
+﻿@model CreateJobCardViewModel
+@{
+    ViewData["Title"] = "Create Job Card";
+}
+
+<div class="page-head">
+  <div>
+    <div class="page-title">Create Job Card</div>
+    <div class="page-desc">Picking a customer only filters the Site list below. Nothing else about the client is shown here.</div>
+  </div>
+</div>
+
+<div class="card card-pad" style="max-width:720px;">
+<form asp-action="Create" method="post" novalidate>
+  @Html.AntiForgeryToken()
+  <div asp-validation-summary="All" class="form-error"></div>
+
+  <div class="form-grid">
+    <div class="field full">
+      <label>Customer</label>
+      <div style="display:flex;gap:8px;">
+        <select asp-for="CustomerId" id="customer-select" style="flex:1;">
+          <option value="">Select a customer…</option>
+          @foreach (var c in Model.Customers)
+          {
+              <option value="@c.Id" selected="@(Model.CustomerId == c.Id)">@c.Name</option>
+          }
+        </select>
+        <button type="button" class="btn btn-sm" id="new-customer-btn">+ New customer</button>
+      </div>
+      <span asp-validation-for="CustomerId" class="field-error"></span>
+    </div>
+
+    <div class="field full inline-create-panel" id="new-customer-panel" hidden>
+      <div class="card card-pad" style="background:var(--bg-app);">
+        <b class="tiny">New customer</b>
+        <div class="form-grid" style="margin-top:10px;">
+          <div class="field"><label>Name</label><input type="text" id="nc-name" /></div>
+          <div class="field"><label>Industry</label><input type="text" id="nc-industry" /></div>
+          <div class="field"><label>Contact name</label><input type="text" id="nc-contact-name" /></div>
+          <div class="field"><label>Contact email</label><input type="text" id="nc-contact-email" /></div>
+          <div class="field full"><label>Contact phone</label><input type="text" id="nc-contact-phone" /></div>
+        </div>
+        <div class="tiny field-error" id="nc-error"></div>
+        <div class="form-actions" style="margin-top:8px;border-top:none;padding-top:0;">
+          <button type="button" class="btn btn-primary btn-sm" id="nc-save-btn">Add customer</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="nc-cancel-btn">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="field full">
+      <label>Site</label>
+      <div style="display:flex;gap:8px;">
+        <select asp-for="SiteId" id="site-select" style="flex:1;" disabled>
+          <option value="">Select a customer first…</option>
+        </select>
+        <button type="button" class="btn btn-sm" id="new-site-btn" disabled>+ New site</button>
+      </div>
+      <span asp-validation-for="SiteId" class="field-error"></span>
+    </div>
+
+    <div class="field full inline-create-panel" id="new-site-panel" hidden>
+      <div class="card card-pad" style="background:var(--bg-app);">
+        <b class="tiny">New site</b>
+        <div class="form-grid" style="margin-top:10px;">
+          <div class="field full"><label>Name</label><input type="text" id="ns-name" /></div>
+          <div class="field full"><label>Address</label><input type="text" id="ns-address" /></div>
+          <div class="field"><label>Site type</label><input type="text" id="ns-site-type" /></div>
+        </div>
+        <div class="tiny field-error" id="ns-error"></div>
+        <div class="form-actions" style="margin-top:8px;border-top:none;padding-top:0;">
+          <button type="button" class="btn btn-primary btn-sm" id="ns-save-btn">Add site</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="ns-cancel-btn">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    @if (Model.StandardTemplate is { } template)
+    {
+        <div class="field full">
+          <label>Job type</label>
+          <div class="card" style="padding:10px 14px;background:var(--bg-app);">
+            <b class="tiny">@template.Name</b>
+            <p class="tiny muted" style="margin-top:4px;">Every job uses this one standard checklist.</p>
+          </div>
+        </div>
+    }
+
+    <div class="field">
+      <label>Priority</label>
+      <select asp-for="Priority">
+        @foreach (var p in JobCardListViewModel.Priorities)
+        {
+            <option value="@p" selected="@(Model.Priority == p)">@p</option>
+        }
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Scheduled date</label>
+      <input asp-for="ScheduledDate" type="date" />
+      <span asp-validation-for="ScheduledDate" class="field-error"></span>
+    </div>
+
+    <div class="field">
+      <label>Assign technician <span class="prototype-tag">Optional</span></label>
+      <select asp-for="TechnicianId">
+        <option value="">Leave unassigned</option>
+        @foreach (var t in Model.Technicians)
+        {
+            <option value="@t.Id" selected="@(Model.TechnicianId == t.Id)">@t.FullName - @t.Availability</option>
+        }
+      </select>
+    </div>
+
+    <div class="field full">
+      <label>Notes</label>
+      <textarea asp-for="Notes" maxlength="2000"></textarea>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Create job card</button>
+    <a class="btn btn-ghost" asp-action="Index">Cancel</a>
+  </div>
+</form>
+</div>
+
+@section Scripts {
+<script>
+  window.smartjob = window.smartjob || {};
+  window.smartjob.antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+  window.smartjob.sitesForCustomerUrl = '@Url.Action("SitesForCustomer", "JobCards")';
+  window.smartjob.createCustomerUrl = '@Url.Action("CreateInline", "Customers")';
+  window.smartjob.createSiteUrl = '@Url.Action("CreateInline", "Sites")';
+  window.smartjob.initialSiteId = @Json.Serialize(Model.SiteId?.ToString());
+</script>
+}
