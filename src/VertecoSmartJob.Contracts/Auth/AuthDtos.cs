@@ -41,3 +41,14 @@ public class ResetPasswordRequest
 
     public string NewPassword { get; set; } = string.Empty;
 }
+
+public class UpdateOwnProfileRequest
+{
+    public string FullName { get; set; } = string.Empty;
+
+    public string Email { get; set; } = string.Empty;
+
+    public string Phone { get; set; } = string.Empty;
+
+    public string? CurrentPassword { get; set; }
+}

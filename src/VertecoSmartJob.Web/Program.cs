@@ -128,6 +128,14 @@ builder.Services
         ApiKeyDelegatingHandler>();
 
 builder.Services
+    .AddHttpClient<ProfileApiClient>(
+        client =>
+            client.BaseAddress =
+                new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<
+        ApiKeyDelegatingHandler>();
+
+builder.Services
     .AddHttpClient<CorrectiveActionsApiClient>(
         client =>
             client.BaseAddress =

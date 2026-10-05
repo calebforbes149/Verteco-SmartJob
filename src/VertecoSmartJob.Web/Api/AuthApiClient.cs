@@ -17,4 +17,19 @@ public class AuthApiClient(HttpClient http)
         await response.EnsureApiSuccessAsync(ct);
         return await response.Content.ReadFromJsonAsync<LoginResponse>(cancellationToken: ct);
     }
+
+    public async Task ForgotPasswordAsync(string email, CancellationToken ct = default)
+    {
+        using var response = await http.PostAsJsonAsync(
+            "api/v1/auth/forgot-password", new ForgotPasswordRequest { Email = email }, ct);
+        await response.EnsureApiSuccessAsync(ct);
+    }
+
+    public async Task ResetPasswordAsync(string token, string newPassword, CancellationToken ct = default)
+    {
+        using var response = await http.PostAsJsonAsync(
+            "api/v1/auth/reset-password",
+            new ResetPasswordRequest { Token = token, NewPassword = newPassword }, ct);
+        await response.EnsureApiSuccessAsync(ct);
+    }
 }

@@ -378,6 +378,17 @@ public class AuthController(
         ForgotPasswordRequest request,
         CancellationToken ct)
     {
+        // Return the same result for every address when mail delivery is unavailable.
+        // Otherwise the UI would claim that a link was sent when SMTP is disabled.
+        if (string.IsNullOrWhiteSpace(configuration["Smtp:Host"]) ||
+            configuration.GetValue<int?>("Smtp:Port") is not > 0 ||
+            string.IsNullOrWhiteSpace(configuration["Smtp:Username"]) ||
+            string.IsNullOrWhiteSpace(configuration["Smtp:Password"]))
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                new ProblemDetails { Title = "Password reset email is temporarily unavailable." });
+        }
+
         var user =
             await users.GetByEmailAsync(
                 request.Email,
