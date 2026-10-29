@@ -274,7 +274,14 @@
                             Margin="0,16,0,4">
                             <Label
                                 Text="SAVED TECHNICIAN SIGNATURE"
+                                IsVisible="{Binding IsTechnicianSignatureUploaded}"
                                 TextColor="#73B986"
+                                FontSize="10"
+                                FontAttributes="Bold" />
+                            <Label
+                                Text="⏳ SAVED ON THIS DEVICE — NOT YET UPLOADED"
+                                IsVisible="{Binding IsTechnicianSignaturePendingSync}"
+                                TextColor="#E0A030"
                                 FontSize="10"
                                 FontAttributes="Bold" />
                             <Image
@@ -295,6 +302,11 @@
                             <Label
                                 Text="This signature is saved. Tap &quot;Draw a new signature&quot; above to replace it."
                                 TextColor="#858B93"
+                                FontSize="10" />
+                            <Label
+                                Text="You're offline, so this will upload automatically next time SmartJob syncs (see the Offline Sync screen)."
+                                IsVisible="{Binding IsTechnicianSignaturePendingSync}"
+                                TextColor="#E0A030"
                                 FontSize="10" />
                         </VerticalStackLayout>
 
@@ -501,7 +513,14 @@
                             Margin="0,16,0,4">
                             <Label
                                 Text="SAVED CLIENT SIGNATURE"
+                                IsVisible="{Binding IsClientSignatureUploaded}"
                                 TextColor="#73B986"
+                                FontSize="10"
+                                FontAttributes="Bold" />
+                            <Label
+                                Text="⏳ SAVED ON THIS DEVICE — NOT YET UPLOADED"
+                                IsVisible="{Binding IsClientSignaturePendingSync}"
+                                TextColor="#E0A030"
                                 FontSize="10"
                                 FontAttributes="Bold" />
                             <Image
@@ -522,6 +541,11 @@
                             <Label
                                 Text="This signature is saved. Tap &quot;Draw a new signature&quot; above to replace it."
                                 TextColor="#858B93"
+                                FontSize="10" />
+                            <Label
+                                Text="You're offline, so this will upload automatically next time SmartJob syncs (see the Offline Sync screen)."
+                                IsVisible="{Binding IsClientSignaturePendingSync}"
+                                TextColor="#E0A030"
                                 FontSize="10" />
                         </VerticalStackLayout>
 

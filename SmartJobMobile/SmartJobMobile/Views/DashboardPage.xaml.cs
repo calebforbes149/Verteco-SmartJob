@@ -23,6 +23,20 @@ public partial class DashboardPage : ContentPage
             new DashboardViewModel(apiService);
     }
 
+    // The technician comes back to this same Dashboard instance after
+    // viewing (and marking read) notifications, or after working a
+    // job - without this, the job counts and the notification badge
+    // would just show whatever was true when the app first opened.
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+
+        if (BindingContext is DashboardViewModel viewModel)
+        {
+            _ = viewModel.RefreshAsync();
+        }
+    }
+
     private async void ViewJobsButton_Clicked(
         object? sender,
         EventArgs e)

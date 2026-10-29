@@ -585,6 +585,101 @@ public class ApiService
     }
 
     // =========================================================
+    // UPLOAD A SIGNATURE (full upload + confirm sequence)
+    //
+    // Wraps CreateSignatureUploadAsync + UploadEvidenceFileAsync +
+    // CalculateSha256Async + ConfirmSignatureAsync into one call, so
+    // both the live Signature screen and the offline sync queue can
+    // upload a signature the exact same way.
+    // =========================================================
+
+    public async Task<bool> UploadSignatureFileAsync(
+        Guid jobId,
+        string filePath,
+        string signerName,
+        string type)
+    {
+        string extension =
+            Path.GetExtension(filePath)
+                .ToLowerInvariant();
+
+        if (extension == ".jpeg")
+        {
+            extension = ".jpg";
+        }
+
+        if (extension != ".jpg" &&
+            extension != ".png")
+        {
+            throw new InvalidOperationException(
+                "The generated signature must be a JPG or PNG file.");
+        }
+
+        MobileEvidenceUploadResponse upload =
+            await CreateSignatureUploadAsync(
+                jobId,
+                extension);
+
+        await UploadEvidenceFileAsync(
+            upload.UploadUrl,
+            filePath);
+
+        string sha256 =
+            await CalculateSha256Async(
+                filePath);
+
+        return await ConfirmSignatureAsync(
+            jobId,
+            upload.UploadToken,
+            sha256,
+            signerName,
+            type);
+    }
+
+    // =========================================================
+    // UPLOAD EVIDENCE PHOTO (FULL FLOW)
+    //
+    // Wraps CreateEvidenceUploadAsync + UploadEvidenceFileAsync +
+    // CalculateSha256Async + ConfirmEvidenceAsync into one call, so
+    // both the live Photo Capture screen and the offline sync queue
+    // can upload a photo the exact same way.
+    // =========================================================
+
+    public async Task<bool> UploadEvidencePhotoAsync(
+        Guid jobId,
+        string filePath,
+        string caption)
+    {
+        string extension =
+            Path.GetExtension(filePath)
+                .ToLowerInvariant();
+
+        if (string.IsNullOrWhiteSpace(extension))
+        {
+            extension = ".jpg";
+        }
+
+        MobileEvidenceUploadResponse upload =
+            await CreateEvidenceUploadAsync(
+                jobId,
+                extension);
+
+        await UploadEvidenceFileAsync(
+            upload.UploadUrl,
+            filePath);
+
+        string sha256 =
+            await CalculateSha256Async(
+                filePath);
+
+        return await ConfirmEvidenceAsync(
+            jobId,
+            upload.UploadToken,
+            sha256,
+            caption);
+    }
+
+    // =========================================================
     // SUBMIT JOB FOR REVIEW
     // =========================================================
 

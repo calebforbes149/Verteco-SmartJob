@@ -64,25 +64,29 @@
                 <!-- NOTIFICATIONS -->
                 <!-- ================================================= -->
 
-                <Border
-                    Grid.Column="1"
-                    BackgroundColor="#111419"
-                    Stroke="#272B31"
-                    StrokeThickness="1"
-                    WidthRequest="48"
-                    HeightRequest="48"
-                    Padding="0">
+                <!-- The badge below is deliberately a SIBLING of the -->
+                <!-- icon Border, not nested inside it - MAUI's Border -->
+                <!-- clips its content to Border.StrokeShape, which was -->
+                <!-- cutting the badge (and its number) off whenever it -->
+                <!-- peeked past the icon's rounded corner.             -->
+                <Grid Grid.Column="1">
 
-                    <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="8" />
-                    </Border.StrokeShape>
+                    <Border
+                        BackgroundColor="#111419"
+                        Stroke="#272B31"
+                        StrokeThickness="1"
+                        WidthRequest="48"
+                        HeightRequest="48"
+                        Padding="0">
 
-                    <Border.GestureRecognizers>
-                        <TapGestureRecognizer
-                            Tapped="Notifications_Tapped" />
-                    </Border.GestureRecognizers>
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="8" />
+                        </Border.StrokeShape>
 
-                    <Grid>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer
+                                Tapped="Notifications_Tapped" />
+                        </Border.GestureRecognizers>
 
                         <!-- Notification symbol -->
                         <Path
@@ -102,30 +106,43 @@
                             VerticalOptions="Center"
                             SemanticProperties.Description="Notifications" />
 
-                        <!-- Notification badge -->
-                        <Border
-                            HorizontalOptions="End"
-                            VerticalOptions="Start"
-                            BackgroundColor="#ED3B3B"
-                            StrokeThickness="0"
-                            Padding="4,1"
-                            Margin="0,-4,-4,0">
+                    </Border>
 
-                            <Border.StrokeShape>
-                                <RoundRectangle CornerRadius="8" />
-                            </Border.StrokeShape>
+                    <!-- Notification badge: only shown once there's an -->
+                    <!-- actual unread notification to report. Not part -->
+                    <!-- of the icon Border above, so it can't be clipped. -->
+                    <Border
+                        IsVisible="{Binding HasNotifications}"
+                        HorizontalOptions="End"
+                        VerticalOptions="Start"
+                        BackgroundColor="#ED3B3B"
+                        Stroke="#111419"
+                        StrokeThickness="1.5"
+                        HeightRequest="19"
+                        MinimumWidthRequest="19"
+                        Padding="5,0"
+                        Margin="0,-6,-6,0"
+                        InputTransparent="True">
 
-                            <Label
-                                Text="{Binding NotificationCount}"
-                                TextColor="#FFFFFF"
-                                FontSize="8"
-                                FontAttributes="Bold" />
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="9.5" />
+                        </Border.StrokeShape>
 
-                        </Border>
+                        <Label
+                            Text="{Binding NotificationCountDisplay}"
+                            TextColor="#FFFFFF"
+                            FontSize="11"
+                            FontAttributes="Bold"
+                            LineBreakMode="NoWrap"
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center"
+                            HorizontalTextAlignment="Center"
+                            VerticalTextAlignment="Center"
+                            SemanticProperties.Description="Unread notifications" />
 
-                    </Grid>
+                    </Border>
 
-                </Border>
+                </Grid>
 
 
                 <!-- ================================================= -->

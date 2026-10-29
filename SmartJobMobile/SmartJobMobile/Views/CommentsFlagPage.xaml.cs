@@ -17,6 +17,9 @@ public partial class CommentsFlagPage : ContentPage
                 .MauiContext!
                 .Services;
 
+        LocalDatabaseService localDatabaseService =
+            services.GetRequiredService<LocalDatabaseService>();
+
         ApiService apiService =
             services.GetRequiredService<ApiService>();
 
@@ -26,6 +29,7 @@ public partial class CommentsFlagPage : ContentPage
         BindingContext =
             new CommentsFlagViewModel(
                 job,
+                localDatabaseService,
                 apiService,
                 connectivityService);
 

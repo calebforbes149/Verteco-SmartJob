@@ -27,6 +27,16 @@ public class DashboardViewModel : INotifyPropertyChanged
     }
 
 
+    // The Dashboard page instance is reused when the technician
+    // navigates back to it (e.g. from Notifications), so the data
+    // loaded in the constructor above goes stale - marking
+    // notifications as read, or finishing a job, wouldn't be
+    // reflected here until the app restarted. Call this whenever
+    // the page reappears to keep it current.
+    public Task RefreshAsync() =>
+        LoadDashboardAsync();
+
+
     public string TechnicianName
     {
         get => _technicianName;
@@ -93,8 +103,24 @@ public class DashboardViewModel : INotifyPropertyChanged
 
             _notificationCount = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(HasNotifications));
+            OnPropertyChanged(nameof(NotificationCountDisplay));
         }
     }
+
+    // Only show the red badge on the bell icon when there's
+    // actually something unread - a badge that's always on
+    // screen (even showing "0") just looks broken.
+    public bool HasNotifications =>
+        NotificationCount > 0;
+
+    // Caps the badge text at "9+" so the circle stays a fixed,
+    // readable size instead of stretching (or clipping) to fit
+    // a wide number.
+    public string NotificationCountDisplay =>
+        NotificationCount > 9
+            ? "9+"
+            : NotificationCount.ToString();
 
 
     public string ConnectionStatus
@@ -152,11 +178,7 @@ public class DashboardViewModel : INotifyPropertyChanged
                     "Completed",
                     StringComparison.OrdinalIgnoreCase));
 
-            /*
-             * There is currently no technician notification
-             * endpoint, so do not invent notification data.
-             */
-            NotificationCount = 0;
+            await LoadNotificationCountAsync();
         }
         catch (Exception ex)
         {
@@ -164,6 +186,33 @@ public class DashboardViewModel : INotifyPropertyChanged
                 $"Failed to load dashboard data: {ex.Message}");
 
             ResetJobCounts();
+        }
+    }
+
+
+    /*
+     * The bell icon's badge should reflect real, unread
+     * notifications from SmartJob - the same endpoint the
+     * Notifications screen already uses. A failure here
+     * (e.g. offline) shouldn't affect the job counts above,
+     * so it's kept in its own try/catch.
+     */
+    private async Task LoadNotificationCountAsync()
+    {
+        try
+        {
+            MobileNotificationsResponse? response =
+                await _apiService.GetNotificationsAsync();
+
+            NotificationCount =
+                response?.Items?.Count(n => !n.IsRead) ?? 0;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"Failed to load notification count: {ex.Message}");
+
+            NotificationCount = 0;
         }
     }
 

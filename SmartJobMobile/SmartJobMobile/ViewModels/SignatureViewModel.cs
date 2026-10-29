@@ -3,12 +3,14 @@ using SmartJobMobile.Services;
 using SmartJobMobile.Views;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 
 namespace SmartJobMobile.ViewModels;
 
 public class SignatureViewModel : INotifyPropertyChanged
 {
     private readonly Job _job;
+    private readonly LocalDatabaseService _localDatabaseService;
     private readonly ApiService _apiService;
     private readonly ConnectivityService _connectivityService;
 
@@ -32,12 +34,30 @@ public class SignatureViewModel : INotifyPropertyChanged
     private bool _isReplacingTechnicianSignature;
     private bool _isReplacingClientSignature;
 
+    // True when a signature has been captured and queued on this device
+    // but not uploaded yet (captured while offline).
+    private bool _isTechnicianPendingSync;
+    private bool _isClientPendingSync;
+
     // Fired right after signatures are confirmed on the server, so the page
     // can clear the drawing pads before the user could tap Continue again.
     public event Action? SignaturesUploaded;
 
-    public bool HasTechnicianSignature => _technicianSignatureId.HasValue;
-    public bool HasClientSignature => _clientSignatureId.HasValue;
+    // A signature "exists" whether it's already confirmed on the server or
+    // only captured locally and waiting to sync - either way there's
+    // something to show and nothing more to draw.
+    public bool HasTechnicianSignature => _technicianSignatureId.HasValue || _isTechnicianPendingSync;
+    public bool HasClientSignature => _clientSignatureId.HasValue || _isClientPendingSync;
+
+    public bool IsTechnicianSignaturePendingSync => _isTechnicianPendingSync;
+    public bool IsClientSignaturePendingSync => _isClientPendingSync;
+
+    // "Uploaded" (confirmed on the server) is the opposite of "pending
+    // sync" whenever there's a signature at all - kept as its own
+    // property instead of inverting IsTechnicianSignaturePendingSync in
+    // XAML, since this project has no bool-inverse converter registered.
+    public bool IsTechnicianSignatureUploaded => _technicianSignatureId.HasValue;
+    public bool IsClientSignatureUploaded => _clientSignatureId.HasValue;
 
     // The blank drawing pad only needs to be shown when there isn't already
     // a saved signature, or when the user explicitly asked to replace it.
@@ -173,6 +193,7 @@ public class SignatureViewModel : INotifyPropertyChanged
         ConnectivityService connectivityService)
     {
         _job = job;
+        _localDatabaseService = localDatabaseService;
         _apiService = apiService;
         _connectivityService = connectivityService;
         _ = LoadExistingSignaturesAsync();
@@ -180,14 +201,65 @@ public class SignatureViewModel : INotifyPropertyChanged
 
     private async Task LoadExistingSignaturesAsync()
     {
-        if (!_connectivityService.IsOnline || _job.ApiId == Guid.Empty)
+        if (_job.ApiId == Guid.Empty)
         {
-            ShowError("Connect to the API to load saved signatures before editing this job.");
+            ShowError("SmartJob could not identify the current job.");
             return;
         }
+
         try
         {
             IsLoadingExisting = true;
+
+            // A signature captured while offline is queued locally until it
+            // can be uploaded. Check for one regardless of connectivity, so
+            // it's still what gets shown even on a later load.
+            (SignatureSyncPayload? pendingTechnician, SignatureSyncPayload? pendingClient) =
+                await LoadPendingSignaturePayloadsAsync();
+
+            if (!_connectivityService.IsOnline)
+            {
+                // Offline: there's no point blocking the screen just
+                // because we can't ask the server what's already saved -
+                // show whatever was captured on this device instead, and
+                // let CanContinue unblock so signing can still happen.
+                //
+                // Only touch a side that isn't already confirmed from an
+                // earlier online load - we have no way to re-fetch a
+                // confirmed signature's preview right now, so leave it
+                // exactly as it was rather than blanking it out.
+                if (!_technicianSignatureId.HasValue)
+                {
+                    _isTechnicianPendingSync = false;
+                    TechnicianSignaturePreview = null;
+                    if (pendingTechnician is not null) ApplyPendingTechnicianSignature(pendingTechnician);
+                }
+
+                if (!_clientSignatureId.HasValue)
+                {
+                    _isClientPendingSync = false;
+                    ClientSignaturePreview = null;
+                    if (pendingClient is not null) ApplyPendingClientSignature(pendingClient);
+                }
+
+                _isReplacingTechnicianSignature = false;
+                _isReplacingClientSignature = false;
+
+                _savedDataLoaded = true;
+                OnPropertyChanged(nameof(CanContinue));
+                OnPropertyChanged(nameof(HasTechnicianSignature));
+                OnPropertyChanged(nameof(HasClientSignature));
+                OnPropertyChanged(nameof(ShowTechnicianPad));
+                OnPropertyChanged(nameof(ShowClientPad));
+                OnPropertyChanged(nameof(IsTechnicianSignaturePendingSync));
+                OnPropertyChanged(nameof(IsClientSignaturePendingSync));
+                OnPropertyChanged(nameof(IsTechnicianSignatureUploaded));
+                OnPropertyChanged(nameof(IsClientSignatureUploaded));
+
+                ClearError();
+                return;
+            }
+
             var detail = await _apiService.GetJobDetailsAsync(_job.ApiId);
             if (detail is null) return;
             _savedDataLoaded = true;
@@ -203,12 +275,14 @@ public class SignatureViewModel : INotifyPropertyChanged
             // leaving a stale pad open from an earlier replace request.
             _isReplacingTechnicianSignature = false;
             _isReplacingClientSignature = false;
-            OnPropertyChanged(nameof(HasTechnicianSignature));
-            OnPropertyChanged(nameof(HasClientSignature));
-            OnPropertyChanged(nameof(ShowTechnicianPad));
-            OnPropertyChanged(nameof(ShowClientPad));
+
             if (technician is not null)
             {
+                // The server already has a confirmed signature, so drop any
+                // stale locally-queued copy left over from before it synced.
+                await ClearPendingSignatureAsync("Technician");
+                _isTechnicianPendingSync = false;
+
                 _savedTechnicianName = technician.SignerName;
                 TechnicianName = technician.SignerName;
                 try
@@ -218,12 +292,21 @@ public class SignatureViewModel : INotifyPropertyChanged
                 }
                 catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Technician signature preview unavailable: {ex}"); }
             }
+            else if (pendingTechnician is not null)
+            {
+                ApplyPendingTechnicianSignature(pendingTechnician);
+            }
             else
             {
                 _savedTechnicianName = string.Empty;
+                _isTechnicianPendingSync = false;
             }
+
             if (client is not null)
             {
+                await ClearPendingSignatureAsync("Client");
+                _isClientPendingSync = false;
+
                 _savedClientName = client.SignerName;
                 ClientName = client.SignerName;
                 try
@@ -233,10 +316,24 @@ public class SignatureViewModel : INotifyPropertyChanged
                 }
                 catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Client signature preview unavailable: {ex}"); }
             }
+            else if (pendingClient is not null)
+            {
+                ApplyPendingClientSignature(pendingClient);
+            }
             else
             {
                 _savedClientName = string.Empty;
+                _isClientPendingSync = false;
             }
+
+            OnPropertyChanged(nameof(HasTechnicianSignature));
+            OnPropertyChanged(nameof(HasClientSignature));
+            OnPropertyChanged(nameof(ShowTechnicianPad));
+            OnPropertyChanged(nameof(ShowClientPad));
+            OnPropertyChanged(nameof(IsTechnicianSignaturePendingSync));
+            OnPropertyChanged(nameof(IsClientSignaturePendingSync));
+            OnPropertyChanged(nameof(IsTechnicianSignatureUploaded));
+            OnPropertyChanged(nameof(IsClientSignatureUploaded));
         }
         catch (Exception ex)
         {
@@ -246,23 +343,67 @@ public class SignatureViewModel : INotifyPropertyChanged
         finally { IsLoadingExisting = false; }
     }
 
+    private void ApplyPendingTechnicianSignature(SignatureSyncPayload payload)
+    {
+        _isTechnicianPendingSync = true;
+        _savedTechnicianName = payload.SignerName;
+        TechnicianName = payload.SignerName;
+
+        if (File.Exists(payload.LocalFilePath))
+        {
+            byte[] bytes = File.ReadAllBytes(payload.LocalFilePath);
+            TechnicianSignaturePreview = ImageSource.FromStream(() => new MemoryStream(bytes));
+        }
+    }
+
+    private void ApplyPendingClientSignature(SignatureSyncPayload payload)
+    {
+        _isClientPendingSync = true;
+        _savedClientName = payload.SignerName;
+        ClientName = payload.SignerName;
+
+        if (File.Exists(payload.LocalFilePath))
+        {
+            byte[] bytes = File.ReadAllBytes(payload.LocalFilePath);
+            ClientSignaturePreview = ImageSource.FromStream(() => new MemoryStream(bytes));
+        }
+    }
+
     public async Task RemoveExistingSignatureAsync(string type)
     {
         var id = type == "Technician" ? _technicianSignatureId : _clientSignatureId;
-        if (!id.HasValue || IsSaving) return;
+        bool isPendingOnly = type == "Technician" ? _isTechnicianPendingSync : _isClientPendingSync;
+
+        if (!id.HasValue && !isPendingOnly) return;
+        if (IsSaving) return;
+
         try
         {
             IsSaving = true;
-            await _apiService.RemoveSignatureAsync(_job.ApiId, id.Value);
+
+            if (id.HasValue)
+            {
+                // Confirmed on the server - remove it there.
+                await _apiService.RemoveSignatureAsync(_job.ApiId, id.Value);
+            }
+            else
+            {
+                // Only captured on this device and never uploaded - just
+                // drop the local file and its queued upload.
+                await ClearPendingSignatureAsync(type);
+            }
+
             if (type == "Technician")
             {
                 _technicianSignatureId = null;
+                _isTechnicianPendingSync = false;
                 TechnicianSignaturePreview = null;
                 TechnicianConfirmed = false;
             }
             else
             {
                 _clientSignatureId = null;
+                _isClientPendingSync = false;
                 ClientSignaturePreview = null;
                 ClientConfirmed = false;
             }
@@ -384,15 +525,6 @@ public class SignatureViewModel : INotifyPropertyChanged
             return;
         }
 
-        // Signature upload currently requires the API.
-        if (!_connectivityService.IsOnline)
-        {
-            ShowError(
-                "Uploading signatures currently requires an internet connection. Please reconnect before continuing.");
-
-            return;
-        }
-
         if (IsSaving)
         {
             return;
@@ -404,19 +536,39 @@ public class SignatureViewModel : INotifyPropertyChanged
 
             try
             {
-                // Upload technician signature.
-                if (technicianSignaturePath is not null)
-                    await UploadSignatureAsync(
-                        technicianSignaturePath,
-                        TechnicianName.Trim(),
-                        "Technician");
+                if (_connectivityService.IsOnline)
+                {
+                    // Online: upload (and confirm) right away, same as before.
+                    if (technicianSignaturePath is not null)
+                        await UploadSignatureAsync(
+                            technicianSignaturePath,
+                            TechnicianName.Trim(),
+                            "Technician");
 
-                // Upload client signature.
-                if (clientSignaturePath is not null)
-                    await UploadSignatureAsync(
-                        clientSignaturePath,
-                        ClientName.Trim(),
-                        "Client");
+                    if (clientSignaturePath is not null)
+                        await UploadSignatureAsync(
+                            clientSignaturePath,
+                            ClientName.Trim(),
+                            "Client");
+                }
+                else
+                {
+                    // Offline: a technician in the field often has no
+                    // signal, so capturing a signature can't require one.
+                    // Save it to this device and queue it to upload the
+                    // next time SmartJob syncs.
+                    if (technicianSignaturePath is not null)
+                        await SaveSignatureForLaterSyncAsync(
+                            technicianSignaturePath,
+                            TechnicianName.Trim(),
+                            "Technician");
+
+                    if (clientSignaturePath is not null)
+                        await SaveSignatureForLaterSyncAsync(
+                            clientSignaturePath,
+                            ClientName.Trim(),
+                            "Client");
+                }
             }
             catch (HttpRequestException ex)
             {
@@ -470,7 +622,7 @@ public class SignatureViewModel : INotifyPropertyChanged
     }
 
     // =========================================================
-    // UPLOAD ONE SIGNATURE
+    // UPLOAD ONE SIGNATURE (ONLINE)
     // =========================================================
 
     private async Task UploadSignatureAsync(
@@ -478,49 +630,138 @@ public class SignatureViewModel : INotifyPropertyChanged
         string signerName,
         string type)
     {
-        string extension =
-            Path.GetExtension(filePath)
-                .ToLowerInvariant();
+        await _apiService.UploadSignatureFileAsync(
+            _job.ApiId,
+            filePath,
+            signerName,
+            type);
+    }
 
-        if (extension == ".jpeg")
+    // =========================================================
+    // SAVE ONE SIGNATURE FOR LATER SYNC (OFFLINE)
+    // =========================================================
+
+    private async Task SaveSignatureForLaterSyncAsync(
+        string sourceFilePath,
+        string signerName,
+        string type)
+    {
+        // The drawing pad wrote its PNG to the OS cache folder, which can
+        // be cleared under storage pressure - copy it into persistent app
+        // storage so it survives until it can actually be uploaded.
+        string localFilePath = GetLocalSignatureFilePath(type);
+
+        File.Copy(sourceFilePath, localFilePath, overwrite: true);
+
+        // Only one pending copy per signature slot - replace whatever was
+        // queued before (e.g. from an earlier offline attempt).
+        await RemovePendingSyncQueueItemAsync(type);
+
+        SignatureSyncPayload payload = new SignatureSyncPayload
         {
-            extension = ".jpg";
+            Type = type,
+            SignerName = signerName,
+            LocalFilePath = localFilePath
+        };
+
+        await _localDatabaseService.AddSyncQueueItemAsync(
+            new SyncQueueItem
+            {
+                JobId = _job.ApiId.ToString(),
+                OperationType = "UploadSignature",
+                PayloadJson = JsonSerializer.Serialize(payload)
+            });
+    }
+
+    // =========================================================
+    // OFFLINE SIGNATURE HELPERS
+    // =========================================================
+
+    private string GetLocalSignatureFilePath(string type) =>
+        Path.Combine(
+            FileSystem.AppDataDirectory,
+            $"signature_{_job.ApiId}_{type}.png");
+
+    private async Task<(SignatureSyncPayload? Technician, SignatureSyncPayload? Client)>
+        LoadPendingSignaturePayloadsAsync()
+    {
+        string jobId = _job.ApiId.ToString();
+
+        List<SyncQueueItem> pending =
+            await _localDatabaseService.GetPendingSyncItemsAsync();
+
+        SignatureSyncPayload? technician = null;
+        SignatureSyncPayload? client = null;
+
+        foreach (SyncQueueItem item in pending)
+        {
+            if (item.JobId != jobId ||
+                !item.OperationType.Equals("UploadSignature", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            SignatureSyncPayload? payload = TryParseSignaturePayload(item.PayloadJson);
+            if (payload is null) continue;
+
+            if (payload.Type == "Technician") technician = payload;
+            else if (payload.Type == "Client") client = payload;
         }
 
-        if (extension != ".jpg" &&
-            extension != ".png")
+        return (technician, client);
+    }
+
+    private async Task RemovePendingSyncQueueItemAsync(string type)
+    {
+        string jobId = _job.ApiId.ToString();
+
+        List<SyncQueueItem> pending =
+            await _localDatabaseService.GetPendingSyncItemsAsync();
+
+        foreach (SyncQueueItem item in pending)
         {
-            throw new InvalidOperationException(
-                "The generated signature must be a JPG or PNG file.");
+            if (item.JobId != jobId ||
+                !item.OperationType.Equals("UploadSignature", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            SignatureSyncPayload? payload = TryParseSignaturePayload(item.PayloadJson);
+            if (payload?.Type == type)
+            {
+                await _localDatabaseService.DeleteSyncQueueItemAsync(item);
+            }
         }
+    }
 
-        // Ask the backend for an upload location.
-        MobileEvidenceUploadResponse upload =
-            await _apiService
-                .CreateSignatureUploadAsync(
-                    _job.ApiId,
-                    extension);
+    private async Task ClearPendingSignatureAsync(string type)
+    {
+        await RemovePendingSyncQueueItemAsync(type);
 
-        // Upload the generated signature image.
-        await _apiService
-            .UploadEvidenceFileAsync(
-                upload.UploadUrl,
-                filePath);
+        string path = GetLocalSignatureFilePath(type);
+        if (File.Exists(path))
+        {
+            try { File.Delete(path); }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    $"Could not delete local signature file: {ex}");
+            }
+        }
+    }
 
-        // Calculate the SHA-256 hash required by the backend.
-        string sha256 =
-            await _apiService
-                .CalculateSha256Async(
-                    filePath);
-
-        // Confirm the uploaded file as a job signature.
-        await _apiService
-            .ConfirmSignatureAsync(
-                _job.ApiId,
-                upload.UploadToken,
-                sha256,
-                signerName,
-                type);
+    private static SignatureSyncPayload? TryParseSignaturePayload(string json)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<SignatureSyncPayload>(
+                json,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     // =========================================================
@@ -556,4 +797,22 @@ public class SignatureViewModel : INotifyPropertyChanged
             new PropertyChangedEventArgs(
                 propertyName));
     }
+}
+
+// =============================================================
+// SIGNATURE SYNC PAYLOAD
+//
+// What gets stored in a SyncQueueItem.PayloadJson for a signature
+// that was captured offline and is waiting to be uploaded. Read
+// back here when reloading the Signature screen, and read back by
+// OfflineSyncViewModel when it actually uploads it.
+// =============================================================
+
+public class SignatureSyncPayload
+{
+    public string Type { get; set; } = string.Empty;
+
+    public string SignerName { get; set; } = string.Empty;
+
+    public string LocalFilePath { get; set; } = string.Empty;
 }

@@ -256,6 +256,61 @@
                     </VerticalStackLayout>
                 </VerticalStackLayout>
 
+                <!-- ================================================= -->
+                <!-- QUEUED (OFFLINE) EVIDENCE -->
+                <!-- ================================================= -->
+
+                <VerticalStackLayout
+                    IsVisible="{Binding HasPendingEvidence}"
+                    Spacing="10"
+                    Margin="0,24,0,20">
+                    <Label
+                        Text="QUEUED PHOTOS — NOT YET UPLOADED"
+                        TextColor="#E0A030"
+                        FontSize="14"
+                        FontAttributes="Bold" />
+                    <Label
+                        Text="These photos were captured while offline. They'll upload automatically the next time you sync."
+                        TextColor="#B59354"
+                        FontSize="11"
+                        LineBreakMode="WordWrap" />
+                    <VerticalStackLayout
+                        BindableLayout.ItemsSource="{Binding PendingEvidence}"
+                        Spacing="12">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <Border
+                                    BackgroundColor="#1C1710"
+                                    Stroke="#4A3A1A"
+                                    StrokeThickness="1"
+                                    Padding="12">
+                                    <VerticalStackLayout Spacing="8">
+                                        <Image
+                                            Source="{Binding Preview}"
+                                            HeightRequest="180"
+                                            Aspect="AspectFit" />
+                                        <Label
+                                            Text="{Binding Caption}"
+                                            TextColor="#D9C68C"
+                                            FontSize="11" />
+                                        <Label
+                                            Text="⏳ SAVED ON THIS DEVICE"
+                                            TextColor="#E0A030"
+                                            FontSize="9"
+                                            FontAttributes="Bold" />
+                                        <Button
+                                            Text="REMOVE QUEUED PHOTO"
+                                            CommandParameter="{Binding QueueItemId}"
+                                            Clicked="RemovePendingEvidence_Clicked"
+                                            BackgroundColor="Transparent"
+                                            TextColor="#ED6464" />
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+
                 <VerticalStackLayout
                     Spacing="2"
                     Margin="0,28,0,12">
@@ -268,7 +323,7 @@
                         CharacterSpacing="0.5" />
 
                     <Label
-                        Text="Take a photo or select an existing image from the device."
+                        Text="Capture or choose a photo, then tap Add Photo. Repeat for every photo this installation needs."
                         TextColor="#646A72"
                         FontSize="10" />
 
@@ -479,8 +534,31 @@
 
 
                 <!-- ================================================= -->
+                <!-- ADD PHOTO (commits the staged photo above into the -->
+                <!-- SAVED/QUEUED list, then clears it so another photo -->
+                <!-- can be captured without leaving this screen)       -->
+                <!-- ================================================= -->
+
+                <Button
+                    Text="ADD PHOTO TO JOB"
+                    Command="{Binding AddPhotoCommand}"
+                    IsVisible="{Binding HasPhoto}"
+                    IsEnabled="{Binding CanContinue}"
+                    BackgroundColor="#1B2B20"
+                    TextColor="#73B986"
+                    BorderColor="#2C5138"
+                    BorderWidth="1"
+                    FontSize="12"
+                    FontAttributes="Bold"
+                    CharacterSpacing="0.8"
+                    HeightRequest="52"
+                    CornerRadius="6"
+                    Margin="0,18,0,0"
+                    SemanticProperties.Description="Add this photo to the job and capture another" />
+
+                <!-- ================================================= -->
                 <Label
-                    Text="The photographic evidence check is marked complete when your photo is saved."
+                    Text="Add as many photos as the installation needs - each tap of Add Photo saves it and clears the preview for the next one. Continue once you've added them all."
                     TextColor="#858B93"
                     FontSize="11"
                     Margin="0,22,0,0"
@@ -516,7 +594,7 @@
                 <!-- ================================================= -->
 
                 <Button
-                    Text="SAVE EVIDENCE &amp; CONTINUE"
+                    Text="CONTINUE TO COMMENTS &amp; FLAG"
                     Command="{Binding ContinueCommand}"
                     IsEnabled="{Binding CanContinue}"
                     BackgroundColor="#ED3B3B"
@@ -527,7 +605,7 @@
                     HeightRequest="52"
                     CornerRadius="6"
                     Margin="0,28,0,0"
-                    SemanticProperties.Description="Save photo evidence and continue" />
+                    SemanticProperties.Description="Continue to comments and flag once all photos have been added" />
 
 
                 <!-- FOOTER -->

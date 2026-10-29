@@ -449,6 +449,60 @@
                     x:Name="WorkChecklistHost"
                     Margin="0,24,0,0" />
 
+                <!-- EQUIPMENT SAVE STATUS -->
+                <Border
+                    IsVisible="{Binding IsEquipmentUploaded}"
+                    BackgroundColor="#111916"
+                    Stroke="#263C2E"
+                    StrokeThickness="1"
+                    Padding="12"
+                    Margin="0,20,0,0">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="6" />
+                    </Border.StrokeShape>
+
+                    <Label
+                        Text="✓ SAVED TO JOB CARD"
+                        TextColor="#73B986"
+                        FontSize="10"
+                        FontAttributes="Bold"
+                        HorizontalTextAlignment="Center" />
+
+                </Border>
+
+                <Border
+                    IsVisible="{Binding IsEquipmentPendingSync}"
+                    BackgroundColor="#1C1710"
+                    Stroke="#4A3A1A"
+                    StrokeThickness="1"
+                    Padding="12"
+                    Margin="0,20,0,0">
+
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="6" />
+                    </Border.StrokeShape>
+
+                    <VerticalStackLayout Spacing="4">
+
+                        <Label
+                            Text="⏳ SAVED ON THIS DEVICE — NOT YET UPLOADED"
+                            TextColor="#E0A030"
+                            FontSize="10"
+                            FontAttributes="Bold"
+                            HorizontalTextAlignment="Center" />
+
+                        <Label
+                            Text="This equipment will upload to SmartJob the next time you sync."
+                            TextColor="#B59354"
+                            FontSize="9"
+                            HorizontalTextAlignment="Center"
+                            LineBreakMode="WordWrap" />
+
+                    </VerticalStackLayout>
+
+                </Border>
+
                 <Button
                     Text="REMOVE SAVED EQUIPMENT FROM THIS JOB"
                     Command="{Binding RemoveEquipmentCommand}"

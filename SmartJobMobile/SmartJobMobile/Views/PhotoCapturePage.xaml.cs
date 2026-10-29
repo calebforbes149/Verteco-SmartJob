@@ -56,4 +56,11 @@ public partial class PhotoCapturePage : ContentPage
         if (!await DisplayAlertAsync("Remove photo", "Remove this photo from the current job card?", "Remove", "Cancel")) return;
         await _viewModel.RemoveSavedEvidenceAsync(id);
     }
+
+    private async void RemovePendingEvidence_Clicked(object? sender, EventArgs e)
+    {
+        if (sender is not Button { CommandParameter: int queueItemId }) return;
+        if (!await DisplayAlertAsync("Remove queued photo", "Remove this queued photo? It will not be uploaded.", "Remove", "Cancel")) return;
+        await _viewModel.RemovePendingEvidenceAsync(queueItemId);
+    }
 }

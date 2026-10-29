@@ -261,7 +261,7 @@ public class JobDetailsViewModel : INotifyPropertyChanged
         }
 
         await window.Page.Navigation.PushAsync(
-            new EquipmentPage(
+            new ChecklistPage(
                 SelectedJob));
     }
 

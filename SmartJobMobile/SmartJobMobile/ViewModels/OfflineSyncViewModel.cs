@@ -661,6 +661,397 @@ public class OfflineSyncViewModel : INotifyPropertyChanged
             }
 
             // =====================================================
+            // UPLOAD QUEUED SIGNATURES
+            //
+            // Signatures captured offline don't go through the
+            // checklist push/pull protocol above - the mobile sync
+            // API only understands "setchecklistitem" operations.
+            // Instead, upload each one the same way the Signature
+            // screen itself does when it's online, just run now.
+            // =====================================================
+
+            int signaturesAppliedCount = 0;
+            int signaturesFailedCount = 0;
+
+            List<SyncQueueItem> pendingSignatureItems =
+                pendingItems
+                    .Where(item =>
+                        item.OperationType.Equals(
+                            "UploadSignature",
+                            StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+            foreach (SyncQueueItem queueItem in pendingSignatureItems)
+            {
+                try
+                {
+                    if (!Guid.TryParse(queueItem.JobId, out Guid signatureJobId))
+                    {
+                        throw new InvalidOperationException(
+                            "The queued signature has an invalid job ID.");
+                    }
+
+                    SignatureSyncPayload? payload =
+                        JsonSerializer.Deserialize<SignatureSyncPayload>(
+                            queueItem.PayloadJson,
+                            new JsonSerializerOptions
+                            {
+                                PropertyNameCaseInsensitive = true
+                            });
+
+                    if (payload is null ||
+                        string.IsNullOrWhiteSpace(payload.LocalFilePath) ||
+                        !File.Exists(payload.LocalFilePath))
+                    {
+                        throw new InvalidOperationException(
+                            "The locally saved signature file is missing.");
+                    }
+
+                    await _apiService.UploadSignatureFileAsync(
+                        signatureJobId,
+                        payload.LocalFilePath,
+                        payload.SignerName,
+                        payload.Type);
+
+                    queueItem.Status = "Completed";
+                    queueItem.LastError = string.Empty;
+
+                    await _localDatabaseService
+                        .UpdateSyncQueueItemAsync(queueItem);
+
+                    try { File.Delete(payload.LocalFilePath); }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine(
+                            $"Could not delete synced signature file: {ex}");
+                    }
+
+                    signaturesAppliedCount++;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        $"Signature sync failed for queue item {queueItem.Id}: {ex}");
+
+                    queueItem.LastError =
+                        "SmartJob could not upload this signature. It will be retried on the next sync.";
+
+                    queueItem.RetryCount++;
+
+                    await _localDatabaseService
+                        .UpdateSyncQueueItemAsync(queueItem);
+
+                    signaturesFailedCount++;
+                }
+            }
+
+            // =====================================================
+            // SAVE QUEUED EQUIPMENT
+            //
+            // Equipment recorded offline doesn't go through the
+            // checklist push/pull protocol either - upload it the
+            // same way the Equipment screen itself does when online.
+            // =====================================================
+
+            int equipmentAppliedCount = 0;
+            int equipmentFailedCount = 0;
+
+            List<SyncQueueItem> pendingEquipmentItems =
+                pendingItems
+                    .Where(item =>
+                        item.OperationType.Equals(
+                            "UpdateEquipment",
+                            StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+            foreach (SyncQueueItem queueItem in pendingEquipmentItems)
+            {
+                try
+                {
+                    if (!Guid.TryParse(queueItem.JobId, out Guid equipmentJobId))
+                    {
+                        throw new InvalidOperationException(
+                            "The queued equipment has an invalid job ID.");
+                    }
+
+                    EquipmentSyncPayload? payload =
+                        JsonSerializer.Deserialize<EquipmentSyncPayload>(
+                            queueItem.PayloadJson,
+                            new JsonSerializerOptions
+                            {
+                                PropertyNameCaseInsensitive = true
+                            });
+
+                    if (payload is null)
+                    {
+                        throw new InvalidOperationException(
+                            "The locally saved equipment details are missing.");
+                    }
+
+                    List<string> descriptionParts = new List<string>();
+
+                    if (!string.IsNullOrWhiteSpace(payload.AssetNumber))
+                        descriptionParts.Add($"Asset Number: {payload.AssetNumber}");
+
+                    if (!string.IsNullOrWhiteSpace(payload.ModelNumber))
+                        descriptionParts.Add($"Model Number: {payload.ModelNumber}");
+
+                    if (!string.IsNullOrWhiteSpace(payload.Notes))
+                        descriptionParts.Add($"Notes: {payload.Notes}");
+
+                    MobileEquipmentRequest equipmentRequest = new MobileEquipmentRequest
+                    {
+                        Name = payload.Name,
+                        SerialNumber = payload.SerialNumber,
+                        Description = string.Join(Environment.NewLine, descriptionParts)
+                    };
+
+                    await _apiService.AddEquipmentAsync(equipmentJobId, equipmentRequest);
+
+                    queueItem.Status = "Completed";
+                    queueItem.LastError = string.Empty;
+
+                    await _localDatabaseService
+                        .UpdateSyncQueueItemAsync(queueItem);
+
+                    equipmentAppliedCount++;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        $"Equipment sync failed for queue item {queueItem.Id}: {ex}");
+
+                    queueItem.LastError =
+                        "SmartJob could not save this equipment. It will be retried on the next sync.";
+
+                    queueItem.RetryCount++;
+
+                    await _localDatabaseService
+                        .UpdateSyncQueueItemAsync(queueItem);
+
+                    equipmentFailedCount++;
+                }
+            }
+
+            // =====================================================
+            // UPLOAD QUEUED EVIDENCE PHOTOS
+            //
+            // Photos captured offline don't go through the checklist
+            // push/pull protocol either - upload each the same way
+            // the Photo Capture screen itself does when online.
+            // =====================================================
+
+            int evidenceAppliedCount = 0;
+            int evidenceFailedCount = 0;
+
+            List<SyncQueueItem> pendingEvidenceItems =
+                pendingItems
+                    .Where(item =>
+                        item.OperationType.Equals(
+                            "UploadEvidence",
+                            StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+            foreach (SyncQueueItem queueItem in pendingEvidenceItems)
+            {
+                try
+                {
+                    if (!Guid.TryParse(queueItem.JobId, out Guid evidenceJobId))
+                    {
+                        throw new InvalidOperationException(
+                            "The queued photo has an invalid job ID.");
+                    }
+
+                    EvidenceSyncPayload? payload =
+                        JsonSerializer.Deserialize<EvidenceSyncPayload>(
+                            queueItem.PayloadJson,
+                            new JsonSerializerOptions
+                            {
+                                PropertyNameCaseInsensitive = true
+                            });
+
+                    if (payload is null ||
+                        string.IsNullOrWhiteSpace(payload.LocalFilePath) ||
+                        !File.Exists(payload.LocalFilePath))
+                    {
+                        throw new InvalidOperationException(
+                            "The locally saved photo file is missing.");
+                    }
+
+                    await _apiService.UploadEvidencePhotoAsync(
+                        evidenceJobId,
+                        payload.LocalFilePath,
+                        payload.Caption);
+
+                    queueItem.Status = "Completed";
+                    queueItem.LastError = string.Empty;
+
+                    await _localDatabaseService
+                        .UpdateSyncQueueItemAsync(queueItem);
+
+                    try { File.Delete(payload.LocalFilePath); }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine(
+                            $"Could not delete synced evidence file: {ex}");
+                    }
+
+                    evidenceAppliedCount++;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        $"Evidence sync failed for queue item {queueItem.Id}: {ex}");
+
+                    queueItem.LastError =
+                        "SmartJob could not upload this photo. It will be retried on the next sync.";
+
+                    queueItem.RetryCount++;
+
+                    await _localDatabaseService
+                        .UpdateSyncQueueItemAsync(queueItem);
+
+                    evidenceFailedCount++;
+                }
+            }
+
+            // =====================================================
+            // SAVE QUEUED COMMENTS
+            // =====================================================
+
+            int commentsAppliedCount = 0;
+            int commentsFailedCount = 0;
+
+            List<SyncQueueItem> pendingCommentsItems =
+                pendingItems
+                    .Where(item =>
+                        item.OperationType.Equals(
+                            "SaveComments",
+                            StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+            foreach (SyncQueueItem queueItem in pendingCommentsItems)
+            {
+                try
+                {
+                    if (!Guid.TryParse(queueItem.JobId, out Guid commentsJobId))
+                    {
+                        throw new InvalidOperationException(
+                            "The queued comments have an invalid job ID.");
+                    }
+
+                    CommentsSyncPayload? payload =
+                        JsonSerializer.Deserialize<CommentsSyncPayload>(
+                            queueItem.PayloadJson,
+                            new JsonSerializerOptions
+                            {
+                                PropertyNameCaseInsensitive = true
+                            });
+
+                    if (payload is null)
+                    {
+                        throw new InvalidOperationException(
+                            "The locally saved comments are missing.");
+                    }
+
+                    await _apiService.SaveTechnicianCommentsAsync(
+                        commentsJobId,
+                        payload.Comments);
+
+                    queueItem.Status = "Completed";
+                    queueItem.LastError = string.Empty;
+
+                    await _localDatabaseService
+                        .UpdateSyncQueueItemAsync(queueItem);
+
+                    commentsAppliedCount++;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        $"Comments sync failed for queue item {queueItem.Id}: {ex}");
+
+                    queueItem.LastError =
+                        "SmartJob could not save these comments. They will be retried on the next sync.";
+
+                    queueItem.RetryCount++;
+
+                    await _localDatabaseService
+                        .UpdateSyncQueueItemAsync(queueItem);
+
+                    commentsFailedCount++;
+                }
+            }
+
+            // =====================================================
+            // SAVE QUEUED JOB FLAGS
+            // =====================================================
+
+            int flagsAppliedCount = 0;
+            int flagsFailedCount = 0;
+
+            List<SyncQueueItem> pendingFlagItems =
+                pendingItems
+                    .Where(item =>
+                        item.OperationType.Equals(
+                            "FlagJob",
+                            StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+            foreach (SyncQueueItem queueItem in pendingFlagItems)
+            {
+                try
+                {
+                    if (!Guid.TryParse(queueItem.JobId, out Guid flagJobId))
+                    {
+                        throw new InvalidOperationException(
+                            "The queued flag has an invalid job ID.");
+                    }
+
+                    FlagSyncPayload? payload =
+                        JsonSerializer.Deserialize<FlagSyncPayload>(
+                            queueItem.PayloadJson,
+                            new JsonSerializerOptions
+                            {
+                                PropertyNameCaseInsensitive = true
+                            });
+
+                    if (payload is null)
+                    {
+                        throw new InvalidOperationException(
+                            "The locally saved flag is missing.");
+                    }
+
+                    await _apiService.FlagJobAsync(
+                        flagJobId,
+                        payload.Reason);
+
+                    queueItem.Status = "Completed";
+                    queueItem.LastError = string.Empty;
+
+                    await _localDatabaseService
+                        .UpdateSyncQueueItemAsync(queueItem);
+
+                    flagsAppliedCount++;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        $"Flag sync failed for queue item {queueItem.Id}: {ex}");
+
+                    queueItem.LastError =
+                        "SmartJob could not save this flag. It will be retried on the next sync.";
+
+                    queueItem.RetryCount++;
+
+                    await _localDatabaseService
+                        .UpdateSyncQueueItemAsync(queueItem);
+
+                    flagsFailedCount++;
+                }
+            }
+
+            // =====================================================
             // REMOVE SUCCESSFUL QUEUE ITEMS
             // =====================================================
 
@@ -786,11 +1177,26 @@ public class OfflineSyncViewModel : INotifyPropertyChanged
             // RESULT MESSAGE
             // =====================================================
 
+            int totalFailedCount =
+                signaturesFailedCount +
+                equipmentFailedCount +
+                evidenceFailedCount +
+                commentsFailedCount +
+                flagsFailedCount;
+
             await Shell.Current.DisplayAlert(
                 "Sync Complete",
                 $"Applied: {appliedCount}\n" +
                 $"Needs Review: {conflictCount}\n" +
-                $"Rejected: {rejectedCount}",
+                $"Rejected: {rejectedCount}\n" +
+                $"Signatures uploaded: {signaturesAppliedCount}\n" +
+                $"Equipment saved: {equipmentAppliedCount}\n" +
+                $"Photos uploaded: {evidenceAppliedCount}\n" +
+                $"Comments saved: {commentsAppliedCount}\n" +
+                $"Flags saved: {flagsAppliedCount}" +
+                (totalFailedCount > 0
+                    ? $"\nItems failed (will retry): {totalFailedCount}"
+                    : string.Empty),
                 "OK");
         }
         catch (Exception ex)

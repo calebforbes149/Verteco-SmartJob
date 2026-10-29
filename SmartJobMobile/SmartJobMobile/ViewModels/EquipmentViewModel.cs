@@ -4,6 +4,7 @@ using SmartJobMobile.Views;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Windows.Input;
 
 namespace SmartJobMobile.ViewModels;
@@ -27,6 +28,7 @@ public class EquipmentViewModel : INotifyPropertyChanged
     private bool _isLoading;
     private bool _hasSavedEquipment;
     private bool _savedDataLoaded;
+    private bool _isPendingSync;
     private ApiSiteEquipment? _selectedSiteEquipment;
 
     public ObservableCollection<ApiSiteEquipment> SiteEquipmentOptions { get; } = new();
@@ -52,6 +54,15 @@ public class EquipmentViewModel : INotifyPropertyChanged
         get => _hasSavedEquipment;
         private set { _hasSavedEquipment = value; OnPropertyChanged(); }
     }
+
+    // True once equipment has been saved to this device while offline,
+    // but has not yet been uploaded to SmartJob by a sync.
+    public bool IsEquipmentPendingSync =>
+        _hasSavedEquipment && _isPendingSync;
+
+    // True once equipment is confirmed as saved on the job card itself.
+    public bool IsEquipmentUploaded =>
+        _hasSavedEquipment && !_isPendingSync;
 
     public bool IsLoading
     {
@@ -199,14 +210,45 @@ public class EquipmentViewModel : INotifyPropertyChanged
 
     private async Task LoadEquipmentAsync()
     {
-        if (!_connectivityService.IsOnline || _job.ApiId == Guid.Empty)
+        if (_job.ApiId == Guid.Empty)
         {
-            ShowError("Connect to the API to load saved equipment before editing this job.");
+            ShowError("SmartJob could not identify the current job.");
             return;
         }
+
         try
         {
             IsLoading = true;
+
+            // Equipment captured while offline is queued locally until it
+            // can be uploaded. Check for one regardless of connectivity,
+            // so it's still what gets shown even on a later load.
+            EquipmentSyncPayload? pending = await LoadPendingEquipmentPayloadAsync();
+
+            if (!_connectivityService.IsOnline)
+            {
+                // Offline: there's no point blocking the screen just
+                // because we can't ask the server what's already saved -
+                // show whatever was captured on this device instead, and
+                // let CanContinue unblock so the technician can carry on.
+                if (pending is not null)
+                {
+                    ApplyPendingEquipment(pending);
+                }
+                else
+                {
+                    HasSavedEquipment = false;
+                    _isPendingSync = false;
+                }
+
+                _savedDataLoaded = true;
+                OnPropertyChanged(nameof(CanContinue));
+                OnPropertyChanged(nameof(IsEquipmentPendingSync));
+                OnPropertyChanged(nameof(IsEquipmentUploaded));
+                ClearError();
+                return;
+            }
+
             var detail = await _apiService.GetJobDetailsAsync(_job.ApiId);
             if (detail is null) return;
             _savedDataLoaded = true;
@@ -218,11 +260,28 @@ public class EquipmentViewModel : INotifyPropertyChanged
 
             if (!string.IsNullOrWhiteSpace(detail.FieldEquipmentSerialNumber))
             {
+                // The server already has confirmed equipment, so drop any
+                // stale locally-queued copy left over from before it synced.
+                await RemovePendingEquipmentSyncItemAsync();
+                _isPendingSync = false;
+
                 EquipmentName = detail.FieldEquipmentName ?? string.Empty;
                 SerialNumber = detail.FieldEquipmentSerialNumber;
                 ReadDescription(detail.FieldEquipmentDescription);
                 HasSavedEquipment = true;
             }
+            else if (pending is not null)
+            {
+                ApplyPendingEquipment(pending);
+            }
+            else
+            {
+                HasSavedEquipment = false;
+                _isPendingSync = false;
+            }
+
+            OnPropertyChanged(nameof(IsEquipmentPendingSync));
+            OnPropertyChanged(nameof(IsEquipmentUploaded));
         }
         catch (Exception ex)
         {
@@ -230,6 +289,17 @@ public class EquipmentViewModel : INotifyPropertyChanged
             ShowError("Saved equipment details could not be loaded. Please reconnect and try again.");
         }
         finally { IsLoading = false; }
+    }
+
+    private void ApplyPendingEquipment(EquipmentSyncPayload payload)
+    {
+        _isPendingSync = true;
+        EquipmentName = payload.Name;
+        SerialNumber = payload.SerialNumber;
+        AssetNumber = payload.AssetNumber;
+        ModelNumber = payload.ModelNumber;
+        EquipmentNotes = payload.Notes;
+        HasSavedEquipment = true;
     }
 
     private void ReadDescription(string? description)
@@ -263,11 +333,30 @@ public class EquipmentViewModel : INotifyPropertyChanged
         try
         {
             IsSaving = true;
-            if (HasSavedEquipment)
+
+            if (_isPendingSync)
+            {
+                // Only a local, not-yet-uploaded copy exists - there's
+                // nothing on the server to remove, so just drop it.
+                await RemovePendingEquipmentSyncItemAsync();
+                _isPendingSync = false;
+            }
+            else if (HasSavedEquipment)
+            {
+                if (!_connectivityService.IsOnline)
+                {
+                    ShowError("Removing saved equipment currently requires an internet connection. Please reconnect before continuing.");
+                    return;
+                }
+
                 await _apiService.RemoveEquipmentAsync(_job.ApiId);
+            }
+
             HasSavedEquipment = false;
             SelectedSiteEquipment = null;
             EquipmentName = SerialNumber = AssetNumber = ModelNumber = EquipmentNotes = string.Empty;
+            OnPropertyChanged(nameof(IsEquipmentPendingSync));
+            OnPropertyChanged(nameof(IsEquipmentUploaded));
             EquipmentRemoved?.Invoke(this, EventArgs.Empty);
             ClearError();
         }
@@ -339,22 +428,34 @@ public class EquipmentViewModel : INotifyPropertyChanged
             return;
         }
 
-        // -----------------------------------------------------
-        // EQUIPMENT CURRENTLY REQUIRES CONNECTION
-        // -----------------------------------------------------
-
-        if (!_connectivityService.IsOnline)
-        {
-            ShowError(
-                "Equipment details currently require an internet connection. Please reconnect before continuing.");
-
-            return;
-        }
-
         try
         {
             IsSaving =
                 true;
+
+            if (!_connectivityService.IsOnline)
+            {
+                // Offline: a technician in the field often has no signal,
+                // so recording equipment can't require one. Save it to
+                // this device and queue it to upload the next time
+                // SmartJob syncs.
+                await SaveEquipmentForLaterSyncAsync(
+                    EquipmentName.Trim(),
+                    SerialNumber.Trim(),
+                    AssetNumber.Trim(),
+                    ModelNumber.Trim(),
+                    EquipmentNotes.Trim());
+
+                _isPendingSync = true;
+                HasSavedEquipment = true;
+                OnPropertyChanged(nameof(IsEquipmentPendingSync));
+                OnPropertyChanged(nameof(IsEquipmentUploaded));
+
+                await Shell.Current.Navigation.PushAsync(
+                    new PhotoCapturePage(_job));
+
+                return;
+            }
 
             // -------------------------------------------------
             // BUILD DESCRIPTION
@@ -424,7 +525,13 @@ public class EquipmentViewModel : INotifyPropertyChanged
                 return;
             }
 
+            // The upload above succeeded, so drop any stale locally-queued
+            // copy from an earlier offline attempt.
+            await RemovePendingEquipmentSyncItemAsync();
+            _isPendingSync = false;
             HasSavedEquipment = true;
+            OnPropertyChanged(nameof(IsEquipmentPendingSync));
+            OnPropertyChanged(nameof(IsEquipmentUploaded));
 
             // -------------------------------------------------
             // CONTINUE TO PHOTO EVIDENCE
@@ -453,6 +560,98 @@ public class EquipmentViewModel : INotifyPropertyChanged
         {
             IsSaving =
                 false;
+        }
+    }
+
+    // =========================================================
+    // SAVE EQUIPMENT FOR LATER SYNC (OFFLINE)
+    // =========================================================
+
+    private async Task SaveEquipmentForLaterSyncAsync(
+        string name,
+        string serialNumber,
+        string assetNumber,
+        string modelNumber,
+        string notes)
+    {
+        // Only one pending copy per job - replace whatever was queued
+        // before (e.g. from an earlier offline attempt).
+        await RemovePendingEquipmentSyncItemAsync();
+
+        EquipmentSyncPayload payload = new EquipmentSyncPayload
+        {
+            Name = name,
+            SerialNumber = serialNumber,
+            AssetNumber = assetNumber,
+            ModelNumber = modelNumber,
+            Notes = notes
+        };
+
+        await _localDatabaseService.AddSyncQueueItemAsync(
+            new SyncQueueItem
+            {
+                JobId = _job.ApiId.ToString(),
+                OperationType = "UpdateEquipment",
+                PayloadJson = JsonSerializer.Serialize(payload)
+            });
+    }
+
+    // =========================================================
+    // OFFLINE EQUIPMENT HELPERS
+    // =========================================================
+
+    private async Task<EquipmentSyncPayload?> LoadPendingEquipmentPayloadAsync()
+    {
+        string jobId = _job.ApiId.ToString();
+
+        List<SyncQueueItem> pending =
+            await _localDatabaseService.GetPendingSyncItemsAsync();
+
+        foreach (SyncQueueItem item in pending)
+        {
+            if (item.JobId != jobId ||
+                !item.OperationType.Equals("UpdateEquipment", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            EquipmentSyncPayload? payload = TryParseEquipmentPayload(item.PayloadJson);
+            if (payload is not null) return payload;
+        }
+
+        return null;
+    }
+
+    private async Task RemovePendingEquipmentSyncItemAsync()
+    {
+        string jobId = _job.ApiId.ToString();
+
+        List<SyncQueueItem> pending =
+            await _localDatabaseService.GetPendingSyncItemsAsync();
+
+        foreach (SyncQueueItem item in pending)
+        {
+            if (item.JobId != jobId ||
+                !item.OperationType.Equals("UpdateEquipment", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            await _localDatabaseService.DeleteSyncQueueItemAsync(item);
+        }
+    }
+
+    private static EquipmentSyncPayload? TryParseEquipmentPayload(string json)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<EquipmentSyncPayload>(
+                json,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
+        catch
+        {
+            return null;
         }
     }
 
@@ -495,4 +694,26 @@ public class EquipmentViewModel : INotifyPropertyChanged
             new PropertyChangedEventArgs(
                 propertyName));
     }
+}
+
+// =============================================================
+// EQUIPMENT SYNC PAYLOAD
+//
+// What gets stored in a SyncQueueItem.PayloadJson for equipment
+// that was recorded offline and is waiting to be uploaded. Read
+// back here when reloading the Equipment screen, and read back by
+// OfflineSyncViewModel when it actually uploads it.
+// =============================================================
+
+public class EquipmentSyncPayload
+{
+    public string Name { get; set; } = string.Empty;
+
+    public string SerialNumber { get; set; } = string.Empty;
+
+    public string AssetNumber { get; set; } = string.Empty;
+
+    public string ModelNumber { get; set; } = string.Empty;
+
+    public string Notes { get; set; } = string.Empty;
 }
