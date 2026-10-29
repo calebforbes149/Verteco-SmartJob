@@ -36,6 +36,15 @@ public partial class SignaturePage : ContentPage
             connectivityService);
 
         BindingContext = _viewModel;
+
+        // Once a signature upload is confirmed, clear the pad that was just
+        // submitted so a second tap on Continue can't re-upload the same
+        // drawing as a duplicate signature.
+        _viewModel.SignaturesUploaded += () =>
+        {
+            TechnicianSignaturePad.Clear();
+            ClientSignaturePad.Clear();
+        };
     }
 
     private async void BackButton_Clicked(
@@ -65,7 +74,25 @@ public partial class SignaturePage : ContentPage
     {
         try
         {
-            if (!_viewModel.CanContinue) return;
+            if (!_viewModel.CanContinue)
+            {
+                // CanContinue being false here means a tap silently did
+                // nothing before - this is the "sometimes it just does
+                // nothing" glitch. Tell the user what's actually going on
+                // instead of staying quiet.
+                string reason = _viewModel.IsSaving
+                    ? "Still saving the previous signatures. Please wait a moment and try again."
+                    : _viewModel.IsLoadingExisting
+                        ? "Still loading this job's saved signatures. Please wait a moment and try again."
+                        : "This job's saved signatures haven't finished loading (often a connection issue). Please check your connection and reopen this page.";
+
+                await DisplayAlertAsync(
+                    "Please wait",
+                    reason,
+                    "OK");
+
+                return;
+            }
 
             if (TechnicianSignaturePad.Lines.Count == 0 && !_viewModel.HasTechnicianSignature)
             {
@@ -130,5 +157,19 @@ public partial class SignaturePage : ContentPage
     {
         if (!await DisplayAlertAsync("Remove signature", "Remove the saved client signature from this job card?", "Remove", "Cancel")) return;
         await _viewModel.RemoveExistingSignatureAsync("Client");
+    }
+
+    private void ReplaceTechnicianSignature_Clicked(object? sender, EventArgs e)
+    {
+        // Make sure the pad is empty before it's shown again, so the user
+        // draws a fresh signature rather than resubmitting an old one.
+        TechnicianSignaturePad.Clear();
+        _viewModel.BeginReplaceTechnicianSignature();
+    }
+
+    private void ReplaceClientSignature_Clicked(object? sender, EventArgs e)
+    {
+        ClientSignaturePad.Clear();
+        _viewModel.BeginReplaceClientSignature();
     }
 }

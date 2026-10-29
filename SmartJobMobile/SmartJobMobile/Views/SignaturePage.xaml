@@ -287,11 +287,21 @@
                                 Clicked="RemoveTechnicianSignature_Clicked"
                                 BackgroundColor="Transparent"
                                 TextColor="#ED6464" />
+                            <Button
+                                Text="DRAW A NEW SIGNATURE"
+                                Clicked="ReplaceTechnicianSignature_Clicked"
+                                BackgroundColor="Transparent"
+                                TextColor="#8D939A" />
                             <Label
-                                Text="Leave the pad empty to keep this signature, or draw a new one to replace it."
+                                Text="This signature is saved. Tap &quot;Draw a new signature&quot; above to replace it."
                                 TextColor="#858B93"
                                 FontSize="10" />
                         </VerticalStackLayout>
+
+                        <!-- Hidden once a technician signature is already saved, unless the
+                             user taps "Draw a new signature" above to replace it. This keeps
+                             an empty pad from appearing underneath the saved signature. -->
+                        <VerticalStackLayout IsVisible="{Binding ShowTechnicianPad}">
 
                         <Label
                             Text="TECHNICIAN SIGNATURE *"
@@ -357,6 +367,8 @@
                             CornerRadius="6"
                             Margin="0,10,0,0"
                             SemanticProperties.Description="Clear technician signature" />
+
+                        </VerticalStackLayout>
 
 
                         <!-- TECHNICIAN CONFIRMATION -->
@@ -502,11 +514,21 @@
                                 Clicked="RemoveClientSignature_Clicked"
                                 BackgroundColor="Transparent"
                                 TextColor="#ED6464" />
+                            <Button
+                                Text="DRAW A NEW SIGNATURE"
+                                Clicked="ReplaceClientSignature_Clicked"
+                                BackgroundColor="Transparent"
+                                TextColor="#8D939A" />
                             <Label
-                                Text="Leave the pad empty to keep this signature, or draw a new one to replace it."
+                                Text="This signature is saved. Tap &quot;Draw a new signature&quot; above to replace it."
                                 TextColor="#858B93"
                                 FontSize="10" />
                         </VerticalStackLayout>
+
+                        <!-- Hidden once a client signature is already saved, unless the
+                             user taps "Draw a new signature" above to replace it. This keeps
+                             an empty pad from appearing underneath the saved signature. -->
+                        <VerticalStackLayout IsVisible="{Binding ShowClientPad}">
 
                         <Label
                             Text="CLIENT SIGNATURE *"
@@ -572,6 +594,8 @@
                             CornerRadius="6"
                             Margin="0,10,0,0"
                             SemanticProperties.Description="Clear client signature" />
+
+                        </VerticalStackLayout>
 
 
                         <!-- CLIENT CONFIRMATION -->

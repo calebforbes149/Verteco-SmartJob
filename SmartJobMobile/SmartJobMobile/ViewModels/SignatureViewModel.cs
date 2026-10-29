@@ -29,9 +29,25 @@ public class SignatureViewModel : INotifyPropertyChanged
     private string _savedClientName = string.Empty;
     private ImageSource? _technicianSignaturePreview;
     private ImageSource? _clientSignaturePreview;
+    private bool _isReplacingTechnicianSignature;
+    private bool _isReplacingClientSignature;
+
+    // Fired right after signatures are confirmed on the server, so the page
+    // can clear the drawing pads before the user could tap Continue again.
+    public event Action? SignaturesUploaded;
 
     public bool HasTechnicianSignature => _technicianSignatureId.HasValue;
     public bool HasClientSignature => _clientSignatureId.HasValue;
+
+    // The blank drawing pad only needs to be shown when there isn't already
+    // a saved signature, or when the user explicitly asked to replace it.
+    // Previously the pad had no visibility binding at all, so it stayed on
+    // screen underneath the "saved signature" preview the moment a reload
+    // picked up a signature that had already been uploaded - this is what
+    // looked like a duplicate signature box.
+    public bool ShowTechnicianPad => !HasTechnicianSignature || _isReplacingTechnicianSignature;
+    public bool ShowClientPad => !HasClientSignature || _isReplacingClientSignature;
+
     public bool CanContinue => !IsSaving && !IsLoadingExisting && _savedDataLoaded;
     public bool IsLoadingExisting
     {
@@ -182,8 +198,15 @@ public class SignatureViewModel : INotifyPropertyChanged
             _clientSignatureId = client?.Id;
             TechnicianSignaturePreview = null;
             ClientSignaturePreview = null;
+            // A fresh load always reflects the server's current state, so
+            // collapse back to "show the saved signature" rather than
+            // leaving a stale pad open from an earlier replace request.
+            _isReplacingTechnicianSignature = false;
+            _isReplacingClientSignature = false;
             OnPropertyChanged(nameof(HasTechnicianSignature));
             OnPropertyChanged(nameof(HasClientSignature));
+            OnPropertyChanged(nameof(ShowTechnicianPad));
+            OnPropertyChanged(nameof(ShowClientPad));
             if (technician is not null)
             {
                 _savedTechnicianName = technician.SignerName;
@@ -252,6 +275,22 @@ public class SignatureViewModel : INotifyPropertyChanged
             ShowError("The saved signature could not be removed. Please try again.");
         }
         finally { IsSaving = false; }
+    }
+
+    // =========================================================
+    // REPLACE A SAVED SIGNATURE
+    // =========================================================
+
+    public void BeginReplaceTechnicianSignature()
+    {
+        _isReplacingTechnicianSignature = true;
+        OnPropertyChanged(nameof(ShowTechnicianPad));
+    }
+
+    public void BeginReplaceClientSignature()
+    {
+        _isReplacingClientSignature = true;
+        OnPropertyChanged(nameof(ShowClientPad));
     }
 
     // =========================================================
@@ -363,39 +402,66 @@ public class SignatureViewModel : INotifyPropertyChanged
         {
             IsSaving = true;
 
-            // Upload technician signature.
-            if (technicianSignaturePath is not null)
-                await UploadSignatureAsync(
-                    technicianSignaturePath,
-                    TechnicianName.Trim(),
-                    "Technician");
+            try
+            {
+                // Upload technician signature.
+                if (technicianSignaturePath is not null)
+                    await UploadSignatureAsync(
+                        technicianSignaturePath,
+                        TechnicianName.Trim(),
+                        "Technician");
 
-            // Upload client signature.
-            if (clientSignaturePath is not null)
-                await UploadSignatureAsync(
-                    clientSignaturePath,
-                    ClientName.Trim(),
-                    "Client");
+                // Upload client signature.
+                if (clientSignaturePath is not null)
+                    await UploadSignatureAsync(
+                        clientSignaturePath,
+                        ClientName.Trim(),
+                        "Client");
+            }
+            catch (HttpRequestException ex)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    $"Signature Network Error: {ex}");
 
-            // Continue to final review.
-            await Shell.Current.Navigation.PushAsync(
-                new ReviewSubmitPage(_job));
-        }
-        catch (HttpRequestException ex)
-        {
-            System.Diagnostics.Debug.WriteLine(
-                $"Signature Network Error: {ex}");
+                ShowError(
+                    "SmartJob could not upload the signatures. Please check the connection and try again.");
 
-            ShowError(
-                "SmartJob could not upload the signatures. Please check the connection and try again.");
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine(
-                $"Signature Save Error: {ex}");
+                return;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    $"Signature Save Error: {ex}");
 
-            ShowError(
-                "The signatures could not be saved. Please try again.");
+                ShowError(
+                    "The signatures could not be saved. Please try again.");
+
+                return;
+            }
+
+            // The uploads above succeeded, so refresh local state from the
+            // server now - this hides the drawing pad for whichever
+            // signature just got saved, and means the page shows the right
+            // thing even if opening the review page below fails. It also
+            // tells the page to clear the pads so a retry doesn't re-upload
+            // the same signature a second time.
+            await LoadExistingSignaturesAsync();
+            SignaturesUploaded?.Invoke();
+
+            try
+            {
+                // Continue to final review.
+                await Shell.Current.Navigation.PushAsync(
+                    new ReviewSubmitPage(_job));
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    $"Review navigation error: {ex}");
+
+                ShowError(
+                    "Your signatures were saved. Tap Continue again to open the review page.");
+            }
         }
         finally
         {
