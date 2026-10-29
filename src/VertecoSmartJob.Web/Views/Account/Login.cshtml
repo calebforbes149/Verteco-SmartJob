@@ -37,6 +37,14 @@
                     <p role="status" style="color:var(--success);margin-top:16px;">@resetMessage</p>
                 }
 
+                @if (Model.RetryAfterSeconds is > 0)
+                {
+                    <div class="login-wait" role="alert">
+                        <strong>@(Model.IsAccountLocked ? "Account temporarily locked" : "Too many sign-in requests")</strong>
+                        <span id="login-wait-message">Please try again in <span id="login-countdown" data-seconds="@Model.RetryAfterSeconds">@TimeSpan.FromSeconds(Model.RetryAfterSeconds.Value).ToString(@"mm\:ss")</span>.</span>
+                    </div>
+                }
+
                 <form asp-controller="Account" asp-action="Login" method="post" novalidate>
                     @Html.AntiForgeryToken()
                     <input type="hidden" asp-for="ReturnUrl" />
@@ -58,5 +66,26 @@
             </div>
         </div>
     </div>
+    <script>
+        const countdown = document.getElementById('login-countdown');
+        if (countdown) {
+            const submit = document.querySelector('.login-submit');
+            const message = document.getElementById('login-wait-message');
+            const end = Date.now() + Number(countdown.dataset.seconds) * 1000;
+            submit.disabled = true;
+            const tick = () => {
+                const remaining = Math.max(0, Math.ceil((end - Date.now()) / 1000));
+                if (remaining === 0) {
+                    message.textContent = 'You can try signing in now.';
+                    submit.disabled = false;
+                    clearInterval(timer);
+                } else {
+                    countdown.textContent = `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`;
+                }
+            };
+            const timer = setInterval(tick, 1000);
+            tick();
+        }
+    </script>
 </body>
 </html>

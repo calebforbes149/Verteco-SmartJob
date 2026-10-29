@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Azure.Storage.Blobs;
@@ -323,6 +324,18 @@ builder.Services.AddRateLimiter(
         options.RejectionStatusCode =
             StatusCodes
                 .Status429TooManyRequests;
+
+        options.OnRejected = (context, _) =>
+        {
+            context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+            if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out TimeSpan retryAfter))
+            {
+                var seconds = Math.Max(1, (int)Math.Ceiling(retryAfter.TotalSeconds));
+                context.HttpContext.Response.Headers.RetryAfter = seconds.ToString(CultureInfo.InvariantCulture);
+            }
+
+            return ValueTask.CompletedTask;
+        };
     });
 
 var app = builder.Build();

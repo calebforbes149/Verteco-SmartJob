@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
+using System.Globalization;
 using System.Security.Cryptography;
 using VertecoSmartJob.Application.Abstractions;
 using VertecoSmartJob.Contracts.Auth;
@@ -67,15 +68,7 @@ public class AuthController(
         }
 
         if (user.IsCurrentlyLockedOut())
-        {
-            return StatusCode(
-                StatusCodes.Status423Locked,
-                new ProblemDetails
-                {
-                    Title =
-                        "Account temporarily locked due to repeated failed attempts. Try again later."
-                });
-        }
+            return LockedOut(user);
 
         if (!hasher.Verify(
                 user,
@@ -98,6 +91,9 @@ public class AuthController(
 
             await unitOfWork.SaveChangesAsync(
                 ct);
+
+            if (user.IsCurrentlyLockedOut())
+                return LockedOut(user);
 
             return Unauthorized(
                 new ProblemDetails
@@ -158,6 +154,18 @@ public class AuthController(
                 accessToken,
                 rawRefreshToken,
                 accessTokenExpiresAtUtc));
+    }
+
+    private ObjectResult LockedOut(User user)
+    {
+        var retryAfterSeconds = Math.Max(1, (int)Math.Ceiling(
+            (user.LockedOutUntilUtc!.Value - DateTime.UtcNow).TotalSeconds));
+        Response.Headers.RetryAfter = retryAfterSeconds.ToString(CultureInfo.InvariantCulture);
+        return StatusCode(StatusCodes.Status423Locked, new ProblemDetails
+        {
+            Status = StatusCodes.Status423Locked,
+            Title = "Account temporarily locked after repeated failed sign-in attempts."
+        });
     }
 
     [AllowAnonymous]

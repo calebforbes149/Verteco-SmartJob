@@ -33,6 +33,7 @@ public sealed class ApiLifecycleTests
                 new Dictionary<string, string?>
                 {
                     ["ConnectionStrings:AzureSql"] = "Server=localhost;Database=SmartJobTest;User Id=x;Password=y;TrustServerCertificate=true",
+                    ["Ai:Provider"] = "RuleBased",
                     ["ApiKeys:Accounts:0:Email"] = "manager@verteco.example",
                     ["ApiKeys:Accounts:0:Key"] = "integration-manager-key",
                     ["ApiKeys:Accounts:1:Email"] = "thabo.nkosi@verteco.co.za",
@@ -104,10 +105,11 @@ public sealed class ApiLifecycleTests
         Assert.Equal("attachment", pdf.Content.Headers.ContentDisposition?.DispositionType);
         var document = System.Text.Encoding.ASCII.GetString(await pdf.Content.ReadAsByteArrayAsync());
         Assert.StartsWith("%PDF-1.4", document);
-        Assert.Contains("/Count 2", document);
+        Assert.Contains("/Count 3", document);
         Assert.Contains("/Subtype /Image", document);
         Assert.Contains("/Logo Do", document);
-        Assert.Contains("AI commentary", document);
-        Assert.Contains("Unavailable for this report", document);
+        Assert.Contains("Report insights", document);
+        Assert.Contains("About these figures", document);
+        Assert.Contains("Monthly overview", document);
     }
 }

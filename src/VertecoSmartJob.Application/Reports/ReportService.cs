@@ -1,12 +1,14 @@
 using VertecoSmartJob.Application.Abstractions;
+using VertecoSmartJob.Domain.Enums;
 
 namespace VertecoSmartJob.Application.Reports;
 
 public sealed record ReportStatistics(
     string Id, DateTime FromUtc, DateTime ToUtc, int JobsCreated, int JobsCompleted,
-    double? AverageCompletionHours, Dictionary<string, int> StatusCounts);
+    double? AverageCompletionHours, Dictionary<string, int> StatusCounts,
+    int JobsInScope = 0, int FlaggedJobs = 0, int HighPriorityJobs = 0);
 
-public enum ReportingAiStatus { Available, NotConfigured, RateLimited, Unavailable }
+public enum ReportingAiStatus { Available, LocalInsights, NotConfigured, RateLimited, Unavailable }
 
 public sealed record ReportingAiResult(string? Commentary, ReportingAiStatus Status);
 
@@ -30,7 +32,10 @@ public sealed class ReportService(IJobCardRepository jobs, IReportingAiService a
             records.Count(j => j.CreatedAtUtc >= from && j.CreatedAtUtc < to),
             completed.Count,
             durations.Count == 0 ? null : Math.Round(durations.Average(), 1),
-            records.GroupBy(j => j.Status.ToString()).ToDictionary(g => g.Key, g => g.Count()));
+            records.GroupBy(j => j.Status.ToString()).ToDictionary(g => g.Key, g => g.Count()),
+            records.Count,
+            records.Count(j => j.IsFlagged),
+            records.Count(j => j.Priority is JobPriority.High or JobPriority.Urgent));
     }
 
     public async Task<(ReportStatistics Statistics, ReportingAiResult Ai)> GetReportAsync(int year, int month, CancellationToken ct = default)

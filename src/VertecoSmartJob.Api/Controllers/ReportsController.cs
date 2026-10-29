@@ -44,6 +44,7 @@ public sealed class ReportsController(ReportService reports) : ControllerBase
     }
 
     [HttpGet("{id}/export")]
+    [EnableRateLimiting("ai")]
     public async Task<IActionResult> Export(string id, [FromQuery] string format = "csv", CancellationToken ct = default)
     {
         if (!TryPeriod(id, out var year, out var month)) return BadRequest(new ProblemDetails { Title = "Report ID must be yyyy-MM", Status = 400 });
@@ -68,6 +69,7 @@ public sealed class ReportsController(ReportService reports) : ControllerBase
     {
         Id = s.Id, FromUtc = s.FromUtc, ToUtc = s.ToUtc, JobsCreated = s.JobsCreated,
         JobsCompleted = s.JobsCompleted,
-        AverageCompletionHours = s.AverageCompletionHours, StatusCounts = s.StatusCounts
+        AverageCompletionHours = s.AverageCompletionHours, StatusCounts = s.StatusCounts,
+        JobsInScope = s.JobsInScope, FlaggedJobs = s.FlaggedJobs, HighPriorityJobs = s.HighPriorityJobs
     };
 }

@@ -27,6 +27,9 @@ public class User : SoftDeletableEntity
 
     public void RegisterFailedLogin(int maxAttempts, TimeSpan lockoutDuration)
     {
+        if (LockedOutUntilUtc is { } until && until <= DateTime.UtcNow)
+            ResetFailedLogins();
+
         FailedLoginAttempts++;
         if (FailedLoginAttempts >= maxAttempts)
             LockedOutUntilUtc = DateTime.UtcNow.Add(lockoutDuration);

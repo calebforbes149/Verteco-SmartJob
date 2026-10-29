@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using VertecoSmartJob.Contracts.Auth;
 using VertecoSmartJob.Web.Api;
 using VertecoSmartJob.Web.Auth;
 using VertecoSmartJob.Web.Models;
@@ -26,7 +27,39 @@ public class AccountController(AuthApiClient authApi) : Controller
     {
         if (!ModelState.IsValid) return View(model);
 
-        var result = await authApi.LoginAsync(model.Email, model.Password, ct);
+        LoginResponse? result;
+        try
+        {
+            result = await authApi.LoginAsync(model.Email, model.Password, ct);
+        }
+        catch (ApiException ex) when (ex.StatusCode is 423 or 429)
+        {
+            model.IsAccountLocked = ex.StatusCode == 423;
+            model.RetryAfterSeconds = ex.RetryAfterSeconds;
+            if (model.RetryAfterSeconds is null)
+                ModelState.AddModelError(string.Empty, model.IsAccountLocked
+                    ? "Your account is temporarily locked. Please try again later."
+                    : "Too many sign-in requests. Please try again later.");
+            return View(model);
+        }
+        catch (ApiException)
+        {
+            ModelState.AddModelError(string.Empty,
+                "Sign-in is unavailable right now. Please try again shortly.");
+            return View(model);
+        }
+        catch (HttpRequestException)
+        {
+            ModelState.AddModelError(string.Empty,
+                "Sign-in service is unavailable. Start the SmartJob API and try again.");
+            return View(model);
+        }
+        catch (TaskCanceledException) when (!ct.IsCancellationRequested)
+        {
+            ModelState.AddModelError(string.Empty,
+                "Sign-in service timed out. Check that the SmartJob API is running and try again.");
+            return View(model);
+        }
         if (result is null)
         {
             ModelState.AddModelError(string.Empty, "Incorrect email or password.");

@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using VertecoSmartJob.Contracts.Auth;
 using VertecoSmartJob.Contracts.Reference;
+using VertecoSmartJob.Domain.Entities;
 using VertecoSmartJob.Infrastructure.Identity;
 using VertecoSmartJob.Infrastructure.Persistence;
 using VertecoSmartJob.Infrastructure.Persistence.Seed;
@@ -19,6 +20,76 @@ namespace VertecoSmartJob.Tests.Integration;
 
 public sealed class AccountProfileTests
 {
+    [Fact]
+    public async Task FifthBadPassword_LocksAccountAndReturnsCountdown()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        using var factory = CreateFactory(connection);
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await DbSeeder.SeedAsync(db);
+            var user = await db.Users.SingleAsync(u => u.Email == "manager@verteco.example");
+            user.SetPasswordHash(scope.ServiceProvider.GetRequiredService<PasswordHashingService>()
+                .Hash(user, "correct-password"));
+            user.ConfirmEmail();
+            await db.SaveChangesAsync();
+        }
+
+        using var client = factory.CreateClient();
+        var badLogin = new LoginRequest { Email = "manager@verteco.example", Password = "wrong-password" };
+        for (var attempt = 1; attempt <= 5; attempt++)
+        {
+            using var response = await client.PostAsJsonAsync("/api/v1/auth/login", badLogin);
+            Assert.Equal(attempt == 5 ? HttpStatusCode.Locked : HttpStatusCode.Unauthorized,
+                response.StatusCode);
+            if (attempt == 5)
+                Assert.InRange(response.Headers.RetryAfter!.Delta!.Value.TotalSeconds, 1, 900);
+        }
+
+        using var locked = await client.PostAsJsonAsync("/api/v1/auth/login",
+            new LoginRequest { Email = badLogin.Email, Password = "correct-password" });
+        Assert.Equal(HttpStatusCode.Locked, locked.StatusCode);
+    }
+
+    [Fact]
+    public void ExpiredLockout_ResetsFailedAttemptCount()
+    {
+        var user = new User();
+        for (var attempt = 0; attempt < 5; attempt++)
+            user.RegisterFailedLogin(5, TimeSpan.FromMinutes(15));
+
+        Assert.True(user.IsCurrentlyLockedOut());
+        typeof(User).GetProperty(nameof(User.LockedOutUntilUtc))!
+            .SetValue(user, DateTime.UtcNow.AddSeconds(-1));
+
+        user.RegisterFailedLogin(5, TimeSpan.FromMinutes(15));
+
+        Assert.Equal(1, user.FailedLoginAttempts);
+        Assert.False(user.IsCurrentlyLockedOut());
+    }
+
+    [Fact]
+    public async Task AuthRequestLimit_ReturnsRetryTime()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        using var factory = CreateFactory(connection);
+        using var client = factory.CreateClient();
+        var login = new LoginRequest { Email = "unknown@example.test", Password = "wrong-password" };
+
+        for (var attempt = 0; attempt < 10; attempt++)
+        {
+            using var response = await client.PostAsJsonAsync("/api/v1/auth/login", login);
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        using var rejected = await client.PostAsJsonAsync("/api/v1/auth/login", login);
+        Assert.Equal(HttpStatusCode.TooManyRequests, rejected.StatusCode);
+        Assert.InRange(rejected.Headers.RetryAfter!.Delta!.Value.TotalSeconds, 1, 300);
+    }
+
     [Fact]
     public async Task ForgotPasswordWithoutMailConfiguration_DoesNotClaimAResetLinkWasSent()
     {

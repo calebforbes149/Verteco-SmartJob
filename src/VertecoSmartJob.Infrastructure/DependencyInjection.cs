@@ -159,20 +159,22 @@ public static class DependencyInjection
         services.AddScoped<
             ReportService>();
 
-        services.AddSingleton<
-            IReportingAiService>(
-            sp =>
-                new GeminiReportingAiService(
-                    new HttpClient
-                    {
-                        Timeout =
-                            TimeSpan.FromSeconds(25)
-                    },
+        services.AddSingleton<IReportingAiService>(sp =>
+        {
+            IReportingAiService local = new LocalReportingInsightsService();
+            var provider = configuration["Ai:Provider"]?.Trim() ?? "Gemini";
+            if (provider.Equals("RuleBased", StringComparison.OrdinalIgnoreCase))
+                return local;
+
+            if (provider.Equals("Gemini", StringComparison.OrdinalIgnoreCase))
+                return new GeminiReportingAiService(
+                    new HttpClient { Timeout = TimeSpan.FromSeconds(45) },
                     configuration,
                     sp.GetRequiredService<
-                        Microsoft.Extensions.Logging
-                            .ILogger<
-                                GeminiReportingAiService>>()));
+                        Microsoft.Extensions.Logging.ILogger<GeminiReportingAiService>>());
+
+            throw new InvalidOperationException($"Unsupported Ai:Provider '{provider}'. Use RuleBased or Gemini.");
+        });
 
         services.AddSingleton<
             PasswordHashingService>();

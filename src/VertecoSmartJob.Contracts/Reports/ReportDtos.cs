@@ -9,6 +9,9 @@ public class ReportDto
     public int JobsCompleted { get; set; }
     public double? AverageCompletionHours { get; set; }
     public Dictionary<string, int> StatusCounts { get; set; } = [];
+    public int JobsInScope { get; set; }
+    public int FlaggedJobs { get; set; }
+    public int HighPriorityJobs { get; set; }
     public string? AiCommentary { get; set; }
     public string AiStatus { get; set; } = "Unavailable";
 }
