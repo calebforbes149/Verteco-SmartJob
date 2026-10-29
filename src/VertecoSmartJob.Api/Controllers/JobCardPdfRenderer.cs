@@ -1,8 +1,7 @@
-using PdfSharpCore;
-using PdfSharpCore.Drawing;
-using PdfSharpCore.Fonts;
-using PdfSharpCore.Pdf;
-using PdfSharpCore.Utils;
+using PdfSharp;
+using PdfSharp.Drawing;
+using PdfSharp.Fonts;
+using PdfSharp.Pdf;
 using VertecoSmartJob.Contracts.Jobs;
 
 namespace VertecoSmartJob.Api.Controllers;
@@ -12,9 +11,15 @@ public sealed record JobCardPdfAsset(byte[] Content, string ContentType);
 // Produces the same job-card record the manager sees in the web app.
 public static class JobCardPdfRenderer
 {
+    private static readonly Lazy<bool> FontsReady = new(() =>
+    {
+        GlobalFontSettings.FontResolver ??= new JobCardFontResolver();
+        return true;
+    });
+
     public static byte[] Render(JobCardDetailDto job, IReadOnlyDictionary<Guid, JobCardPdfAsset> files)
     {
-        GlobalFontSettings.FontResolver ??= new FontResolver();
+        _ = FontsReady.Value;
         var document = new PdfDocument { Info = { Title = $"Job card {job.Number}" } };
         using (var canvas = new Canvas(document))
         {
@@ -78,10 +83,10 @@ public static class JobCardPdfRenderer
             using var graphics = XGraphics.FromPdfPage(document.Pages[index]);
             graphics.DrawLine(new XPen(XColors.LightGray, 0.7), 48, 790, 547, 790);
             graphics.DrawString("VERTECO SMARTJOB  |  Private job-card record",
-                new XFont("Arial", 8), XBrushes.DimGray,
+                new XFont("Lato", 8), XBrushes.DimGray,
                 new XRect(48, 798, 430, 18), XStringFormats.TopLeft);
             graphics.DrawString($"{index + 1} / {document.PageCount}",
-                new XFont("Arial", 8), XBrushes.DimGray,
+                new XFont("Lato", 8), XBrushes.DimGray,
                 new XRect(500, 798, 47, 18), XStringFormats.TopRight);
         }
 
@@ -94,10 +99,10 @@ public static class JobCardPdfRenderer
     {
         private readonly PdfDocument _document;
         private XGraphics _graphics = null!;
-        private readonly XFont _body = new("Arial", 10);
-        private readonly XFont _bold = new("Arial", 10, XFontStyle.Bold);
-        private readonly XFont _small = new("Arial", 8);
-        private readonly XFont _title = new("Arial", 21, XFontStyle.Bold);
+        private readonly XFont _body = new("Lato", 10);
+        private readonly XFont _bold = new("Lato", 10, XFontStyleEx.Bold);
+        private readonly XFont _small = new("Lato", 8);
+        private readonly XFont _title = new("Lato", 21, XFontStyleEx.Bold);
         private double _y;
         private const double Left = 48;
         private const double Right = 547;
@@ -122,7 +127,8 @@ public static class JobCardPdfRenderer
             using var logoBuffer = new MemoryStream();
             logoResource.CopyTo(logoBuffer);
             var logoBytes = logoBuffer.ToArray();
-            using var logo = XImage.FromStream(() => new MemoryStream(logoBytes));
+            using var logoStream = new MemoryStream(logoBytes);
+            using var logo = XImage.FromStream(logoStream);
             var logoWidth = Math.Min(112d, 45d * logo.PixelWidth / logo.PixelHeight);
             var logoHeight = logoWidth * logo.PixelHeight / logo.PixelWidth;
             _graphics.DrawImage(logo, Left, 24, logoWidth, logoHeight);
@@ -229,7 +235,8 @@ public static class JobCardPdfRenderer
                 return;
             }
 
-            using var image = XImage.FromStream(() => new MemoryStream(file.Content));
+            using var imageStream = new MemoryStream(file.Content);
+            using var image = XImage.FromStream(imageStream);
             var width = Math.Min(signature ? 260d : 420d,
                 (signature ? 100d : 210d) * image.PixelWidth / image.PixelHeight);
             var height = width * image.PixelHeight / image.PixelWidth;
@@ -242,5 +249,26 @@ public static class JobCardPdfRenderer
         }
 
         public void Dispose() => _graphics.Dispose();
+    }
+
+    private sealed class JobCardFontResolver : IFontResolver
+    {
+        private const string Regular = "lato-regular";
+        private const string Bold = "lato-bold";
+
+        public FontResolverInfo ResolveTypeface(string familyName, bool bold, bool italic) =>
+            new(bold ? Bold : Regular);
+
+        public byte[] GetFont(string faceName)
+        {
+            var resourceName = faceName == Bold
+                ? "VertecoSmartJob.Api.Assets.Fonts.Lato-Bold.ttf"
+                : "VertecoSmartJob.Api.Assets.Fonts.Lato-Regular.ttf";
+            using var stream = typeof(JobCardPdfRenderer).Assembly.GetManifestResourceStream(resourceName)
+                ?? throw new InvalidOperationException($"Embedded PDF font missing: {resourceName}");
+            using var buffer = new MemoryStream();
+            stream.CopyTo(buffer);
+            return buffer.ToArray();
+        }
     }
 }

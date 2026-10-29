@@ -13,4 +13,6 @@ public class LoginViewModel
     public string Password { get; set; } = string.Empty;
 
     public string? ReturnUrl { get; set; }
+    public int? RetryAfterSeconds { get; set; }
+    public bool IsAccountLocked { get; set; }
 }

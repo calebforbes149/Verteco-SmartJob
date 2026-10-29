@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Globalization;
 using System.Text;
 using VertecoSmartJob.Application.Reports;
+using VertecoSmartJob.Contracts.Reports;
 
 namespace VertecoSmartJob.Api.Controllers;
 
@@ -23,7 +24,10 @@ internal static class ReportExports
         {
             ("Period", s.Id), ("Jobs created", s.JobsCreated.ToString(CultureInfo.InvariantCulture)),
             ("Jobs completed", s.JobsCompleted.ToString(CultureInfo.InvariantCulture)),
-            ("Average completion hours", s.AverageCompletionHours?.ToString(CultureInfo.InvariantCulture) ?? "N/A")
+            ("Average completion hours", s.AverageCompletionHours?.ToString(CultureInfo.InvariantCulture) ?? "N/A"),
+            ("Jobs in report scope", s.JobsInScope.ToString(CultureInfo.InvariantCulture)),
+            ("Currently flagged", s.FlaggedJobs.ToString(CultureInfo.InvariantCulture)),
+            ("High or urgent priority", s.HighPriorityJobs.ToString(CultureInfo.InvariantCulture))
         };
         rows.AddRange(s.StatusCounts.OrderBy(kv => kv.Key).Select(kv => ($"Status: {kv.Key}", kv.Value.ToString(CultureInfo.InvariantCulture))));
         return rows;
@@ -44,18 +48,14 @@ internal static class ReportExports
         var commentary = string.IsNullOrWhiteSpace(aiCommentary)
             ? "Unavailable for this report. Statistics are still complete."
             : aiCommentary;
-        var commentaryLines = Wrap(commentary, 88).ToList();
+        var sections = ReportAnalysisFormatter.Parse(commentary);
         var pages = new List<string>
         {
             CoverPage(s),
-            DetailsPage(s, commentaryLines.Take(11).ToList())
+            DetailsPage(s)
         };
-        var remaining = commentaryLines.Skip(11).ToList();
-        while (remaining.Count > 0)
-        {
-            pages.Add(ContinuationPage(s, remaining.Take(42).ToList(), pages.Count + 1));
-            remaining = remaining.Skip(42).ToList();
-        }
+        foreach (var analysisLines in PaginateAnalysis(sections))
+            pages.Add(AnalysisPage(s, analysisLines, pages.Count + 1));
 
         var pageCount = pages.Count;
         var regularFont = 3 + pageCount;
@@ -117,7 +117,7 @@ internal static class ReportExports
         return page.ToString();
     }
 
-    private static string DetailsPage(ReportStatistics s, List<string> commentaryLines)
+    private static string DetailsPage(ReportStatistics s)
     {
         var page = new StringBuilder();
         InnerPageHeader(page, s);
@@ -129,6 +129,8 @@ internal static class ReportExports
         MetricCard(page, 390, "AVG. COMPLETION", s.AverageCompletionHours is null
             ? "N/A" : $"{s.AverageCompletionHours.Value:0.0} hrs");
 
+        Text(page, $"In scope: {s.JobsInScope} | Flagged: {s.FlaggedJobs} | High/urgent: {s.HighPriorityJobs}",
+            50, 609, 9, false, Muted);
         Text(page, "Status breakdown", 50, 592, 15, true, TextColor);
         Fill(page, 50, 552, 495, 28, Dark);
         Text(page, "STATUS", 64, 562, 9, true, White);
@@ -144,22 +146,70 @@ internal static class ReportExports
             Text(page, statuses[i].Value.ToString(CultureInfo.InvariantCulture), 479, y + 8, 9, true, TextColor);
         }
 
-        Text(page, "AI commentary", 50, 329, 15, true, TextColor);
-        Fill(page, 50, 128, 495, 180, Pale);
-        Fill(page, 50, 128, 4, 180, Red);
-        for (var i = 0; i < commentaryLines.Count; i++)
-            Text(page, commentaryLines[i], 66, 282 - i * 14, 10, false, TextColor);
+        Text(page, "About these figures", 50, 329, 15, true, TextColor);
+        Fill(page, 50, 170, 495, 138, Pale);
+        Fill(page, 50, 170, 4, 138, Red);
+        Text(page, "Created and completed counts can include different jobs.", 66, 281, 10, false, TextColor);
+        Text(page, "Status, flag and priority counts reflect the current state of jobs", 66, 258, 10, false, TextColor);
+        Text(page, "in this report, not a historical month-end snapshot.", 66, 243, 10, false, TextColor);
+        Text(page, "The full analysis and recommended actions follow on the next page.", 66, 207, 10, false, TextColor);
         InnerPageFooter(page, 2);
         return page.ToString();
     }
 
-    private static string ContinuationPage(ReportStatistics s, List<string> lines, int pageNumber)
+    private sealed record AnalysisLine(string Text, bool IsHeading);
+
+    private static List<List<AnalysisLine>> PaginateAnalysis(IReadOnlyList<ReportAnalysisSection> sections)
+    {
+        const int maxLinesPerPage = 34;
+        var pages = new List<List<AnalysisLine>>();
+        var page = new List<AnalysisLine>();
+
+        void NextPage()
+        {
+            if (page.Count > 0) pages.Add(page);
+            page = [];
+        }
+
+        foreach (var section in sections)
+        {
+            var contentLines = Wrap(section.Body, 76).ToList();
+            if (page.Count > 0 && page.Count + 1 + Math.Min(2, contentLines.Count + 1) > maxLinesPerPage)
+                NextPage();
+            if (page.Count > 0) page.Add(new AnalysisLine(string.Empty, false));
+            page.Add(new AnalysisLine(section.Heading, true));
+
+            foreach (var line in contentLines)
+            {
+                if (page.Count >= maxLinesPerPage)
+                {
+                    NextPage();
+                    page.Add(new AnalysisLine(section.Heading + " (continued)", true));
+                }
+                page.Add(new AnalysisLine(line, false));
+            }
+        }
+
+        if (page.Count > 0) pages.Add(page);
+        return pages;
+    }
+
+    private static string AnalysisPage(ReportStatistics s, List<AnalysisLine> lines, int pageNumber)
     {
         var page = new StringBuilder();
         InnerPageHeader(page, s);
-        Text(page, "AI commentary (continued)", 50, 742, 23, true, TextColor);
+        Text(page, pageNumber == 3 ? "Report insights" : "Report insights (continued)", 50, 742, 23, true, TextColor);
+        Text(page, "Management analysis and recommended actions", 50, 719, 10, false, Muted);
+        var boxBottom = 695 - (lines.Count * 16 + 38);
+        Fill(page, 50, boxBottom, 495, 695 - boxBottom, Pale);
+        Fill(page, 50, boxBottom, 4, 695 - boxBottom, Red);
         for (var i = 0; i < lines.Count; i++)
-            Text(page, lines[i], 50, 709 - i * 15, 10, false, TextColor);
+        {
+            if (lines[i].Text.Length == 0) continue;
+            Text(page, lines[i].Text, 69, 668 - i * 16,
+                lines[i].IsHeading ? 11 : 10, lines[i].IsHeading,
+                lines[i].IsHeading ? Red : TextColor);
+        }
         InnerPageFooter(page, pageNumber);
         return page.ToString();
     }
@@ -216,18 +266,22 @@ internal static class ReportExports
 
     private static IEnumerable<string> Wrap(string value, int maxLength)
     {
-        var line = new StringBuilder();
-        foreach (var word in value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+        foreach (var paragraph in value.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n'))
         {
-            if (line.Length > 0 && line.Length + word.Length + 1 > maxLength)
+            var line = new StringBuilder();
+            foreach (var word in paragraph.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
             {
-                yield return line.ToString();
-                line.Clear();
+                if (line.Length > 0 && line.Length + word.Length + 1 > maxLength)
+                {
+                    yield return line.ToString();
+                    line.Clear();
+                }
+                if (line.Length > 0) line.Append(' ');
+                line.Append(word);
             }
-            if (line.Length > 0) line.Append(' ');
-            line.Append(word);
+            if (line.Length > 0)
+                yield return line.ToString();
         }
-        if (line.Length > 0) yield return line.ToString();
     }
 
     private static (int Width, int Height, byte[] CompressedRgb) ReadEmbeddedLogo()

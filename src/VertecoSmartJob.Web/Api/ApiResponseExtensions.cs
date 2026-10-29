@@ -18,9 +18,17 @@ public static class ApiResponseExtensions
         {
         }
 
+        var retryAfter = response.Headers.RetryAfter;
+        var remaining = retryAfter?.Delta ??
+            (retryAfter?.Date is { } date ? date - DateTimeOffset.UtcNow : (TimeSpan?)null);
+        var retryAfterSeconds = remaining is { } duration
+            ? Math.Max(1, (int)Math.Ceiling(duration.TotalSeconds))
+            : (int?)null;
+
         throw new ApiException(
             (int)response.StatusCode,
             problem?.Title ?? $"Request failed ({(int)response.StatusCode} {response.StatusCode})",
-            problem?.Detail);
+            problem?.Detail,
+            retryAfterSeconds);
     }
 }

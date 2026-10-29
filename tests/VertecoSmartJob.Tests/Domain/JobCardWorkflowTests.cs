@@ -65,6 +65,6 @@ public sealed class JobCardWorkflowTests
 
         Assert.StartsWith("%PDF-", Encoding.ASCII.GetString(pdf, 0, 5));
         Assert.True(pdf.Length > 2_000);
-        Assert.Contains("/Subtype /Image", Encoding.Latin1.GetString(pdf));
+        Assert.Matches(@"/Subtype\s*/Image", Encoding.Latin1.GetString(pdf));
     }
 }

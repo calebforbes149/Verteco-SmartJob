@@ -9,15 +9,15 @@
 
   <ItemGroup>
     <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.14" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.14" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.14">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="PdfSharpCore" Version="1.3.67" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="2.1.13" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
+    <PackageReference Include="PDFsharp" Version="6.2.4" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.3.1" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,6 +29,9 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Assets\verteco-logo-full.png" />
+    <EmbeddedResource Include="Assets\Fonts\Lato-Regular.ttf" />
+    <EmbeddedResource Include="Assets\Fonts\Lato-Bold.ttf" />
+    <EmbeddedResource Include="Assets\Fonts\OFL.txt" />
   </ItemGroup>
 
 </Project>
