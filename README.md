@@ -31,7 +31,7 @@ A digital field service and job card management system built for Verteco, with t
 
 ## Person 1 (Alex) — Backend, API and Reporting
 
-This folder is the backend, API, and reporting starting point for the group project. It contains Domain, Application, Infrastructure, API, and Contracts projects so the web and mobile teams can share DTOs.
+This folder is the backend, API and reporting starting point for the group project. It contains Domain, Application, Infrastructure, API, and Contracts projects so the web and mobile teams can share DTOs.
 
 All jobs use one **Standard Job Card** and its six checklist items. Clients do not choose or edit a template.
 
