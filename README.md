@@ -1,35 +1,93 @@
 # Verteco SmartJob
 
-# To view Apk - Go into releases and use the password that is provided there in release for a quick run through with the mobile app
+Verteco SmartJob is a digital field-service and job-card system. Managers use an ASP.NET Core MVC web app to plan and review work. Technicians use a .NET MAUI Android app to complete it, capture evidence and obtain sign-off. Both clients share an ASP.NET Core Web API backed by Azure SQL and private Azure Blob Storage.
 
-# To run through the web app, the login is Email: alexxornelass755@gmail.com and password is: Test@verteco
+**Module:** INSY7315 - Information Systems 3E, Work Integrated Learning  
+**Client:** Verteco  
+**Group:** 20 - Team Vantage
 
-**Module:** INSY7315 — Information Systems 3E, Work Integrated Learning
-**Client:** Verteco
-**Group:** 20 — Team Vantage
+## Project links
 
-**Group Members:**
-ST10074970 - Isaac Phiri Group 3 
-ST10438433 - Caleb Forbes Group 1
-ST10367702 - Keeran Perumal Group 3
-ST10450571 - Erin Sarjoo Group 2
-ST10437348 - Alexandro Ornelas Group 1
-ST10453511 - Moegammad Alexander Group 2
+| Resource | Link or location |
+| --- | --- |
+| Task 2 collaboration repository | [EMGPRS SmartJob Task 2 repository](https://github.com/EMGPRS/insy7315-2026-task-2-st10453511.git) |
+| Manager web app | [Open the hosted SmartJob web console](https://verteco-smartjob-web-ctatfjduapbcdzb5.southafricanorth-01.azurewebsites.net) |
+| API liveness check | [Open /health/live](https://verteco-smartjob-api-hcdyfgf4cagdh2db.southafricanorth-01.azurewebsites.net/health/live) - confirms the API process is running. |
+| API readiness check | [Open /health/ready](https://verteco-smartjob-api-hcdyfgf4cagdh2db.southafricanorth-01.azurewebsites.net/health/ready) - checks access to Azure SQL and Blob Storage. |
+| Android installer | The signed APK is embedded in the [Version 5 user guide](docs/Verteco%20SmartJob%20User%20Guide%20V5%20Group%2020.pdf). Team members can also use [GitHub Releases](https://github.com/EMGPRS/insy7315-2026-insy7315-2026-final-project-st10453511/releases). |
+| User guide | [Verteco SmartJob User Guide V5, Group 20](docs/Verteco%20SmartJob%20User%20Guide%20V5%20Group%2020.pdf) |
+| Video demonstration | [Watch the SmartJob project video](https://youtu.be/Vq9oaBn_71Y?si=rwpBA2ztyZ8n7VZx) |
+| Implementation presentation | [VertecoSmartJobGroup20Presensation.pptx](docs/VertecoSmartJobGroup20Presensation.pptx) |
+| Expo presentation | [Verteco SmartJob Expo.pptx](docs/Verteco%20SmartJob%20Expo.pptx) |
+| Submission document | [Group20_Submission_With_Link.pdf](docs/Group20_Submission_With_Link.pdf) |
+| Attendance record | [Attendance Group 20.pdf](docs/Attendance%20Group%2020.pdf) |
+| iOS release guide | [iOS build and release steps](docs/ios-build-and-release.md) |
+| API test collections | [Manager API collection](postman/VertecoSmartJob.Person1.postman_collection.json) and [mobile API collection](postman/VertecoSmartJob.Mobile.postman_collection.json) |
 
-A digital field service and job card management system built for Verteco, with three components sharing one API: an ASP.NET Core MVC manager web app, a .NET MAUI technician mobile app, and the ASP.NET Core Web API itself, backed by Azure SQL and Azure Blob Storage.
+The Task 2 repository above is where all six members developed their contributions on separate branches. Changes went through pull requests for review, and an administrator approved merges into `main`. This final-project repository contains the integrated code and submission documents. Branch approval is a GitHub repository rule; it is separate from the Actions workflows described below.
+
+## Demo sign-in
+
+| App | Sign-in email | Password | Access |
+| --- | --- | --- | --- |
+| Manager web console | `alexxornelass755@gmail.com` | `Test@verteco` | Open the hosted web app above and select **Sign in**. |
+| Technician Android app | `caleb@gmail.com` | `password123` | Install the signed APK from the user guide or a team-accessible release, then sign in on the phone. |
+
+The web account has the Manager role. The Android account has the Technician role and sees work assigned to that technician. These are demonstration credentials for the project walkthrough.
+
+## Group members and roles
+
+| Person section | Member | Student number | Group | Project role | Contribution documented below |
+| --- | --- | --- | --- | --- | --- |
+| Person 1 | Alexandro Ornelas | ST10437348 | Group 1 | Backend Core Lead | Backend, API and reporting |
+| Person 2 | Caleb Forbes | ST10438433 | Group 1 | Web Front End Lead | Manager web app |
+| Person 3 | Moegammad Alexander | ST10453511 | Group 2 | Group Leader, Project Manager and Data Lead | Security, identity and notifications |
+| Person 4 | Isaac Phiri | ST10074970 | Group 3 | DevOps, Hosting and API Platform Lead | Mobile backend, API and sync |
+| Person 5 | Erin Sarjoo | ST10450571 | Group 2 | Mobile Lead | Technician mobile front end |
+| Person 6 | Keeran Perumal | ST10367702 | Group 3 | Security and Identity Lead | Mobile security, DevOps and hosting |
+
+## CI/CD and deployment
+
+The workflows below are part of this final-project repository. GitHub Actions checks pull requests and branch pushes, while repository rules control who can merge. In the Task 2 collaboration repository, the team worked on separate branches and needed administrator approval before merging into `main`. A workflow does not grant that approval. In a repository with these workflows, a merge to `main` creates a push that starts a fresh test-and-deploy run for the merged commit.
+
+| Workflow | Trigger | What it does | Result |
+| --- | --- | --- | --- |
+| [SmartJob CI](.github/workflows/ci.yml) | Pull request or push to `main`/`develop`, or manual run | Restores the .NET 10 solution, verifies analyzer findings at error severity, builds Release and runs the `VertecoSmartJob.Tests` project. | Fast build and test check for the web/API solution |
+| [SmartJob All Tests](.github/workflows/unit-tests.yml) | Pull request or push to `main`/`develop`, or manual run | Runs `dotnet test` on the whole solution with no test filter, collects TRX results and XPlat Code Coverage, and uploads results even if tests fail. | Test and coverage artifact retained for 14 days |
+| [SmartJob Main Tests](.github/workflows/main-tests.yml) | Called by Main Deploy, or manual run | Restores the solution, verifies analyzers, builds Release and runs the `VertecoSmartJob.Tests` project. | Fresh deployment gate for the merged commit |
+| [SmartJob Main Deploy](.github/workflows/main-deploy.yml) | Push to `main` | Calls Main Tests, publishes API and web, deploys API to Azure, checks API readiness, deploys web and checks web health. | Hosted API and manager web app updated only after the test job succeeds |
+| [SmartJob Android Build](.github/workflows/android.yml) | Pull request or push to `main`/`develop`, or manual run | Installs the MAUI Android workload and builds an unsigned PR APK, or reconstructs and validates the signing keystore before building a signed APK on push/manual runs. | APK artifact retained for 14 days |
+
+### What happens when a change reaches `main`
+
+1. A contributor opens a pull request. CI, All Tests and the Android build run against the proposed change. The Android PR build is unsigned and does not use the signing secrets.
+2. After the required review and approval, the pull request is merged under that repository's branch rules. A resulting push to `main` in this final-project repository starts Main Deploy.
+3. Main Deploy calls Main Tests first. It restores the solution, checks analyzer errors, builds Release and runs the test project again on the merged commit. A failure stops the deploy job.
+4. The deploy job publishes the API and web projects separately. It uses `AZURE_API_PUBLISH_PROFILE` and `AZURE_WEB_PUBLISH_PROFILE` from GitHub Secrets to deploy to their Azure App Services.
+5. The workflow polls the API `/health/ready` endpoint before deploying the web app. It then polls the web `/health/live` endpoint. A failed health check fails the workflow; it is not an automatic rollback.
+6. The Android workflow also runs for the `main` push. It produces a signed APK as a downloadable Actions artifact. Publishing that APK as a GitHub Release is a separate release step.
+
+Main Tests runs the current `VertecoSmartJob.Tests` project. All Tests runs every test project in the solution, so it will also include any additional test projects added later. The deployment workflow uses a concurrency group to prevent overlapping `main` deploys.
+
+Android signing uses `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD` from GitHub Secrets. Azure publish profiles use the two Azure secrets above. Database, Blob, SMTP and Gemini runtime settings are configured for the hosted apps separately; they are not embedded in the workflow files or Android artifact.
 
 ## Contents
 
-- [Person 1 — Backend, API & Reporting](#person-1-alex--backend-api--reporting)
-- [Person 2 — Web Front End](#person-2-caleb--web-front-end-setup)
-- [Person 3 — Security, Identity & Notifications](#person-3-moe--security-identity--notifications)
-- [Person 4 — Mobile Backend, API & Sync](#person-4-isaac--mobile-backend-api--sync)
-- [Person 5 — Mobile Front End](#person-5-erin-mobile-front-end)
-- [Person 6 — Mobile Security, DevOps & Hosting](#person-6-keeran-mobile-security-devops--hosting)
+- [Project links](#project-links)
+- [Demo sign-in](#demo-sign-in)
+- [Group members and roles](#group-members-and-roles)
+- [CI/CD and deployment](#cicd-and-deployment)
+- [Person 1 - Backend, API and Reporting](#person-1)
+- [Person 2 - Web Front End](#person-2)
+- [Person 3 - Security, Identity and Notifications](#person-3)
+- [Person 4 - Mobile Backend, API and Sync](#person-4)
+- [Person 5 - Mobile Front End](#person-5)
+- [Person 6 - Mobile Security, DevOps and Hosting](#person-6)
 
 ---
 
-## Person 1 (Alex) — Backend, API and Reporting
+<a id="person-1"></a>
+## Person 1 (Alex) - Backend, API and Reporting
 
 This folder is the backend, API and reporting starting point for the group project. It contains Domain, Application, Infrastructure, API, and Contracts projects so the web and mobile teams can share DTOs.
 
@@ -42,7 +100,7 @@ All jobs use one **Standard Job Card** and its six checklist items. Clients do n
 - Customer, site, user, and technician management services, soft deletion, and audit records.
 - Flagged jobs and persisted corrective actions with manager resolution and audit records.
 - Azure SQL EF Core provider, seed data, migrations, and an idempotent SQL deployment script.
-- Private Azure Blob Storage adapter, technician job routes, scoped evidence and signature uploads, and offline mobile sync. See [the mobile API guide](docs/mobile-api-testing.md) and its separate Postman collection.
+- Private Azure Blob Storage adapter, technician job routes, scoped evidence and signature uploads, and offline mobile sync. See the [mobile API Postman collection](postman/VertecoSmartJob.Mobile.postman_collection.json) for request examples.
 - `/api/v1` manager endpoints, dashboard aggregates, monthly reports with Gemini AI analysis, CSV/PDF exports, Swagger, and a Postman collection.
 
 ### Open the solution
@@ -98,13 +156,13 @@ The automated tests use an isolated in-memory SQLite database. The running API u
 
    The `Email` must match the seeded manager user. Choose a long random development key and use its **exact value** in Postman's `managerKey` collection variable. The key is for this local development authentication harness, not your Azure SQL password or Azure account password.
 
-   `Jwt` and `Smtp` are Person 3's (Moe's) addition — see that section below for what they're for and how to generate them. Every developer running the Api locally needs their own values for all of these; none of them are committed to the repo.
+   `Jwt` and `Smtp` are Person 3's (Moe's) addition - see that section below for what they're for and how to generate them. Every developer running the Api locally needs their own values for all of these; none of them are committed to the repo.
 3. Save `secrets.json`, set **VertecoSmartJob.Api** as the startup project, select its **http** launch profile, and press **F5**. The API uses `http://localhost:5196`; Swagger is at `http://localhost:5196/swagger`. The **https** profile also exposes `https://localhost:7086`. The launch profiles set `ASPNETCORE_ENVIRONMENT=Development`, which makes User Secrets available.
 
 
 User Secrets live outside the repository and everyone configures their own local file. They are intended for development and are not encrypted. Never put real passwords, storage keys, or API keys in `appsettings.json`, the README, the Postman collection, or a commit.
 
-Development startup applies pending Azure SQL EF migrations. The `AddStandardJobCardTemplate` migration adds only the single required template and its six checklist items when no active standard template exists. Startup does **not** insert accounts or demo records. The existing Manager account and password set through Person 3's login flow remain in the database; the API never recreates them. Automated tests use a separate in-memory SQLite database and test-only fixtures. The database must be reachable before the API can start. If the SQL firewall or credentials are wrong, startup stops during migration. The Api now authenticates requests through **either** the development API-key header **or** a real JWT Bearer token — see Person 3's section below for how real login, password reset, and role enforcement work.
+Development startup applies pending Azure SQL EF migrations. The `AddStandardJobCardTemplate` migration adds only the single required template and its six checklist items when no active standard template exists. Startup does **not** insert accounts or demo records. The existing Manager account and password set through Person 3's login flow remain in the database; the API never recreates them. Automated tests use a separate in-memory SQLite database and test-only fixtures. The database must be reachable before the API can start. If the SQL firewall or credentials are wrong, startup stops during migration. The Api now authenticates requests through **either** the development API-key header **or** a real JWT Bearer token - see Person 3's section below for how real login, password reset, and role enforcement work.
 
 For deployment, use the reviewed `docs/azure-sql-migration.sql` or EF migrations instead of having every production API instance migrate at startup.
 
@@ -190,9 +248,9 @@ The job steps require the Standard Job Card template. Confirm **Standard job car
 | 4 | **Edit site** | **200**. Confirm `address` changed; **Get site** should show it. |
 | 5 | **Create job with standard checklist** | **201 Created** after the template migration is applied. `customerId` and `siteId` must match. **Remove the `technicianId` line from this request body** so the new job stays in `Draft`. Copy response `id` to `jobId`. |
 | 6 | **Edit draft job** | **200**; verify the `priority` and `notes` in **Get job**. This only works while status is `Draft`. |
-| 7 | **Assign technician** | **200** after a job and technician exist. Use **Create technician and account** and copy its `id` to `technicianId`. Once assigned, the draft edit request correctly returns **409 Conflict**. Assigning now also sends the technician an email notification (Person 3) if SMTP is configured — see below. |
+| 7 | **Assign technician** | **200** after a job and technician exist. Use **Create technician and account** and copy its `id` to `technicianId`. Once assigned, the draft edit request correctly returns **409 Conflict**. Assigning now also sends the technician an email notification (Person 3) if SMTP is configured - see below. |
 
-The collection's **Approve submitted job** request cannot approve a newly assigned job. A technician must accept it, start it, complete its checklist, add evidence and both signatures, then submit it for review. Use the technician routes and the separate mobile Postman collection described in [the mobile API guide](docs/mobile-api-testing.md) to complete that workflow. The Person 1 collection still covers manager requests.
+The collection's **Approve submitted job** request cannot approve a newly assigned job. A technician must accept it, start it, complete its checklist, add evidence and both signatures, then submit it for review. Use the technician routes and the [mobile API Postman collection](postman/VertecoSmartJob.Mobile.postman_collection.json) to complete that workflow. The Person 1 collection still covers manager requests.
 
 Next, use that completed job to send **Reopen job**. Expect **200** and status `Reopened`. To test **Cancel active job**, first set `jobId` to a *different* job in `Draft`, `Assigned`, `Accepted`, `InProgress`, `AwaitingApproval`, or `Reopened`; expect **200** and `Cancelled`. Cancelling a `Completed` or already `Cancelled` job correctly returns **409**. These requests change shared Azure data, so choose disposable records when possible.
 
@@ -236,58 +294,59 @@ Each flag creates one corrective-action record with a reason, open/resolved stat
 | API stops at `MigrateAsync`, SQL host not found | Use the exact `*.database.windows.net` server name in User Secrets; check internet/DNS and Azure SQL Networking. |
 | SQL login or firewall error | Check SQL login/password, database name, your current public IP firewall rule, and whether the free database has paused after its allowance. |
 | API says `ConnectionStrings:AzureSql` or `Blob:ServiceUri or Blob:ConnectionString` is required | Open **Manage User Secrets** on the **API project**, verify the JSON keys and run with the **Development** launch profile. |
-| Postman `401` | Confirm the API is running and `managerKey` exactly matches User Secrets; the email must identify an existing, active user. If testing with a Bearer token instead, confirm the token hasn't expired (30-minute lifetime) and that `Authorization: Bearer <token>` is actually present on the request — Postman's Authorization tab can silently fail to apply if a conflicting header is also set manually; check the Headers tab directly if in doubt. |
+| Postman `401` | Confirm the API is running and `managerKey` exactly matches User Secrets; the email must identify an existing, active user. If testing with a Bearer token instead, confirm the token hasn't expired (30-minute lifetime) and that `Authorization: Bearer <token>` is actually present on the request - Postman's Authorization tab can silently fail to apply if a conflicting header is also set manually; check the Headers tab directly if in doubt. |
 | Web dashboard redirects to login after its API token expires | Sign in again with the Manager account. The Web cookie can outlive its API token; the Web app now clears an invalid cookie when the API returns `401`. If a fresh login still fails, check the API's `JwtBearer` authentication warning and verify `Api:BaseUrl` points to the API's HTTPS address. |
-| Postman `403` | The key or token identified a user without permission for that manager endpoint — this is expected and correct for a Technician token hitting a Manager-only route. |
+| Postman `403` | The key or token identified a user without permission for that manager endpoint - this is expected and correct for a Technician token hitting a Manager-only route. |
 | Postman `400` | Check required body fields, valid GUID variables, JSON syntax, and the `yyyy-MM-dd` job date or `yyyy-MM` report period. |
 | Postman `404` or `405` on an ID request | Fill `jobId`, `customerId`, `siteId`, or `userId`; an empty variable can turn a detail URL into a collection URL. |
 | Postman `409` | Check the job's current `status` and flag state; edits require `Draft`, approval requires `AwaitingApproval` with no open flag, and a flag can be resolved only once. |
-| Postman `423` | The account is locked out after 5 failed login attempts; wait 15 minutes or have a Manager reset it via `set-password`. This is correct, intended behaviour — see Person 3's section. |
+| Postman `423` | The account is locked out after 5 failed login attempts; wait 15 minutes or have a Manager reset it via `set-password`. This is correct, intended behaviour - see Person 3's section. |
 | Postman Runner says **0 tests** | The collection has request examples but no Postman assertion scripts. Inspect response status/body for each request using the tables above. |
 
 ---
 
-## Person 2 (Caleb) — Web Front End setup
+<a id="person-2"></a>
+## Person 2 (Caleb) - Web Front End setup
 
-This section documents what's been done to get `VertecoSmartJob.Web` built and running against this API, for the rest of the team.
+This section documents the implemented `VertecoSmartJob.Web` manager console and its integration with the shared API.
 
 ### What's included
 
 A server-rendered ASP.NET Core MVC front end, calling this API through typed `HttpClient`s rather than any JavaScript framework. Screens built so far:
 
-- **Dashboard** — summary stats (active job cards, due today, technicians available).
-- **Job Cards** — list/filter, create (with the one seeded Standard checklist attached automatically), and a details view with the lifecycle tracker (Draft → Assigned → Accepted → InProgress → AwaitingApproval → Completed, plus Reopened/Cancelled).
-- **Customers** — list, details (with its sites), create, edit; create/edit also support creating a new site inline against that customer.
-- **Sites** — list, details (with equipment), create, edit.
-- **Technicians** — list, details (with linked user account status and Suspend/Reactivate/Deactivate actions), create, edit.
-- **Flagged Items** — list of flagged jobs and their open corrective actions (Manager only).
-- **Historical Records** — searchable record view across jobs/equipment history.
-- **Reports** — monthly report list and a details page with stats, status breakdown, report insights, and CSV/PDF export links (Manager only).
-- **Activity Feed** — audit trail view (Manager only).
-- **Profile & Settings** — read-only signed-in user info and logout.
-- **Login** — real email/password sign-in against the Api's `/api/v1/auth/login` endpoint. See Person 3's section below for how accounts get their first password and how the identity system works end to end.
-- **Privacy Notice** — a POPIA-aligned privacy page (Person 3), linked from the sidebar under Account.
+- **Dashboard** - summary stats (active job cards, due today, technicians available).
+- **Job Cards** - list/filter, create (with the one seeded Standard checklist attached automatically), and a details view with the lifecycle tracker (Draft → Assigned → Accepted → InProgress → AwaitingApproval → Completed, plus Reopened/Cancelled).
+- **Customers** - list, details (with its sites), create, edit; create/edit also support creating a new site inline against that customer.
+- **Sites** - list, details (with equipment), create, edit.
+- **Technicians** - list, details (with linked user account status and Suspend/Reactivate/Deactivate actions), create, edit.
+- **Flagged Items** - list of flagged jobs and their open corrective actions (Manager only).
+- **Historical Records** - searchable record view across jobs/equipment history.
+- **Reports** - monthly report list and a details page with stats, status breakdown, report insights, and CSV/PDF export links (Manager only).
+- **Activity Feed** - audit trail view (Manager only).
+- **Profile & Settings** - signed-in user details, editable name/email/phone, password reset and logout.
+- **Login** - real email/password sign-in against the Api's `/api/v1/auth/login` endpoint. See Person 3's section below for how accounts get their first password and how the identity system works end to end.
+- **Privacy Notice** - a POPIA-aligned privacy page (Person 3), linked from the sidebar under Account.
 
 Manager-only pages and nav items are hidden from Technician accounts via `User.IsInRole("Manager")` checks, matching the API's own role rules.
 
-### Project structure — how to navigate
+### Project structure - how to navigate
 
 Everything below lives inside `src/VertecoSmartJob.Web/`:
 
 | Folder / file | What's in it |
 | --- | --- |
-| `Program.cs` | App startup — registers one typed `HttpClient` per API area, cookie auth setup, MVC routing, and (Person 3) a security response headers middleware. |
-| `Auth/` | `ApiKeyDelegatingHandler.cs` — attaches the signed-in user's JWT as a `Bearer` token to every outgoing API request (Person 3; the file name is unchanged from the original API-key version, but it now carries a real token read from the sign-in cookie rather than a static shared key). |
-| `Api/` | One typed client class per API area (`JobCardsApiClient`, `CustomersApiClient`, `SitesApiClient`, `TechniciansApiClient`, `UsersApiClient`, `DashboardApiClient`, `ReportsApiClient`, `AuditApiClient`, `CorrectiveActionsApiClient`, `JobTemplatesApiClient`), plus `AuthApiClient.cs` (Person 3 — calls `/api/v1/auth/login`; deliberately does **not** use `ApiKeyDelegatingHandler`, since logging in is the one call made before any credential exists), and shared plumbing (`ApiException.cs`, `ApiResponseExtensions.cs`, `AuditEntryDto.cs`, `JobCardListQuery.cs`). Controllers never call the API directly — they go through these. |
+| `Program.cs` | App startup - registers one typed `HttpClient` per API area, cookie auth setup, MVC routing, and (Person 3) a security response headers middleware. |
+| `Auth/` | `ApiKeyDelegatingHandler.cs` - attaches the signed-in user's JWT as a `Bearer` token to every outgoing API request (Person 3; the file name is unchanged from the original API-key version, but it now carries a real token read from the sign-in cookie rather than a static shared key). |
+| `Api/` | One typed client class per API area (`JobCardsApiClient`, `CustomersApiClient`, `SitesApiClient`, `TechniciansApiClient`, `UsersApiClient`, `DashboardApiClient`, `ReportsApiClient`, `AuditApiClient`, `CorrectiveActionsApiClient`, `JobTemplatesApiClient`), plus `AuthApiClient.cs` (Person 3 - calls `/api/v1/auth/login`; deliberately does **not** use `ApiKeyDelegatingHandler`, since logging in is the one call made before any credential exists), and shared plumbing (`ApiException.cs`, `ApiResponseExtensions.cs`, `AuditEntryDto.cs`, `JobCardListQuery.cs`). Controllers never call the API directly - they go through these. |
 | `Models/` | View models for forms and list/detail pages (one per screen, e.g. `JobCardListViewModel.cs`, `TechnicianDetailsViewModel.cs`, `CustomerFormViewModel.cs`, `LoginViewModel.cs`). |
-| `Controllers/` | One controller per feature area — `HomeController` (Dashboard), `JobCardsController`, `CustomersController`, `SitesController`, `TechniciansController`, `FlaggedItemsController`, `HistoryController`, `ReportsController`, `ActivityController`, `ProfileController`, `AccountController` (real login/logout, Person 3), `PrivacyController` (Person 3). |
-| `Views/{ControllerName}/` | The Razor pages for that controller — folder names match controller names exactly (e.g. `Views/Technicians/` holds `Index.cshtml`, `Details.cshtml`, `Create.cshtml`, `Edit.cshtml`). |
+| `Controllers/` | One controller per feature area - `HomeController` (Dashboard), `JobCardsController`, `CustomersController`, `SitesController`, `TechniciansController`, `FlaggedItemsController`, `HistoryController`, `ReportsController`, `ActivityController`, `ProfileController`, `AccountController` (real login/logout, Person 3), `PrivacyController` (Person 3). |
+| `Views/{ControllerName}/` | The Razor pages for that controller - folder names match controller names exactly (e.g. `Views/Technicians/` holds `Index.cshtml`, `Details.cshtml`, `Create.cshtml`, `Edit.cshtml`). |
 | `Views/Shared/` | `_Layout.cshtml` (the sidebar/topbar shell every page renders inside) and `Error.cshtml`. |
 | `Views/_ViewStart.cshtml`, `Views/_ViewImports.cshtml` | Wires every view to `_Layout.cshtml` and brings in shared `@using`s and tag helpers. |
-| `wwwroot/css/site.css` | All styling — colors, layout, the login screen, sidebar, cards, tables, etc. |
+| `wwwroot/css/site.css` | All styling - colors, layout, the login screen, sidebar, cards, tables, etc. |
 | `wwwroot/js/site.js` | Sidebar toggle, toast notifications, and the inline customer/site creation panels on the job card form. |
 | `wwwroot/images/` | `verteco-logo-full.png` and `verteco-mark-transparent.png`. |
-| `appsettings.json` | Non-secret config — `Api:BaseUrl` only. (The old `DevAccounts` dev-login placeholder has been removed — see Person 3's section.) |
+| `appsettings.json` | Non-secret config - `Api:BaseUrl` only. (The old `DevAccounts` dev-login placeholder has been removed - see Person 3's section.) |
 
 To find the code behind any page: open the Razor view under `Views/{Area}/`, then its controller action under `Controllers/{Area}Controller.cs`, then whichever `Api/*ApiClient.cs` it calls for data.
 
@@ -306,7 +365,7 @@ To find the code behind any page: open the Razor view under `Views/{Area}/`, the
 
 ### Project location and reference
 
-`VertecoSmartJob.Web` lives directly inside `src/`, as a sibling of `VertecoSmartJob.Api`, `VertecoSmartJob.Application`, `VertecoSmartJob.Contracts`, `VertecoSmartJob.Domain`, and `VertecoSmartJob.Infrastructure` — not nested inside an extra `src/src/...` folder, and not at the solution root. Its `.csproj` has exactly one project reference:
+`VertecoSmartJob.Web` lives directly inside `src/`, as a sibling of `VertecoSmartJob.Api`, `VertecoSmartJob.Application`, `VertecoSmartJob.Contracts`, `VertecoSmartJob.Domain`, and `VertecoSmartJob.Infrastructure` - not nested inside an extra `src/src/...` folder, and not at the solution root. Its `.csproj` has exactly one project reference:
 
 ```xml
 <ItemGroup>
@@ -314,20 +373,20 @@ To find the code behind any page: open the Razor view under `Views/{Area}/`, the
 </ItemGroup>
 ```
 
-A duplicated/incorrect second `ProjectReference` line (pointing at `..\src\VertecoSmartJob.Contracts\...`) will cause `NU1104`/`MSB9008` build errors and a cascade of unrelated-looking `CS1061` errors in the Views — if you see that, check this file first.
+A duplicated/incorrect second `ProjectReference` line (pointing at `..\src\VertecoSmartJob.Contracts\...`) will cause `NU1104`/`MSB9008` build errors and a cascade of unrelated-looking `CS1061` errors in the Views - if you see that, check this file first.
 
-Separately: `VertecoSmartJob.slnx` should list every project **once**, each under the correct folder (e.g. `src/VertecoSmartJob.Web/VertecoSmartJob.Web.csproj`). A stray duplicate entry with the wrong path (missing the `src/` prefix) has shown up before and causes Visual Studio to display a second, broken "(not found)" copy of a project in Solution Explorer alongside the real one. If you see this, open `VertecoSmartJob.slnx` in a text editor and remove the incorrectly-pathed duplicate line — do not remove the correct one.
+Separately: `VertecoSmartJob.slnx` should list every project **once**, each under the correct folder (e.g. `src/VertecoSmartJob.Web/VertecoSmartJob.Web.csproj`). A stray duplicate entry with the wrong path (missing the `src/` prefix) has shown up before and causes Visual Studio to display a second, broken "(not found)" copy of a project in Solution Explorer alongside the real one. If you see this, open `VertecoSmartJob.slnx` in a text editor and remove the incorrectly-pathed duplicate line - do not remove the correct one.
 
 ### Running the Web app against the Api
 
-- `Web/appsettings.json` points `Api:BaseUrl` at `https://localhost:7086` (the Api's **https** profile — see the note below on why https specifically matters).
+- `Web/appsettings.json` points `Api:BaseUrl` at `https://localhost:7086` (the Api's **https** profile - see the note below on why https specifically matters).
 - To run both projects together from one Visual Studio instance: right-click the solution → **Configure Startup Projects…** → **Multiple startup projects** → set both `VertecoSmartJob.Api` and `VertecoSmartJob.Web` to **Start**, then F5.
 - Person 3's note: point `Api:BaseUrl` at the Api's **https** URL, not http. The Api redirects http → https (`UseHttpsRedirection`), and .NET's `HttpClient` strips the `Authorization` header when a request is redirected across a scheme/port boundary, as a security safeguard. Pointing at http will cause every authenticated request from the Web app to silently lose its Bearer token mid-redirect, which looks like a confusing, intermittent `401` rather than an obvious configuration error.
-- If you're only running Web locally against an Api someone else is hosting, you no longer need any shared secret between the two for login itself — the Web app simply calls that Api's real `/api/v1/auth/login` endpoint and uses whatever token comes back. You do still need the Api's database/storage secrets if you're running the Api yourself rather than pointing at someone else's running instance.
+- If you're only running Web locally against an Api someone else is hosting, you no longer need any shared secret between the two for login itself - the Web app simply calls that Api's real `/api/v1/auth/login` endpoint and uses whatever token comes back. You do still need the Api's database/storage secrets if you're running the Api yourself rather than pointing at someone else's running instance.
 
 ### Static assets
 
-`wwwroot/css/site.css` and the two logo images in `wwwroot/images/` (`verteco-logo-full.png`, `verteco-mark-transparent.png`) must exist in the Web project for the UI to render with its intended styling. These are plain static files, not generated at build time — if the site loads with no styling or broken image icons, check these are actually present first.
+`wwwroot/css/site.css` and the two logo images in `wwwroot/images/` (`verteco-logo-full.png`, `verteco-mark-transparent.png`) must exist in the Web project for the UI to render with its intended styling. These are plain static files, not generated at build time - if the site loads with no styling or broken image icons, check these are actually present first.
 
 ### Known local setup issue: Azure SQL firewall
 
@@ -338,26 +397,27 @@ Microsoft.Data.SqlClient.SqlException: Cannot open server 'smartjob' requested b
 Client with IP address 'x.x.x.x' is not allowed to access the server.
 ```
 
-this is Azure SQL's firewall rejecting your public IP — not a code or configuration problem on the Web side. Whoever owns the Azure SQL server needs to add that IP under **Azure Portal → SQL servers → `smartjob` → Networking → Firewall rules**, which can take a few minutes to take effect. Since the Api won't start at all while this is unresolved, any Web page that depends on real data will hang or fail until it's fixed. Home/mobile IPs can change over time, so this may need to be re-added later.
+this is Azure SQL's firewall rejecting your public IP - not a code or configuration problem on the Web side. Whoever owns the Azure SQL server needs to add that IP under **Azure Portal → SQL servers → `smartjob` → Networking → Firewall rules**, which can take a few minutes to take effect. Since the Api won't start at all while this is unresolved, any Web page that depends on real data will hang or fail until it's fixed. Home/mobile IPs can change over time, so this may need to be re-added later.
 
 ---
 
-## Person 3 (Moe) — Security, Identity & Notifications
+<a id="person-3"></a>
+## Person 3 (Moe) - Security, Identity & Notifications
 
-This section documents the real authentication system, password reset flow, audit/notification wiring, and security hardening built on top of Persons 1 and 2's work — replacing the temporary dev-account login bridge that the Web app originally shipped with.
+This section documents the real authentication system, password reset flow, audit/notification wiring, and security hardening built on top of Persons 1 and 2's work - replacing the temporary dev-account login bridge that the Web app originally shipped with.
 
 ### What's included
 
 **Identity core**
-- `User` (Domain) extended with `PasswordHash`, `IsEmailConfirmed`, `FailedLoginAttempts`, and `LockedOutUntilUtc` — all behind behavior methods (`SetPasswordHash`, `ConfirmEmail`, `RegisterFailedLogin`, `ResetFailedLogins`, `IsCurrentlyLockedOut`), never public setters.
-- `PasswordHashingService` (Infrastructure) — PBKDF2 hashing via ASP.NET Core's built-in `PasswordHasher<User>`. Salted automatically; the same password hashed twice never produces the same stored value.
-- `JwtTokenService` (Infrastructure) — issues signed, short-lived (30 minute) access tokens carrying `ClaimTypes.NameIdentifier`, `Name`, `Email`, `Role`, and a `TechnicianId` claim when applicable. This is deliberately the **same claim shape** Alex's `ApiKeyAuthenticationHandler` already produces, so every existing `[Authorize(Roles=...)]` check and `ActorTechnicianId`/`ICurrentUser` lookup across the codebase works unchanged regardless of which credential type authenticated the request.
+- `User` (Domain) extended with `PasswordHash`, `IsEmailConfirmed`, `FailedLoginAttempts`, and `LockedOutUntilUtc` - all behind behavior methods (`SetPasswordHash`, `ConfirmEmail`, `RegisterFailedLogin`, `ResetFailedLogins`, `IsCurrentlyLockedOut`), never public setters.
+- `PasswordHashingService` (Infrastructure) - PBKDF2 hashing via ASP.NET Core's built-in `PasswordHasher<User>`. Salted automatically; the same password hashed twice never produces the same stored value.
+- `JwtTokenService` (Infrastructure) - issues signed, short-lived (30 minute) access tokens carrying `ClaimTypes.NameIdentifier`, `Name`, `Email`, `Role`, and a `TechnicianId` claim when applicable. This is deliberately the **same claim shape** Alex's `ApiKeyAuthenticationHandler` already produces, so every existing `[Authorize(Roles=...)]` check and `ActorTechnicianId`/`ICurrentUser` lookup across the codebase works unchanged regardless of which credential type authenticated the request.
 - `AuthController` (`/api/v1/auth`): `POST /login`, `POST /forgot-password`, `POST /reset-password`, and `POST /users/{id}/set-password` (Manager-only).
-- Dual authentication in the Api's `Program.cs`: a policy scheme forwards to JWT Bearer validation when a request carries an `Authorization` header, or to Alex's existing API-key scheme otherwise. Both are fully supported side by side — Postman's `X-SmartJob-Key` testing flow still works exactly as documented above, and the Web app now uses the JWT path.
+- Dual authentication in the Api's `Program.cs`: a policy scheme forwards to JWT Bearer validation when a request carries an `Authorization` header, or to Alex's existing API-key scheme otherwise. Both are fully supported side by side - Postman's `X-SmartJob-Key` testing flow still works exactly as documented above, and the Web app now uses the JWT path.
 
 **Password reset, with real email**
-- `PasswordResetToken` (Domain) — a single-use, time-limited (1 hour) token. The emailed link contains the raw token; only its SHA-256 hash is ever stored, same principle as the password itself.
-- `IEmailSender` / `SmtpEmailSender` (Infrastructure) — sends real email via Gmail SMTP. Failures are logged, not thrown, so a flaky mail server never blocks the calling request.
+- `PasswordResetToken` (Domain) - a single-use, time-limited (1 hour) token. The emailed link contains the raw token; only its SHA-256 hash is ever stored, same principle as the password itself.
+- `IEmailSender` / `SmtpEmailSender` (Infrastructure) - sends real email via Gmail SMTP. Failures are logged, not thrown, so a flaky mail server never blocks the calling request.
 - `POST /api/v1/auth/forgot-password` always returns the same response whether or not the email exists, to avoid leaking which emails are registered. `POST /api/v1/auth/reset-password` validates the token, updates the password, and marks the token used.
 - This has been tested end to end: a real password reset email was sent and received, and the returned link's token successfully completed a password change.
 
@@ -367,18 +427,18 @@ This section documents the real authentication system, password reset flow, audi
 - This has been tested directly: 5 wrong-password attempts in a row produced a real `423` on the 6th, confirmed in the audit log.
 
 **Audit trail and notifications**
-- Auth events (`LoginSucceeded`, `LoginFailed`, `AccountLockedOut`, `PasswordResetRequested`, `PasswordReset`, `PasswordSetByManager`) write into the same `AuditLog` table Alex's job-lifecycle code already uses, via `IAuditLogRepository` — one unified audit trail, not two separate logs.
+- Auth events (`LoginSucceeded`, `LoginFailed`, `AccountLockedOut`, `PasswordResetRequested`, `PasswordReset`, `PasswordSetByManager`) write into the same `AuditLog` table Alex's job-lifecycle code already uses, via `IAuditLogRepository` - one unified audit trail, not two separate logs.
 - `INotificationService` / `EmailNotificationService` (wired into `JobCardService`) sends a real email when a job is assigned, submitted for review, approved, reopened, or flagged. Technicians are emailed directly (via their linked `User.Email`); Managers are emailed as a group for events needing their review. This has been tested by assigning a real job and confirming no send failure was logged.
 
 **Web app integration**
-- `AccountController` now calls the real `/api/v1/auth/login` endpoint via a new `AuthApiClient`, storing the returned JWT in the sign-in cookie instead of the old static API key. The old `DevAccount.cs` model and the `DevAccounts` config sections have been removed — they're no longer referenced anywhere.
+- `AccountController` now calls the real `/api/v1/auth/login` endpoint via a new `AuthApiClient`, storing the returned JWT in the sign-in cookie instead of the old static API key. The old `DevAccount.cs` model and the `DevAccounts` config sections have been removed - they're no longer referenced anywhere.
 - `ApiKeyDelegatingHandler` (same file name, different contents) now attaches `Authorization: Bearer <token>` from the signed-in cookie to every outgoing API call, instead of a static `X-SmartJob-Key`.
 
 **Hardening**
-- CSRF: every mutating Web controller action already had `[ValidateAntiForgeryToken]` (confirmed by checking all 12 controllers — every `[HttpPost]` has a matching token check).
+- CSRF: every mutating Web controller action already had `[ValidateAntiForgeryToken]` (confirmed by checking all 12 controllers - every `[HttpPost]` has a matching token check).
 - SQL injection: confirmed no raw SQL anywhere in the codebase; everything goes through EF Core's parameterized queries.
 - Security response headers added to both apps: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin` on both the Api and Web app, plus a `Content-Security-Policy` on the Web app specifically (the Api is a pure JSON API and doesn't render HTML, so CSP doesn't meaningfully apply there except to its dev-only Swagger UI).
-  - The Web app's CSP allows `'unsafe-inline'` for scripts and styles. This is a deliberate, documented trade-off: the app already uses inline `<script>` (on the Create Job Card page), inline `onclick=` handlers, and inline `style=""` attributes across many views. A stricter, nonce-based CSP is the textbook-correct approach but would require refactoring those into external files — flagged here as a known limitation rather than hidden.
+  - The Web app's CSP allows `'unsafe-inline'` for scripts and styles. This is a deliberate, documented trade-off: the app already uses inline `<script>` (on the Create Job Card page), inline `onclick=` handlers, and inline `style=""` attributes across many views. A stricter, nonce-based CSP is the textbook-correct approach but would require refactoring those into external files - flagged here as a known limitation rather than hidden.
 - A `JwtBearer` authentication-failure logger was added (`OnAuthenticationFailed` in `Program.cs`) so a rejected token now produces a diagnostic log line instead of a silent `401` with no explanation.
 - Found and fixed a real authorization bug along the way: `TechniciansController.Suspend` (Web) was missing `[Authorize(Roles = "Manager")]`, unlike its two neighboring actions (`Reactivate`, `Deactivate`). The Api's own `UsersController` still had a class-level Manager-only guard, so this was never actually exploitable end to end, but it's a good example of defense-in-depth catching a gap in one layer.
 
@@ -386,16 +446,16 @@ This section documents the real authentication system, password reset flow, audi
 - A **Privacy Notice** page (`/Privacy`, `PrivacyController` + `Views/Privacy/Index.cshtml`) covering what's stored, why (including the client-confirmed indefinite retention policy, for warranty claims and renewals), and how it's protected. Linked from the sidebar under Account. Anonymous-accessible by design, since a privacy notice should be readable without needing to log in first.
 
 **In-app notifications (mobile)**
-- The mobile Notifications screen was previously a static placeholder with hardcoded "No new notifications" text and no real data behind it. It's now backed by a real `Notification` entity (Domain), persisted by `EmailNotificationService` alongside every email it already sends — so each job assigned/submitted/approved/reopened/flagged event now produces both a real email **and** a persisted in-app notification for the relevant user.
+- The mobile Notifications screen was previously a static placeholder with hardcoded "No new notifications" text and no real data behind it. It's now backed by a real `Notification` entity (Domain), persisted by `EmailNotificationService` alongside every email it already sends - so each job assigned/submitted/approved/reopened/flagged event now produces both a real email **and** a persisted in-app notification for the relevant user.
 - `MobileNotificationsController` (`/api/v1/mobile/notifications`, Technician-only) exposes `GET` (paged, for the signed-in technician only) and `POST /{id}/read` (marks one read, with an ownership check so a technician can't mark someone else's notification read by guessing a GUID).
 - On mobile, `NotificationsViewModel` and the rewired `NotificationsPage.xaml` replace the old static page with a real `CollectionView` bound to live data, keeping the original empty-state visual (the bell icon) as the `CollectionView`'s `EmptyView` rather than a separate always-shown block.
-- **Known gap at submission:** the `AddNotifications` EF migration exists in the codebase but had not yet been added to `docs/azure-sql-migration.sql` — see the note under Person 4's section on regenerating that script before final submission.
+- **Migration note:** the `AddNotifications` EF migration is in the codebase, while the checked-in `docs/azure-sql-migration.sql` does not include that migration. The API applies pending EF migrations at startup when its database is reachable.
 
 ### How to actually log in for the first time
 
 The existing Manager login has a working password. Any new account has no password until a Manager sets one:
 
-1. Run the Api and Postman's **List users** to find the target user's `id` (a `User` id, not a `Technician` id — they're different GUIDs for the same person).
+1. Run the Api and Postman's **List users** to find the target user's `id` (a `User` id, not a `Technician` id - they're different GUIDs for the same person).
 2. As a Manager (via `managerKey` or a Manager's own JWT), call:
    ```
    POST {{baseUrl}}/api/v1/auth/users/{id}/set-password
@@ -407,10 +467,10 @@ The existing Manager login has a working password. Any new account has no passwo
 
 ### Gmail SMTP setup (for anyone who needs to run email-dependent features locally)
 
-1. Use a dedicated Gmail account for this project (not a personal one) — this is what sends every notification and reset email, and the email will visibly come from this address.
+1. Use a dedicated Gmail account for this project (not a personal one) - this is what sends every notification and reset email, and the email will visibly come from this address.
 2. Enable **2-Step Verification** on that Google account (Security settings).
-3. Generate an **App Password** at `myaccount.google.com/apppasswords` — this 16-character value, not the normal Gmail password, goes in `Smtp:Password` in User Secrets.
-4. Without this configured, email-dependent features (reset, notifications) don't throw — they log a warning and continue, so the rest of the app still works, but no real email goes out.
+3. Generate an **App Password** at `myaccount.google.com/apppasswords` - this 16-character value, not the normal Gmail password, goes in `Smtp:Password` in User Secrets.
+4. Without this configured, email-dependent features (reset, notifications) don't throw - they log a warning and continue, so the rest of the app still works, but no real email goes out.
 
 ### New/changed API endpoints (Person 3)
 
@@ -426,24 +486,25 @@ The existing Manager login has a working password. Any new account has no passwo
 These were verified directly, not just implemented:
 - **Lockout:** 5 consecutive wrong-password attempts against the same account produced `423 Locked` on the 6th, and the correct password was also rejected with `423` during the lockout window. Confirmed in the audit log (`LoginFailed` ×5, then `AccountLockedOut`).
 - **Role enforcement:** a Technician's valid, correctly-signed JWT was used against a Manager-only endpoint (`GET /api/v1/users`) and correctly received `403 Forbidden`.
-- **XSS:** `<script>alert('xss')</script>` entered into a job's notes field rendered as literal encoded text in the page's actual HTML source, not as an executable script — confirmed via View Page Source, not just the browser's rendered view.
+- **XSS:** `<script>alert('xss')</script>` entered into a job's notes field rendered as literal encoded text in the page's actual HTML source, not as an executable script - confirmed via View Page Source, not just the browser's rendered view.
 
 ---
 
-## Person 4 (Isaac) — Mobile Backend, API & Sync
+<a id="person-4"></a>
+## Person 4 (Isaac) - Mobile Backend, API & Sync
 
 | | |
 | --- | --- |
 | **Role** | Mobile Backend, API & Sync Lead |
 | **Development branch** | `Isaac-Mobile-Backend-API-and-Sync` |
-| **Latest sync commit** | `b71e8e7` — Add mobile delta pull sync |
+| **Latest sync commit** | `b71e8e7` - Add mobile delta pull sync |
 | **Verification** | 31 tests passed, 0 failed |
 
-This section records the work completed for the mobile-facing backend and offline synchronization implementation, and serves as a handover for the rest of the team.
+This section records the mobile-facing backend and offline synchronization implementation.
 
 ### Role overview
 
-Responsible for the mobile-facing backend, API, and synchronization layer — giving the mobile application a secure backend through which technicians can access assigned jobs, perform field-work actions, capture job information, and continue working when connectivity is weak or unavailable. This work was kept on a dedicated branch so it could be developed and tested without pushing directly to `main` or overwriting another team member's work.
+Responsible for the mobile-facing backend, API, and synchronization layer - giving the mobile application a secure backend through which technicians can access assigned jobs, perform field-work actions, capture job information, and continue working when connectivity is weak or unavailable. This work was kept on a dedicated branch so it could be developed and tested without pushing directly to `main` or overwriting another team member's work.
 
 ### Main work completed
 
@@ -472,7 +533,7 @@ The mobile API is implemented under the versioned mobile route:
 
 Technician identity is obtained from authentication claims rather than accepting an arbitrary technician ID from the client. This supports ownership checks and helps prevent one technician from requesting another technician's jobs.
 
-**Job operations** — the mobile job controller supports the core field-work workflow:
+**Job operations** - the mobile job controller supports the core field-work workflow:
 
 - Retrieve jobs assigned to the authenticated technician
 - Retrieve individual job details with access checks
@@ -562,7 +623,7 @@ MobileSyncDeltaPull
 
 ### Security and access control
 
-Mobile controllers are restricted to the Technician role. The authenticated technician ID is read from the user's claims and used for job access and synchronization — mobile job access checks mean the API does not simply trust an ID supplied by the client.
+Mobile controllers are restricted to the Technician role. The authenticated technician ID is read from the user's claims and used for job access and synchronization - mobile job access checks mean the API does not simply trust an ID supplied by the client.
 
 Evidence upload instructions are temporary rather than giving the mobile application unrestricted storage credentials.
 
@@ -588,28 +649,16 @@ The existing tests include coverage for the implemented mobile backend areas suc
 | `tests/VertecoSmartJob.Tests/` | Automated project tests. |
 
 
-### Integration notes and remaining work
-
-The main mobile backend/API/sync implementation is complete on the development branch. The remaining work is mainly integration, end-to-end validation, and production hardening rather than another major mobile backend feature:
-
-- Integrate the branch with the team's latest shared backend changes.
-- Resolve merge conflicts carefully, since the branch was created from an older version of another backend branch.
-- Run the full automated test suite again after integration.
-- Apply EF migrations only to the intended team database/environment.
-- Perform full mobile-app-to-API offline/reconnect integration testing with the MAUI client.
-- Complete final project documentation/sequence diagrams required for submission.
-- Further harden evidence upload validation and production security where required.
-- Review edge cases such as job reassignment/unassignment during delta synchronization.
-
 ### Final status
 
 The core deliverables implemented in this branch include the mobile job API, field-work operations, equipment capture, evidence/signature support, offline queued operation processing, idempotency, RowVersion conflict detection, checklist conflict handling, and reconnect delta synchronization.
 
-At the final verification point on this branch, the solution built successfully and all 31 available automated tests passed. The latest synchronization changes were committed and pushed to the branch. The next stage was team integration and final end-to-end validation (see the status note under Database and Entity Framework work above).
+At the final verification point on this contribution branch, the solution built successfully and all 31 tests then available passed. The integrated repository's current test and deployment checks are described in the CI/CD section above.
 
 ---
 
-## Person 5 (Erin) — Mobile Front End
+<a id="person-5"></a>
+## Person 5 (Erin) - Mobile Front End
 
 
 ### Overview
@@ -639,10 +688,10 @@ SmartJob Mobile was designed to support technicians working in areas with unreli
 
 The mobile application follows the MVVM pattern to keep the user interface separated from application logic:
 
-- **Views** — XAML pages used by the technician.
-- **ViewModels** — UI state, commands, and workflow logic.
-- **Models** — mobile and locally cached data structures.
-- **Services** — API communication, connectivity, local SQLite storage, and synchronisation.
+- **Views** - XAML pages used by the technician.
+- **ViewModels** - UI state, commands, and workflow logic.
+- **Models** - mobile and locally cached data structures.
+- **Services** - API communication, connectivity, local SQLite storage, and synchronisation.
 
 ### API integration
 
@@ -650,7 +699,7 @@ The application communicates with the SmartJob backend API for job information a
 
 ### User interface
 
-The application maintains the SmartJob dark and red visual identity introduced during Part 1, adapting the original Figma prototype into a functional mobile interface, with clear navigation, readable job information, validation messages, system feedback, and consistent controls throughout the technician workflow. It was also tested at different window sizes to confirm the interface remains usable and responsive. This continuity from the Part 1 prototype to a working Part 2 implementation is itself part of what the role was originally scoped to deliver — carrying the agreed visual identity through rather than redesigning it mid-project.
+The application maintains the SmartJob dark and red visual identity introduced during Part 1, adapting the original Figma prototype into a functional mobile interface, with clear navigation, readable job information, validation messages, system feedback, and consistent controls throughout the technician workflow. It was also tested at different window sizes to confirm the interface remains usable and responsive. This continuity from the Part 1 prototype to a working Part 2 implementation is itself part of what the role was originally scoped to deliver - carrying the agreed visual identity through rather than redesigning it mid-project.
 
 ### Validation and feedback
 
@@ -658,7 +707,7 @@ The application provides validation throughout the technician workflow to preven
 
 ### Testing
 
-The application was tested through the complete technician workflow using jobs supplied by the SmartJob backend — covering navigation, job progression, local persistence, validation, evidence capture, digital signatures, final submission, status changes, and synchronisation. The final Android project builds successfully using .NET MAUI.
+The application was tested through the complete technician workflow using jobs supplied by the SmartJob backend - covering navigation, job progression, local persistence, validation, evidence capture, digital signatures, final submission, status changes, and synchronisation. The final Android project builds successfully using .NET MAUI.
 
 ### Running the mobile application
 
@@ -671,11 +720,10 @@ This repository contains work completed as part of a six-person development team
 
 ---
 
-## Person 6 (Keeran) — Mobile Security, DevOps & Hosting
+<a id="person-6"></a>
+## Person 6 (Keeran) - Mobile Security, DevOps & Hosting
 
-> No name was recorded in this section's source material — add it here before submission.
-
-**Role as originally scoped:** the group's initial role split assigned this position as DevOps + Hosting + API Platform Lead, covering both the web and mobile sides of deployment, release, and infrastructure — the only role in the original split explicitly covering both platforms rather than one. The final scope below shows that stayed true: Android/iOS release engineering, Azure hosting prep, and CI/CD all sit under this one role, alongside the mobile-specific authentication integration that connects Person 4's backend to Person 5's front end.
+This contribution spans mobile authentication, Android/iOS release engineering, Azure hosting preparation and CI/CD. It connects Person 4's mobile API and Person 5's interface to a signed, authenticated app that can reach the hosted service.
 
 This role focused on the security, deployment, and release side of the SmartJob mobile application.
 
@@ -687,7 +735,7 @@ This role focused on the security, deployment, and release side of the SmartJob 
 - Added automatic token refresh and session-expiry handling.
 - Added secure logout, which clears stored tokens and revokes the refresh token.
 - Removed the hard-coded API key from the mobile app and changed API requests to use Bearer tokens.
-- Configured the mobile app to use the hosted Azure API in production. At final submission, `ApiConfiguration.BaseUrl` points at the hosted Azure URL unconditionally — there's no longer a Debug/Release split pointing local builds at an emulator address, so every build (Windows, Android, iOS; Debug or Release) talks to the same hosted API. Anyone needing to test against a locally-run Api instead will need to point this constant back at a local URL manually.
+- Configured the mobile app to use the hosted Azure API in production. `ApiConfiguration.BaseUrl` points at the hosted Azure URL unconditionally. There is no Debug/Release split pointing local builds at an emulator address, so Windows, Android and iOS builds all use the hosted API unless this configuration is changed for local testing.
 - Updated the Android package name to `za.co.verteco.smartjob`.
 - Disabled cleartext HTTP for Android Release builds.
 - Added GitHub Actions for build checks, static analysis, and automated tests.
@@ -699,11 +747,11 @@ This role focused on the security, deployment, and release side of the SmartJob 
 - Set up branch protection so changes to `main` require a pull request, approval, and successful CI checks.
 - Added iOS build and release documentation for the steps required on macOS.
 
-This work connects directly across the other three mobile-adjacent roles: it takes Person 4's backend endpoints and Person 5's front-end UI and is what actually makes them reachable from a real device — hosted, signed, and authenticated — rather than only working against a developer's local machine.
+This work connects directly across the other three mobile-adjacent roles: it takes Person 4's backend endpoints and Person 5's front-end UI and is what actually makes them reachable from a real device - hosted, signed, and authenticated - rather than only working against a developer's local machine.
 
 ### Security and deployment
 
-Sensitive information such as signing passwords, JWT keys, and database credentials are not stored directly in the repository — these values are kept in secure configuration or GitHub Secrets. The mobile app uses HTTPS, secure token storage, and refresh-token rotation to keep user sessions secure. The CI/CD workflow checks that the project builds successfully and that automated tests pass before changes are merged.
+Sensitive information such as signing passwords, JWT keys, and database credentials are not stored directly in the repository - these values are kept in secure configuration or GitHub Secrets. The mobile app uses HTTPS, secure token storage, and refresh-token rotation to keep user sessions secure. The CI/CD workflow checks that the project builds successfully and that automated tests pass before changes are merged.
 
 ### Mobile release
 
@@ -717,8 +765,3 @@ za.co.verteco.smartjob
 
 The iOS version uses the same .NET MAUI project and authentication setup. The iOS build and release steps are documented in `docs/ios-build-and-release.md`.
 
-**Video Link:** https://youtu.be/Vq9oaBn_71Y?si=rwpBA2ztyZ8n7VZx
-
-**PowerPoint Presentation:** [VertecoSmartJobGroup20Pres.pptx](docs/VertecoSmartJobGroup20Pres.pptx)
-
-**Attendance Sheet:** [Attendance.docx](docs/Attendance.docx)
