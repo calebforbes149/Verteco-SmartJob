@@ -14,14 +14,15 @@ Verteco SmartJob is a digital field-service and job-card system. Managers use an
 | Manager web app | [Open the hosted SmartJob web console](https://verteco-smartjob-web-ctatfjduapbcdzb5.southafricanorth-01.azurewebsites.net) |
 | API liveness check | [Open /health/live](https://verteco-smartjob-api-hcdyfgf4cagdh2db.southafricanorth-01.azurewebsites.net/health/live) - confirms the API process is running. |
 | API readiness check | [Open /health/ready](https://verteco-smartjob-api-hcdyfgf4cagdh2db.southafricanorth-01.azurewebsites.net/health/ready) - checks access to Azure SQL and Blob Storage. |
-| Android installer | The signed APK is embedded in the [Version 5 user guide](docs/Verteco%20SmartJob%20User%20Guide%20V5%20Group%2020.pdf). Team members can also use [GitHub Releases](https://github.com/EMGPRS/insy7315-2026-insy7315-2026-final-project-st10453511/releases). |
-| User guide | [Verteco SmartJob User Guide V5, Group 20](docs/Verteco%20SmartJob%20User%20Guide%20V5%20Group%2020.pdf) |
+| Android installer | The signed APK is embedded in the [user guide](Documents/Verteco%20SmartJob%20User%20Guide.pdf). Team members can also use [GitHub Releases](https://github.com/EMGPRS/insy7315-2026-insy7315-2026-final-project-st10453511/releases). |
+| User guide | [Verteco SmartJob User Guide](Documents/Verteco%20SmartJob%20User%20Guide.pdf) |
 | Video demonstration | [Watch the SmartJob project video](https://youtu.be/Vq9oaBn_71Y?si=rwpBA2ztyZ8n7VZx) |
-| Implementation presentation | [VertecoSmartJobGroup20Presensation.pptx](docs/VertecoSmartJobGroup20Presensation.pptx) |
-| Expo presentation | [Verteco SmartJob Expo.pptx](docs/Verteco%20SmartJob%20Expo.pptx) |
-| Submission document | [Group20_Submission_With_Link.pdf](docs/Group20_Submission_With_Link.pdf) |
-| Attendance record | [Attendance Group 20.pdf](docs/Attendance%20Group%2020.pdf) |
-| iOS release guide | [iOS build and release steps](docs/ios-build-and-release.md) |
+| Final report | [Final Report (With Feedback Implementation).docx](Documents/Final%20Report%20%28With%20Feedback%20Implementation%29.docx) |
+| Implementation presentation | [Verteco SmartJob Presensation.pptx](Documents/Verteco%20SmartJob%20Presensation.pptx) |
+| Expo presentation | [Verteco SmartJob Expo Presentation.pptx](Documents/Verteco%20SmartJob%20Expo%20Presentation.pptx) |
+| Submission links document | [Links.pdf](Documents/Links.pdf) |
+| Attendance record | [Attendance.pdf](Documents/Attendance.pdf) |
+| iOS release guide | [iOS build and release steps](Documents/ios-build-and-release.md) |
 | API test collections | [Manager API collection](postman/VertecoSmartJob.Person1.postman_collection.json) and [mobile API collection](postman/VertecoSmartJob.Mobile.postman_collection.json) |
 
 The Task 2 repository above is where all six members developed their contributions on separate branches. Changes went through pull requests for review, and an administrator approved merges into `main`. This final-project repository contains the integrated code and submission documents. Branch approval is a GitHub repository rule; it is separate from the Actions workflows described below.
@@ -164,7 +165,7 @@ User Secrets live outside the repository and everyone configures their own local
 
 Development startup applies pending Azure SQL EF migrations. The `AddStandardJobCardTemplate` migration adds only the single required template and its six checklist items when no active standard template exists. Startup does **not** insert accounts or demo records. The existing Manager account and password set through Person 3's login flow remain in the database; the API never recreates them. Automated tests use a separate in-memory SQLite database and test-only fixtures. The database must be reachable before the API can start. If the SQL firewall or credentials are wrong, startup stops during migration. The Api now authenticates requests through **either** the development API-key header **or** a real JWT Bearer token - see Person 3's section below for how real login, password reset, and role enforcement work.
 
-For deployment, use the reviewed `docs/azure-sql-migration.sql` or EF migrations instead of having every production API instance migrate at startup.
+For deployment, use the reviewed `Documents/azure-sql-migration.sql` or EF migrations instead of having every production API instance migrate at startup.
 
 The idempotent deployment script now includes Person 3's `AddUserIdentityFields` and `AddPasswordResetTokens` migrations. It prepares the schema only; it does not enable Production hosting or replace the required deployment configuration review.
 
@@ -449,7 +450,7 @@ This section documents the real authentication system, password reset flow, audi
 - The mobile Notifications screen was previously a static placeholder with hardcoded "No new notifications" text and no real data behind it. It's now backed by a real `Notification` entity (Domain), persisted by `EmailNotificationService` alongside every email it already sends - so each job assigned/submitted/approved/reopened/flagged event now produces both a real email **and** a persisted in-app notification for the relevant user.
 - `MobileNotificationsController` (`/api/v1/mobile/notifications`, Technician-only) exposes `GET` (paged, for the signed-in technician only) and `POST /{id}/read` (marks one read, with an ownership check so a technician can't mark someone else's notification read by guessing a GUID).
 - On mobile, `NotificationsViewModel` and the rewired `NotificationsPage.xaml` replace the old static page with a real `CollectionView` bound to live data, keeping the original empty-state visual (the bell icon) as the `CollectionView`'s `EmptyView` rather than a separate always-shown block.
-- **Migration note:** the `AddNotifications` EF migration is in the codebase, while the checked-in `docs/azure-sql-migration.sql` does not include that migration. The API applies pending EF migrations at startup when its database is reachable.
+- **Migration note:** the `AddNotifications` EF migration is in the codebase, while the checked-in `Documents/azure-sql-migration.sql` does not include that migration. The API applies pending EF migrations at startup when its database is reachable.
 
 ### How to actually log in for the first time
 
@@ -763,5 +764,5 @@ The final Android package ID is:
 za.co.verteco.smartjob
 ```
 
-The iOS version uses the same .NET MAUI project and authentication setup. The iOS build and release steps are documented in `docs/ios-build-and-release.md`.
+The iOS version uses the same .NET MAUI project and authentication setup. The iOS build and release steps are documented in `Documents/ios-build-and-release.md`.
 
