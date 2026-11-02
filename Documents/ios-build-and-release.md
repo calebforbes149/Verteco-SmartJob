@@ -61,13 +61,13 @@ Xcode must be installed and opened at least once so that its licence can be acce
 On the Mac, clone the SmartJob repository:
 
 ```bash
-git clone https://github.com/EMGPRS/insy7315-2026-task-2-st10453511.git
+git clone https://github.com/EMGPRS/insy7315-2026-insy7315-2026-final-project-st10453511.git
 ```
 
 Move into the repository:
 
 ```bash
-cd insy7315-2026-task-2-st10453511
+cd insy7315-2026-insy7315-2026-final-project-st10453511
 ```
 
 The final approved application should be built from the team's stable `main` branch.
