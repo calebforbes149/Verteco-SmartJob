@@ -10,14 +10,14 @@ Verteco SmartJob is a digital field-service and job-card system. Managers use an
 
 | Resource | Link or location |
 | --- | --- |
-| Task 2 collaboration repository | [EMGPRS SmartJob Task 2 repository](https://github.com/EMGPRS/insy7315-2026-task-2-st10453511.git) |
 | Manager web app | [Open the hosted SmartJob web console](https://verteco-smartjob-web-ctatfjduapbcdzb5.southafricanorth-01.azurewebsites.net) |
 | API liveness check | [Open /health/live](https://verteco-smartjob-api-hcdyfgf4cagdh2db.southafricanorth-01.azurewebsites.net/health/live) - confirms the API process is running. |
 | API readiness check | [Open /health/ready](https://verteco-smartjob-api-hcdyfgf4cagdh2db.southafricanorth-01.azurewebsites.net/health/ready) - checks access to Azure SQL and Blob Storage. |
 | Android installer | The signed APK is embedded in the [user guide](Documents/Verteco%20SmartJob%20User%20Guide.pdf). Team members can also use [GitHub Releases](https://github.com/EMGPRS/insy7315-2026-insy7315-2026-final-project-st10453511/releases). |
 | User guide | [Verteco SmartJob User Guide](Documents/Verteco%20SmartJob%20User%20Guide.pdf) |
 | Video demonstration | [Watch the SmartJob project video](https://youtu.be/Vq9oaBn_71Y?si=rwpBA2ztyZ8n7VZx) |
-| Final report | [Final Report (With Feedback Implementation).docx](Documents/Final%20Report%20%28With%20Feedback%20Implementation%29.docx) |
+| Part 3 final report | [Verteco Final Report (Part 3).docx](Documents/Verteco%20Final%20Report%20%28Part%203%29.docx) |
+| Full documentation (final report with feedback implementation) | [Report (With Feedback Implementation).docx](Documents/Report%20%28With%20Feedback%20Implementation%29.docx) |
 | Implementation presentation | [Verteco SmartJob Presensation.pptx](Documents/Verteco%20SmartJob%20Presensation.pptx) |
 | Expo presentation | [Verteco SmartJob Expo Presentation.pptx](Documents/Verteco%20SmartJob%20Expo%20Presentation.pptx) |
 | Submission links document | [Links.pdf](Documents/Links.pdf) |
@@ -25,7 +25,7 @@ Verteco SmartJob is a digital field-service and job-card system. Managers use an
 | iOS release guide | [iOS build and release steps](Documents/ios-build-and-release.md) |
 | API test collections | [Manager API collection](postman/VertecoSmartJob.Person1.postman_collection.json) and [mobile API collection](postman/VertecoSmartJob.Mobile.postman_collection.json) |
 
-The Task 2 repository above is where all six members developed their contributions on separate branches. Changes went through pull requests for review, and an administrator approved merges into `main`. This final-project repository contains the integrated code and submission documents. Branch approval is a GitHub repository rule; it is separate from the Actions workflows described below.
+All six members developed their contributions on separate branches. Changes went through pull requests for review, and an administrator approved merges into `main`. This repository contains the integrated code and submission documents. Branch approval is a GitHub repository rule; it is separate from the Actions workflows described below.
 
 ## Demo sign-in
 
@@ -49,7 +49,7 @@ The web account has the Manager role. The Android account has the Technician rol
 
 ## CI/CD and deployment
 
-The workflows below are part of this final-project repository. GitHub Actions checks pull requests and branch pushes, while repository rules control who can merge. In the Task 2 collaboration repository, the team worked on separate branches and needed administrator approval before merging into `main`. A workflow does not grant that approval. In a repository with these workflows, a merge to `main` creates a push that starts a fresh test-and-deploy run for the merged commit.
+The workflows below are part of this repository. GitHub Actions checks pull requests and branch pushes, while repository rules control who can merge. The team worked on separate branches and needed administrator approval before merging into `main`. A workflow does not grant that approval. In a repository with these workflows, a merge to `main` creates a push that starts a fresh test-and-deploy run for the merged commit.
 
 | Workflow | Trigger | What it does | Result |
 | --- | --- | --- | --- |
