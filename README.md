@@ -24,8 +24,9 @@ Verteco SmartJob is a digital field-service and job-card system. Managers use an
 | Attendance record | [Attendance.pdf](Documents/Attendance.pdf) |
 | iOS release guide | [iOS build and release steps](Documents/ios-build-and-release.md) |
 | API test collections | [Manager API collection](postman/VertecoSmartJob.Person1.postman_collection.json) and [mobile API collection](postman/VertecoSmartJob.Mobile.postman_collection.json) |
+| Task 2 Repository (Showcase branches and main protection) | [EMGPRS SmartJob Task 2 repository](https://github.com/EMGPRS/insy7315-2026-task-2-st10453511.git)|
 
-All six members developed their contributions on separate branches. Changes went through pull requests for review, and an administrator approved merges into `main`. This repository contains the integrated code and submission documents. Branch approval is a GitHub repository rule; it is separate from the Actions workflows described below.
+The Task 2 repository above is where all six members developed their contributions on separate branches. Changes went through pull requests for review, and an administrator approved merges into `main`. This final-project repository contains the integrated code and submission documents. Branch approval is a GitHub repository rule; it is separate from the Actions workflows described below.
 
 ## Demo sign-in
 
